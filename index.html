@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Журнал тренировок</title>
 <meta name="description" content="Сборка тренировки на день и счётчик подходов: свой вес, гиря, жгуты.">
 <meta name="theme-color" content="#0B0E10">
@@ -540,6 +540,32 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .sprof{gap:12px}
 .ob{gap:14px}
 .obdots{display:flex;gap:6px}.obdots i{width:22px;height:5px;border-radius:3px;background:var(--sunk)}.obdots i.on{background:var(--acc)}
+/* schedule calendar (iPhone Calendar style) */
+.ical{gap:10px;padding:12px 12px 10px}
+.icalh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.icalm{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;min-width:0;flex:0 1 auto;border:0;background:transparent;font-family:var(--f-display);font-weight:500;font-size:clamp(16px,5vw,20px);text-transform:uppercase;letter-spacing:.03em;color:var(--ink);padding:4px 4px}
+.icalm svg{width:18px;height:18px;color:var(--acc)}
+.icalnav{display:flex;align-items:center;gap:0;flex:none}.icalnav .navbtn{width:36px;height:36px}
+.ictoday{border:1px solid color-mix(in srgb,var(--acc) 40%,transparent);background:color-mix(in srgb,var(--acc) 12%,transparent);color:var(--ink);border-radius:999px;height:32px;padding:0 12px;font-size:13px;font-weight:600;margin-right:4px}
+.wstrip,.mdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;touch-action:pan-y}
+.mgrid{display:grid;gap:4px}.mwd{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}.mwd i{font-style:normal;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.icd{display:grid;justify-items:center;align-content:center;gap:3px;border:0;background:transparent;border-radius:14px;padding:4px 0 6px;min-height:50px;color:var(--ink)}
+.wstrip .icd{min-height:66px}
+.mdays .icd{min-height:44px;padding:2px 0 4px}.mdays .icd b{width:32px;height:32px;font-size:14px}
+.icd i{font-style:normal;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.icd b{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-num);font-size:15px;font-weight:600;transition:background .2s,color .2s}
+.icd.today b{color:var(--acc)}
+.icd.sel b{background:var(--ink);color:var(--bg)}
+.icd.today.sel b{background:var(--acc);color:var(--on-acc)}
+.icd.out{opacity:.35}
+.icd .dot{width:6px;height:6px;border-radius:50%}
+.icd.plan .dot{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--acc) 85%,transparent)}
+.icd.part .dot{background:color-mix(in srgb,var(--acc) 55%,transparent)}
+.icd.done .dot{background:var(--acc)}
+.icd.miss .dot{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--muted) 70%,transparent)}
+.icleg{font-size:11.5px;gap:4px 12px;padding:0 4px}
+.lg{width:8px;height:8px;border-radius:50%;display:inline-block}.lg.plan{box-shadow:inset 0 0 0 1.5px var(--acc)}.lg.part{background:color-mix(in srgb,var(--acc) 55%,transparent)}.lg.done{background:var(--acc)}.lg.miss{box-shadow:inset 0 0 0 1.5px var(--muted)}
+.dayhd{display:grid;gap:2px;padding:2px 6px}.dayhd b{font-size:17px}.dayhd span{font-size:13px;color:var(--muted)}
 /* coach chat */
 .cset{gap:14px}
 .cta{width:100%;min-width:0;border-radius:14px;border:1px solid var(--glass-edge);background:var(--glass-strong);color:var(--ink);font:inherit;font-size:16px;line-height:1.4;padding:10px 12px;resize:vertical}
@@ -576,6 +602,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .cclear{display:flex;justify-content:center}
 .cspace{height:64px}
 .composer{position:fixed;z-index:13;left:50%;transform:translateX(-50%);bottom:calc(var(--tb-b) + var(--tb-h) + 10px);width:min(400px,calc(100% - var(--tb-side) * 2));display:flex;align-items:flex-end;gap:6px;border-radius:24px;padding:5px 5px 5px 16px;margin:0}
+.kb .tabbar{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(20px)}
+.kb .composer{bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+.kb .toast{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 70px)}
+.kb .app{padding-bottom:24px}
 .composer.glass{background:linear-gradient(160deg,rgba(255,255,255,.3),rgba(255,255,255,0) 50%),var(--glass-strong)}
 .composer textarea{flex:1;min-width:0;height:38px;border:0;background:transparent;resize:none;font:inherit;font-size:16px;line-height:1.3;color:var(--ink);padding:9px 0;max-height:120px;outline:none}
 .composer textarea::placeholder{color:var(--muted)}
@@ -1525,10 +1555,138 @@ const EXTPL2={bbbench:'benchpress',inclinebb:'inclinepress',dbbench:'dbbenchpres
  rower:'rower',bike:'bike',rope:'rope',thruster:'thruster',kbclean:'kbclean',boxjump:'boxjump',hipflexor:'hipflexor',childpose:'childpose'};
 
 Object.assign(TECH,TECH2);Object.assign(MUSCLES,MUSCLES2);Object.assign(TPL,TPL2);Object.assign(EXTPL,EXTPL2);
+/* ---------- more kettlebell and band exercises (written for this app; checked against the whole base for duplicates) ---------- */
+// [dir, id, name, kind, equipment label, defaults, timeUnit, tags]
+const BASE3=[
+ ['cardio','k_usswing','Американский мах гирей','wr','гиря',{w:16,r:12},'s',['kb']],
+ ['cardio','k_h2hswing','Махи гирей с перехватом','wr','гиря',{w:16,r:20},'s',['kb']],
+ ['legs','k_revlunge','Обратные выпады с гирей у груди','wr','гиря',{w:12,r:10},'s',['kb']],
+ ['legs','k_bulgarian','Болгарские сплит-приседы с гирей','wr','гиря, скамья',{w:12,r:10},'s',['kb','bench']],
+ ['legs','k_stepup','Зашагивания на скамью с гирей','wr','гиря, скамья',{w:12,r:10},'s',['kb','bench']],
+ ['legs','k_bridge','Ягодичный мост с гирей','wr','гиря',{w:16,r:12},'s',['kb']],
+ ['legs','k_rdl','Румынская тяга с гирей','wr','гиря',{w:20,r:10},'s',['kb']],
+ ['legs','k_cossack','Казачий присед с гирей','wr','гиря',{w:8,r:8},'s',['kb']],
+ ['legs','k_calf','Подъём на носки с гирей','wr','гиря',{w:16,r:15},'s',['kb']],
+ ['back','k_gorilla','Тяга гирь «горилла»','wr','гиря',{w:16,r:8},'s',['kb']],
+ ['back','k_pullover','Пуловер с гирей лёжа','wr','гиря, скамья',{w:12,r:12},'s',['kb','bench']],
+ ['chest','k_bench','Жим гирь лёжа на скамье','wr','гиря, скамья',{w:16,r:10},'s',['kb','bench']],
+ ['chest','k_pushup','Отжимания с упором на гири','reps','гиря',{r:12},'s',['kb']],
+ ['shoulders','k_bottomsup','Жим гири дном вверх','wr','гиря',{w:8,r:8},'s',['kb']],
+ ['shoulders','k_kneelpress','Жим гири с колена','wr','гиря',{w:12,r:8},'s',['kb']],
+ ['shoulders','k_overcarry','Прогулка с гирей над головой','time','гиря',{t:30},'s',['kb']],
+ ['arms','k_ohext','Разгибание гири из-за головы','wr','гиря',{w:12,r:12},'s',['kb']],
+ ['core','k_farmer','Прогулка фермера с гирями','time','гиря',{t:40},'s',['kb']],
+ ['core','k_suitcase','Прогулка с гирей в одной руке','time','гиря',{t:30},'s',['kb']],
+ ['core','k_russian','Русские скручивания с гирей','wr','гиря',{w:8,r:20},'s',['kb']],
+ ['core','k_sidebend','Наклоны в сторону с гирей','wr','гиря',{w:16,r:12},'s',['kb']],
+ ['core','k_situp','Подъём корпуса с гирей','wr','гиря',{w:8,r:12},'s',['kb']],
+ ['core','k_plankpull','Планка с протяжкой гири','reps','гиря',{r:12},'s',['kb']],
+ ['core','k_deadbug','Мёртвый жук с гирей','reps','гиря',{r:10},'s',['kb']],
+ ['core','k_around','Передача гири вокруг корпуса','wr','гиря',{w:8,r:10},'s',['kb']],
+ ['core','k_woodchop','«Дровосек» с гирей','wr','гиря',{w:8,r:10},'s',['kb']],
+ ['legs','b_deadlift','Становая тяга со жгутом','reps','жгут',{r:15},'s',['band']],
+ ['legs','b_rdl','Румынская тяга со жгутом','reps','жгут',{r:15},'s',['band']],
+ ['legs','b_loopsquat','Приседания с мини-петлёй над коленями','reps','жгут',{r:15},'s',['band']],
+ ['legs','b_splitsquat','Сплит-присед со жгутом','reps','жгут',{r:12},'s',['band']],
+ ['legs','b_clamshell','«Раскладушка» с мини-петлёй','reps','жгут',{r:15},'s',['band']],
+ ['legs','b_sideabd','Отведение ноги в сторону со жгутом','reps','жгут',{r:15},'s',['band']],
+ ['legs','b_seatabd','Разведение коленей сидя с мини-петлёй','reps','жгут',{r:20},'s',['band']],
+ ['legs','b_legext','Разгибание колена со жгутом сидя','reps','жгут',{r:15},'s',['band']],
+ ['legs','b_lyingcurl','Сгибание ноги лёжа со жгутом','reps','жгут',{r:15},'s',['band']],
+ ['legs','b_legpress','Жим ногой со жгутом лёжа','reps','жгут',{r:15},'s',['band']],
+ ['back','b_onearmrow','Тяга жгута одной рукой','reps','жгут',{r:12},'s',['band']],
+ ['back','b_seatedrow','Тяга жгута сидя','reps','жгут',{r:15},'s',['band']],
+ ['back','b_straightarm','Пуловер со жгутом прямыми руками','reps','жгут',{r:15},'s',['band']],
+ ['chest','b_pushup','Отжимания со жгутом','reps','жгут',{r:12},'s',['band']],
+ ['shoulders','b_frontraise','Подъём жгута перед собой','reps','жгут',{r:15},'s',['band']],
+ ['shoulders','b_yraise','Y-подъём со жгутом','reps','жгут',{r:15},'s',['band']],
+ ['arms','b_hammer','Молотки со жгутом','reps','жгут',{r:15},'s',['band']],
+ ['arms','b_kickback','Разгибание руки со жгутом в наклоне','reps','жгут',{r:15},'s',['band']],
+ ['arms','b_pushdown','Разгибания на трицепс со жгутом сверху','reps','жгут',{r:15},'s',['band']],
+ ['core','b_woodchop','«Дровосек» со жгутом','reps','жгут',{r:12},'s',['band']],
+ ['core','b_crunch','Скручивания со жгутом на коленях','reps','жгут',{r:15},'s',['band']],
+ ['core','b_deadbug','Мёртвый жук со жгутом','reps','жгут',{r:10},'s',['band']],
+ ['cardio','b_thruster','Присед с жимом со жгутом','reps','жгут',{r:12},'s',['band']]
+];
+// 3 steps + the most common mistake
+const TECH3={
+ k_usswing:['Стопы чуть шире плеч, гиря двумя руками, замах между ног как в обычном махе.','Мощно разогните таз и проведите гирю по дуге до положения над головой, дном вверх.','Наверху руки прямые, корпус вертикален; опустите гирю обратно между ног.','Тянуть гирю вверх руками и прогибаться в пояснице в верхней точке.'],
+ k_h2hswing:['Начните мах двумя руками, затем держите гирю одной рукой.','Когда гиря «зависает» на уровне груди, отпустите её и перехватите другой рукой.','Продолжайте мах, меняя руку в каждом повторе.','Перехват внизу или сбоку — гиря может выскользнуть.'],
+ k_revlunge:['Держите гирю за рожки у груди, локти смотрят вниз.','Шагните назад и опуститесь, пока заднее колено почти не коснётся пола.','Оттолкнитесь передней ногой и вернитесь в стойку; чередуйте ноги.','Переднее колено заваливается внутрь, корпус сильно наклоняется вперёд.'],
+ k_bulgarian:['Задняя стопа на скамье, гиря у груди или в опущенной руке.','Опускайтесь вертикально, пока бедро передней ноги не станет параллельно полу.','Поднимитесь, толкаясь пяткой передней ноги; затем смените ногу.','Передняя стопа слишком близко к скамье — колено уходит далеко вперёд.'],
+ k_stepup:['Гиря у груди, одна стопа целиком стоит на скамье.','Перенесите вес на верхнюю ногу и встаньте на скамью, не отталкиваясь нижней.','Опуститесь медленно той же ногой; сделайте все повторы и смените ногу.','Толчок нижней ногой — работа уходит из целевой ноги.'],
+ k_bridge:['Лягте на спину, стопы на ширине таза, гирю держите на тазу двумя руками.','Поднимите таз, сжимая ягодицы, до прямой линии от колен до плеч.','Задержитесь на секунду и опуститесь, не роняя таз на пол.','Прогиб в пояснице вместо разгибания в тазобедренных суставах.'],
+ k_rdl:['Гиря в опущенных руках перед бёдрами, колени слегка согнуты.','Отводите таз назад, опуская гирю вдоль ног до растяжения задней поверхности бедра.','Разогните таз и встаньте прямо, сжав ягодицы.','Скругление спины и приседание вместо наклона.'],
+ k_cossack:['Широкая стойка, носки чуть наружу, гиря у груди.','Опуститесь на одну ногу, вторая остаётся прямой, носок смотрит вверх.','Поднимитесь и перейдите на другую сторону.','Пятка опорной ноги отрывается от пола.'],
+ k_calf:['Гиря в одной руке, другой держитесь за опору; носки на краю ступеньки.','Поднимитесь на носки как можно выше и задержитесь на секунду.','Опустите пятки ниже ступеньки до растяжения икр.','Пружинящие повторы без паузы вверху и внизу.'],
+ k_gorilla:['Две гири между стоп, наклон с прямой спиной, колени согнуты.','Тяните одну гирю к поясу, опираясь другой рукой на вторую гирю.','Опустите гирю и тяните другой рукой; чередуйте.','Скручивание корпуса и рывок рукой вместо тяги спиной.'],
+ k_pullover:['Лягте на скамью, держите гирю за рожки над грудью.','Опустите гирю за голову по дуге, локти чуть согнуты, до растяжения широчайших.','Верните гирю над грудью тем же путём.','Сгибание рук в локтях — упражнение превращается в разгибание на трицепс.'],
+ k_bench:['Лягте на скамью, гири у груди, рукояти по диагонали, запястья прямые.','Выжмите гири вверх над плечами.','Опустите медленно, локти под 45° к корпусу.','Запястья заламываются назад под весом гири.'],
+ k_pushup:['Поставьте гири на ширину плеч и обхватите рукояти, запястья прямые.','Опускайтесь ниже уровня рукоятей, локти под 45° к корпусу.','Выжмите тело вверх, сохраняя прямую линию от головы до пяток.','Лёгкие гири с узким дном качаются — берите устойчивые.'],
+ k_bottomsup:['Возьмите гирю дном вверх у плеча, сильно сжав рукоять.','Медленно выжмите вверх, удерживая гирю вертикально.','Опустите к плечу под контролем.','Слабый хват — гиря заваливается; начните с лёгкой.'],
+ k_kneelpress:['Встаньте на одно колено, гиря у плеча со стороны опорного колена.','Напрягите ягодицу и пресс и выжмите гирю вверх.','Опустите к плечу; сделайте повторы и смените сторону.','Прогиб в пояснице при выжимании.'],
+ k_overcarry:['Выжмите гирю над головой: рука прямая, бицепс у уха.','Идите медленно, держа гирю над плечом и напрягая пресс.','Опустите гирю на грудь, затем на пол; смените руку.','Прогиб в пояснице, рука уходит вперёд.'],
+ k_ohext:['Держите гирю за рожки над головой, локти направлены вверх.','Опустите гирю за голову, сгибая только локти.','Разогните руки вверх, не разводя локти.','Локти расходятся в стороны — нагрузка уходит в плечи.'],
+ k_farmer:['Возьмите по гире в каждую руку, встаньте прямо, плечи опущены.','Идите короткими быстрыми шагами, корпус вертикален.','Ставьте гири на пол приседом, а не наклоном с круглой спиной.','Плечи поднимаются к ушам, корпус раскачивается.'],
+ k_suitcase:['Гиря в одной руке, вторая свободна, плечи на одном уровне.','Идите ровно, не давая корпусу наклоняться к гире.','Пройдите отрезок и смените руку.','Корпус клонится к гире — пресс не держит.'],
+ k_russian:['Сядьте, отклонитесь назад, гиря у груди двумя руками.','Поворачивайте корпус, касаясь гирей пола то справа, то слева.','Спина прямая, ноги неподвижны.','Двигаются только руки, корпус не поворачивается.'],
+ k_sidebend:['Встаньте прямо, гиря в одной руке, вторая на поясе.','Наклонитесь в сторону гири, не уводя таз и корпус вперёд.','Вернитесь вертикально за счёт косых мышц; затем смените сторону.','Наклон вперёд или с поворотом вместо чисто бокового.'],
+ k_situp:['Лягте, колени согнуты, гиря прижата к груди.','Поднимите корпус до вертикали, не отрывая стоп.','Опуститесь медленно, позвонок за позвонком.','Рывок корпусом и отрыв стоп от пола.'],
+ k_plankpull:['Встаньте в планку на прямых руках, гиря сбоку от корпуса.','Одной рукой протяните гирю под корпусом на другую сторону.','Повторите другой рукой; таз остаётся неподвижным.','Таз поднимается или поворачивается при перестановке.'],
+ k_deadbug:['Лягте на спину, гиря над грудью на прямых руках, ноги согнуты под 90°.','Поочерёдно выпрямляйте ноги над полом, держа гирю неподвижно.','Поясница всё время прижата к полу.','Поясница отрывается от пола.'],
+ k_around:['Встаньте прямо, гиря в одной руке у бедра.','Передавайте гирю из руки в руку вокруг корпуса: спереди и за спиной.','Сделайте повторы в одну сторону, затем в другую.','Корпус раскачивается вслед за гирей.'],
+ k_woodchop:['Гиря двумя руками у одного бедра, ноги шире плеч.','По диагонали поднимите гирю над противоположным плечом, разворачиваясь на носке.','Вернитесь по той же диагонали; затем смените сторону.','Скручивание одной поясницей без работы ног.'],
+ b_deadlift:['Встаньте серединой стоп на жгут, возьмите концы, наклонитесь с прямой спиной.','Разогните таз и колени, встаньте прямо и сожмите ягодицы.','Опуститесь под контролем, сохраняя прямую спину.','Скругление спины и рывок руками.'],
+ b_rdl:['Стоя на жгуте, концы в руках у бёдер, колени мягкие.','Отводите таз назад до растяжения задней поверхности бедра.','Вернитесь, толкая таз вперёд.','Сильное сгибание коленей — получается присед.'],
+ b_loopsquat:['Наденьте мини-петлю чуть выше колен, стопы на ширине плеч.','Приседайте, активно разводя колени наружу против жгута.','Вставайте, не давая коленям сводиться.','Колени сводятся внутрь на подъёме.'],
+ b_splitsquat:['Встаньте передней стопой на жгут, концы держите у плеч.','Опуститесь вертикально, пока заднее колено почти не коснётся пола.','Поднимитесь за счёт передней ноги; затем смените ногу.','Колено передней ноги заваливается внутрь.'],
+ b_clamshell:['Лягте на бок, колени согнуты, мини-петля над коленями.','Не разводя стопы, поднимите верхнее колено как можно выше.','Опустите медленно; сделайте повторы и смените сторону.','Таз заваливается назад вслед за коленом.'],
+ b_sideabd:['Мини-петля на лодыжках, держитесь рукой за опору.','Отведите прямую ногу в сторону, не наклоняя корпус.','Верните медленно; затем другая нога.','Наклон корпуса в противоположную сторону.'],
+ b_seatabd:['Сядьте на край стула, мини-петля над коленями, стопы вместе.','Разведите колени наружу как можно шире.','Медленно сведите, не давая жгуту дёрнуть ноги.','Рывок вместо плавного движения.'],
+ b_legext:['Сядьте на стул, жгут на лодыжке закреплён сзади за ножку стула.','Разогните ногу до прямой и задержитесь на секунду.','Опустите под контролем; затем другая нога.','Рывок и отклонение корпуса назад.'],
+ b_lyingcurl:['Лягте на живот, жгут на лодыжке закреплён впереди низко.','Согните ногу, подтягивая пятку к ягодице.','Медленно выпрямите; затем другая нога.','Таз отрывается от пола.'],
+ b_legpress:['Лягте на спину, жгут через стопу, концы в руках, колено у груди.','Выпрямите ногу вперёд-вверх против жгута.','Верните колено к груди под контролем.','Поясница отрывается от пола.'],
+ b_onearmrow:['Закрепите жгут на уровне пояса, встаньте в лёгкой стойке.','Тяните ручку к поясу, ведя локоть вдоль корпуса и сводя лопатку.','Верните руку вперёд под контролем; затем другая рука.','Поворот корпуса вместо работы спины.'],
+ b_seatedrow:['Сядьте, ноги прямые, жгут обведите вокруг стоп.','Тяните концы к поясу, сводя лопатки.','Верните руки вперёд, не сутулясь.','Отклонение корпуса назад вместо тяги.'],
+ b_straightarm:['Закрепите жгут выше головы, отойдите, руки прямые вперёд-вверх.','Прямыми руками опустите жгут к бёдрам, напрягая широчайшие.','Верните руки вверх медленно.','Сгибание рук в локтях.'],
+ b_pushup:['Перекиньте жгут за спину, концы прижмите ладонями к полу.','Отжимайтесь как обычно: тело — прямая линия.','Вверху жгут натянут сильнее всего — дожимайте до прямых рук.','Жгут сползает — держите его на уровне подмышек.'],
+ b_frontraise:['Встаньте на жгут, концы в руках у бёдер.','Поднимите прямые руки вперёд до уровня плеч.','Опустите медленно.','Раскачка корпусом и подъём выше плеч.'],
+ b_yraise:['Встаньте на жгут, руки перед собой.','Поднимите прямые руки вверх и в стороны буквой Y, большие пальцы вверх.','Опустите медленно.','Плечи поднимаются к ушам.'],
+ b_hammer:['Встаньте на жгут, ладони смотрят друг на друга.','Сгибайте руки, локти прижаты к корпусу.','Опустите медленно.','Раскачка корпусом.'],
+ b_kickback:['Стоя на жгуте, наклонитесь, локоть прижат к корпусу.','Разогните руку назад до прямой.','Верните предплечье под контролем.','Локоть опускается и двигается вместе с кистью.'],
+ b_pushdown:['Закрепите жгут над головой, локти прижаты к бокам.','Разогните руки вниз до прямых.','Верните до угла 90° в локтях.','Локти уходят вперёд, подключается спина.'],
+ b_woodchop:['Закрепите жгут высоко сбоку, возьмите конец двумя руками.','По диагонали протяните жгут вниз к противоположному бедру, разворачивая корпус.','Вернитесь медленно; затем другая сторона.','Работают только руки, корпус не поворачивается.'],
+ b_crunch:['Закрепите жгут сверху, встаньте на колени, концы держите у головы.','Скрутитесь, приближая локти к бёдрам.','Вернитесь медленно.','Сгибание в тазу вместо скручивания корпуса.'],
+ b_deadbug:['Закрепите жгут низко за головой, держите концы прямыми руками над грудью.','Поочерёдно выпрямляйте ноги, руки неподвижны.','Поясница прижата к полу.','Поясница отрывается от пола.'],
+ b_thruster:['Встаньте на жгут, концы у плеч.','Присядьте, затем мощно встаньте и выжмите руки вверх.','Верните руки к плечам и сразу уходите в следующий присед.','Жим без работы ног.']
+};
+const MUSCLES3={
+ k_usswing:'ягодичные, задняя поверхность бедра, дельты|пресс, разгибатели спины', k_h2hswing:'ягодичные, задняя поверхность бедра|предплечья, пресс, разгибатели спины',
+ k_revlunge:'квадрицепсы, ягодичные|задняя поверхность бедра, пресс', k_bulgarian:'квадрицепсы, ягодичные|приводящие бедра, пресс', k_stepup:'квадрицепсы, ягодичные|икры, пресс',
+ k_bridge:'ягодичные|задняя поверхность бедра, пресс', k_rdl:'задняя поверхность бедра, ягодичные|разгибатели спины, предплечья', k_cossack:'квадрицепсы, ягодичные, приводящие бедра|задняя поверхность бедра',
+ k_calf:'икры|', k_gorilla:'широчайшие, ромбовидные|бицепс, разгибатели спины', k_pullover:'широчайшие, грудные|трицепс, пресс', k_bench:'грудные|трицепс, передние дельты',
+ k_pushup:'грудные, трицепс|передние дельты, пресс', k_bottomsup:'дельты|трицепс, предплечья, пресс', k_kneelpress:'дельты|трицепс, пресс, ягодичные', k_overcarry:'дельты, пресс|трапеции, трицепс',
+ k_ohext:'трицепс|предплечья', k_farmer:'предплечья, трапеции, пресс|ягодичные, икры', k_suitcase:'косые мышцы живота, предплечья|трапеции, ягодичные', k_russian:'косые мышцы живота, пресс|сгибатели бедра',
+ k_sidebend:'косые мышцы живота|поясница', k_situp:'пресс|сгибатели бедра', k_plankpull:'пресс, косые мышцы живота|дельты, грудные', k_deadbug:'пресс|сгибатели бедра, дельты',
+ k_around:'пресс, косые мышцы живота|предплечья, дельты', k_woodchop:'косые мышцы живота|дельты, ягодичные',
+ b_deadlift:'ягодичные, задняя поверхность бедра|разгибатели спины, квадрицепсы', b_rdl:'задняя поверхность бедра, ягодичные|разгибатели спины', b_loopsquat:'квадрицепсы, ягодичные|средняя ягодичная',
+ b_splitsquat:'квадрицепсы, ягодичные|задняя поверхность бедра', b_clamshell:'средняя ягодичная|отводящие бедра', b_sideabd:'средняя ягодичная|отводящие бедра', b_seatabd:'средняя ягодичная|отводящие бедра',
+ b_legext:'квадрицепсы|', b_lyingcurl:'задняя поверхность бедра|икры', b_legpress:'квадрицепсы, ягодичные|', b_onearmrow:'широчайшие, ромбовидные|бицепс, задние дельты',
+ b_seatedrow:'ромбовидные, широчайшие|бицепс, задние дельты', b_straightarm:'широчайшие|задние дельты, трицепс', b_pushup:'грудные, трицепс|передние дельты, пресс',
+ b_frontraise:'передние дельты|трапеции', b_yraise:'нижняя трапеция, задние дельты|ромбовидные', b_hammer:'плечевая мышца, бицепс|предплечья', b_kickback:'трицепс|', b_pushdown:'трицепс|',
+ b_woodchop:'косые мышцы живота|дельты, пресс', b_crunch:'пресс|косые мышцы живота', b_deadbug:'пресс|широчайшие', b_thruster:'квадрицепсы, ягодичные, дельты|трицепс, пресс'
+};
+// stick-figure schemes reused where the movement and equipment match
+const EXTPL3={k_usswing:'swing',k_h2hswing:'swing',k_revlunge:'lunge',k_bulgarian:'bulgarian',k_bridge:'glute',k_rdl:'kbdl',k_calf:'calf',k_gorilla:'kbrow',
+ k_pushup:'pushup',k_bottomsup:'kbpress',k_kneelpress:'kbpress',k_russian:'russian',k_plankpull:'plank',k_deadbug:'deadbug',
+ b_loopsquat:'squat',b_splitsquat:'lunge',b_onearmrow:'brow',b_straightarm:'bpull',b_pushup:'pushup',b_hammer:'bcurl',b_deadbug:'deadbug'};
+BASE3.forEach(r=>BASE.push(r));Object.assign(TECH,TECH3);Object.assign(MUSCLES,MUSCLES3);Object.assign(EXTPL,EXTPL3);
+
 function techBlock(ex){
   if(ex.fx)return fxTech(ex);
   const tk=EXTPL[ex.id],tx=TECH[ex.id];
-  if(!tk||!tx)return '<div class="tech tech-none"><p class="empty">Для своих упражнений схемы техники нет.</p>'+ytBtn(ex.name)+'</div>';
+  if(!tx)return '<div class="tech tech-none"><p class="empty">Для своих упражнений схемы техники нет.</p>'+ytBtn(ex.name)+'</div>';
+  if(!tk)return '<div class="tech tech-cues"><div class="cues">'+musclesBlock(ex)+'<ol>'+tx.slice(0,3).map(c=>'<li>'+esc(c)+'</li>').join('')+'</ol><p class="warn"><b>Частая ошибка:</b> '+esc(tx[3])+'</p>'+ytBtn(ex.name)+'</div></div>';
   const alt=!PHOTO[ex.id]&&FX_DUP[ex.id]?FX_BY_ID.get(FX_DUP[ex.id]):null;
   const hasPhoto=!!PHOTO[ex.id]||!!alt,usePhoto=hasPhoto&&demoMode!=='scheme';
   const seg=hasPhoto?'<div class="dseg" role="group" aria-label="Вид техники"><button data-demomode="photo" aria-pressed="'+usePhoto+'">Фото</button><button data-demomode="scheme" aria-pressed="'+!usePhoto+'">Схема</button></div>':'';
@@ -1543,6 +1701,7 @@ function techBlock(ex){
 const FX_SHA='f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5';
 const FX_CDN=['https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@'+FX_SHA+'/exercises/','https://raw.githubusercontent.com/yuhonas/free-exercise-db/'+FX_SHA+'/exercises/'];
 const FX_DUP={"pushups": "Pushups", "dips": "Dips_-_Chest_Version", "widepu": "Push-Up_Wide", "declinepu": "Decline_Push-Up", "kbfloor": "One-Arm_Kettlebell_Floor_Press", "bandfly": "Cross_Over_-_With_Bands", "pullups": "Pullups", "invrow": "Inverted_Row", "kbrow": "One-Arm_Kettlebell_Row", "superman": "Superman", "squat": "Bodyweight_Squat", "goblet": "Goblet_Squat", "glute": "Butt_Lift_Bridge", "bandwalk": "Monster_Walk", "bandlat": "Lateral_Raise_-_With_Bands", "pullapart": "Band_Pull_Apart", "chinups": "Chin-Up", "diamond": "Push-Ups_-_Close_Triceps_Position", "tricepdips": "Dips_-_Triceps_Version", "plank": "Plank", "sideplank": "Side_Bridge", "hlr": "Hanging_Leg_Raise", "tgu": "Kettlebell_Turkish_Get-Up_Lunge_style", "windmill": "Kettlebell_Windmill", "snatch": "One-Arm_Kettlebell_Snatch", "jumpsquat": "Freehand_Jump_Squat", "climbers": "Mountain_Climbers", "hamstr": "Hamstring_Stretch", "catcow": "Cat_Stretch", "bbbench": "Barbell_Bench_Press_-_Medium_Grip", "inclinebb": "Barbell_Incline_Bench_Press_-_Medium_Grip", "dbbench": "Dumbbell_Bench_Press", "inclinedb": "Incline_Dumbbell_Press", "dbfly": "Dumbbell_Flyes", "cablecross": "Cable_Crossover", "machpress": "Machine_Bench_Press", "pecdeck": "Butterfly", "deadlift": "Barbell_Deadlift", "bbrow": "Bent_Over_Barbell_Row", "dbrow": "One-Arm_Dumbbell_Row", "latpull": "Wide-Grip_Lat_Pulldown", "cablerow": "Seated_Cable_Rows", "pullover": "Straight-Arm_Dumbbell_Pullover", "hyper": "Hyperextensions_Back_Extensions", "shrug": "Dumbbell_Shrug", "muscleup": "Muscle_Up", "bbsquat": "Barbell_Squat", "frontsquat": "Front_Barbell_Squat", "legpress": "Leg_Press", "rdl": "Romanian_Deadlift", "dbrdl": "Stiff-Legged_Dumbbell_Deadlift", "hipthrust": "Barbell_Hip_Thrust", "dblunge": "Dumbbell_Lunges", "stepup": "Dumbbell_Step_Ups", "legext": "Leg_Extensions", "legcurl": "Lying_Leg_Curls", "abductor": "Thigh_Abductor", "calf": "Standing_Calf_Raises", "nordic": "Natural_Glute_Ham_Raise", "cablekick": "One-Legged_Cable_Kickback", "ohp": "Standing_Military_Press", "dbpress": "Seated_Dumbbell_Press", "machshoulder": "Machine_Shoulder_Military_Press", "latraise": "Side_Lateral_Raise", "reardelt": "Seated_Bent-Over_Rear_Delt_Raise", "cablefp": "Face_Pull", "hspu": "Handstand_Push-Ups", "bbcurl": "Barbell_Curl", "dbcurl": "Dumbbell_Bicep_Curl", "hammer": "Hammer_Curls", "cablecurl": "Standing_Biceps_Cable_Curl", "pushdown": "Triceps_Pushdown", "skull": "EZ-Bar_Skullcrusher", "dbext": "Standing_Dumbbell_Triceps_Extension", "closebench": "Close-Grip_Barbell_Bench_Press", "crunch": "Crunches", "abwheel": "Ab_Roller", "cablecrunch": "Cable_Crunch", "deadbug": "Dead_Bug", "russian": "Russian_Twist", "vup": "Jackknife_Sit-Up", "rower": "Rowing_Stationary", "bike": "Bicycling_Stationary", "rope": "Rope_Jumping", "kbclean": "One-Arm_Kettlebell_Clean", "boxjump": "Front_Box_Jump", "hipflexor": "Kneeling_Hip_Flexor", "childpose": "Childs_Pose"};
+const FX_SAME={"Parallel_Bar_Dip": "dips", "Dumbbell_Shoulder_Press": "dbpress", "Lying_Triceps_Press": "skull", "Leverage_Chest_Press": "machpress", "Leverage_Shoulder_Press": "machshoulder", "Cable_Rope_Rear-Delt_Rows": "cablefp", "Seated_Triceps_Press": "dbext", "Barbell_Full_Squat": "bbsquat", "Floor_Glute-Ham_Raise": "nordic", "Calf_Press": "x_Calf_Press_On_The_Leg_Press_Machine", "Chain_Press": "x_Bench_Press_with_Chains", "Smith_Machine_Decline_Press": "x_Decline_Smith_Press", "One-Arm_Open_Palm_Kettlebell_Clean": "x_Open_Palm_Kettlebell_Clean", "Two-Arm_Kettlebell_Jerk": "x_Double_Kettlebell_Jerk", "Triceps_Overhead_Extension_with_Rope": "x_Cable_Rope_Overhead_Triceps_Extension", "Bent_Over_One-Arm_Long_Bar_Row": "x_One-Arm_Long_Bar_Row", "Lying_Rear_Delt_Raise": "x_Dumbbell_Lying_Rear_Lateral_Raise", "Front_Two-Dumbbell_Raise": "x_Front_Dumbbell_Raise", "Low_Cable_Triceps_Extension": "x_Cable_Lying_Triceps_Extension", "Neck_Press": "x_Barbell_Guillotine_Bench_Press", "Alternate_Incline_Dumbbell_Curl": "x_Incline_Dumbbell_Curl", "Standing_One-Arm_Dumbbell_Triceps_Extension": "x_Dumbbell_One-Arm_Triceps_Extension", "Quad_Stretch": "x_On_Your_Side_Quad_Stretch", "Oblique_Crunches_-_On_The_Floor": "x_Oblique_Crunches", "Running_Treadmill": "x_Jogging_Treadmill", "Close-Grip_EZ_Bar_Curl": "x_EZ-Bar_Curl", "Standing_Bent-Over_One-Arm_Dumbbell_Triceps_Extension": "x_Tricep_Dumbbell_Kickback", "Rear_Leg_Raises": "x_Glute_Kickback"};
 // [id, direction, name, kind, tags, level 0..2, "main|helping" muscles, steps, common mistake, image folder if differs, English name]
 const FX=[
 ["3_4_Sit-Up", "core", "Подъём корпуса на 3/4", "reps", "body", 0, "пресс|", ["Лягте, согните колени, закрепите стопы, руки у головы.", "Поднимайте корпус примерно на три четверти, скручивая позвоночник.", "Медленно опуститесь, не касаясь пола лопатками."], "Рывки за счёт рук и шеи.", 0, "3/4 Sit-Up"],
@@ -1593,7 +1752,7 @@ const FX=[
 ["Barbell_Curls_Lying_Against_An_Incline", "arms", "Сгибания со штангой на наклонной скамье", "wr", "bb+bench", 0, "бицепс|", ["Лягте грудью на наклонную скамью, руки со штангой вниз.", "Согните руки.", "Опустите медленно."], "Отрывать грудь.", 0, "Barbell Curls Lying Against An Incline"],
 ["Barbell_Deadlift", "back", "Становая тяга", "wr", "bb", 1, "поясница|икры, предплечья, ягодичные, задняя поверхность бедра, широчайшие, середина спины, квадрицепсы, трапеции", ["Штанга над серединой стоп, хват на ширине плеч.", "Встаньте, выпрямляя ноги и таз, гриф у ног.", "Опустите, отводя таз."], "Скругление спины.", 0, "Barbell Deadlift"],
 ["Barbell_Full_Squat", "legs", "Глубокий присед со штангой", "wr", "bb", 1, "квадрицепсы|икры, ягодичные, задняя поверхность бедра, поясница", ["Штанга на трапециях, стопы на ширине плеч.", "Опуститесь ниже параллели, спина ровная.", "Встаньте."], "Заваливание коленей внутрь.", 0, "Barbell Full Squat"],
-["Barbell_Glute_Bridge", "legs", "Ягодичный мост со штангой", "wr", "bb", 1, "ягодичные|икры, задняя поверхность бедра", ["Лягте, штанга на тазу, колени согнуты.", "Поднимите таз до прямой линии.", "Опустите."], "Прогиб в пояснице.", 0, "Barbell Glute Bridge"],
+["Barbell_Glute_Bridge", "legs", "Ягодичный мост со штангой с пола", "wr", "bb", 1, "ягодичные|икры, задняя поверхность бедра", ["Лягте, штанга на тазу, колени согнуты.", "Поднимите таз до прямой линии.", "Опустите."], "Прогиб в пояснице.", 0, "Barbell Glute Bridge"],
 ["Barbell_Guillotine_Bench_Press", "chest", "Жим штанги к шее («гильотина»)", "wr", "bb+bench", 1, "грудные|дельты, трицепс", ["Лягте, хват средний.", "Опустите гриф к шее медленно.", "Выжмите."], "Большой вес — опасно.", 0, "Barbell Guillotine Bench Press"],
 ["Barbell_Hack_Squat", "legs", "Гакк-присед со штангой сзади", "wr", "bb", 1, "квадрицепсы|икры, предплечья, задняя поверхность бедра", ["Штанга за спиной в прямых руках.", "Присядьте, спина ровная.", "Встаньте."], "Наклон вперёд.", 0, "Barbell Hack Squat"],
 ["Barbell_Hip_Thrust", "legs", "Ягодичный мост со штангой от скамьи", "wr", "bb+bench", 1, "ягодичные|икры, задняя поверхность бедра", ["Лопатки на скамье, штанга на тазу.", "Поднимите таз до горизонтали.", "Опустите."], "Прогиб поясницы.", 0, "Barbell Hip Thrust"],
@@ -1680,7 +1839,7 @@ const FX=[
 ["Cable_Wrist_Curl", "arms", "Сгибания запястий на блоке", "wr", "cable+bench", 0, "предплечья|", ["Предплечья на скамье, ладони вверх.", "Согните запястья.", "Опустите."], "Двигать предплечьями.", 0, "Cable Wrist Curl"],
 ["Calf-Machine_Shoulder_Shrug", "back", "Шраги в тренажёре для икр", "wr", "machine", 0, "трапеции|", ["Подушки на плечах.", "Поднимите плечи.", "Опустите."], "Сгибать колени.", 0, "Calf-Machine Shoulder Shrug"],
 ["Calf_Press", "legs", "Подъём на носки в тренажёре", "wr", "machine", 0, "икры|", ["Носки на платформе.", "Толкните платформу носками.", "Опустите."], "Сгибать колени.", 0, "Calf Press"],
-["Calf_Press_On_The_Leg_Press_Machine", "legs", "Подъём на носки в жиме ногами", "wr", "machine", 0, "икры|", ["Носки на краю платформы.", "Толкайте платформу носками.", "Верните."], "Сгибать колени.", 0, "Calf Press On The Leg Press Machine"],
+["Calf_Press_On_The_Leg_Press_Machine", "legs", "Подъём на носки в тренажёре для жима ногами", "wr", "machine", 0, "икры|", ["Носки на краю платформы.", "Толкайте платформу носками.", "Верните."], "Сгибать колени.", 0, "Calf Press On The Leg Press Machine"],
 ["Calf_Raise_On_A_Dumbbell", "legs", "Подъём на носки стоя на гантели", "reps", "db", 1, "икры|", ["Встаньте носками на гриф гантели.", "Поднимитесь на носки.", "Опустите."], "Потеря равновесия.", 0, "Calf Raise On A Dumbbell"],
 ["Calf_Raises_-_With_Bands", "legs", "Подъём на носки со жгутом", "reps", "band", 0, "икры|", ["Встаньте на жгут, рукояти у плеч.", "Поднимитесь на носки.", "Опустите."], "Неполная амплитуда.", 0, "Calf Raises - With Bands"],
 ["Calf_Stretch_Elbows_Against_Wall", "mobility", "Растяжка икр с упором предплечьями в стену", "time", "body", 0, "икры|", ["Упритесь предплечьями в стену.", "Пятки на полу.", "Держите 20–30 с."], "Отрывать пятки.", 0, "Calf Stretch Elbows Against Wall"],
@@ -2014,7 +2173,7 @@ const FX=[
 ["Monster_Walk", "legs", "«Монстр-шаги» со жгутом", "reps", "band", 0, "отводящие бедра|", ["Жгуты на коленях и лодыжках.", "Шагайте вперёд и вбок.", "Короткие шаги."], "Колени внутрь.", 0, "Monster Walk"],
 ["Mountain_Climbers", "cardio", "Скалолаз", "reps", "body", 0, "квадрицепсы|грудные, задняя поверхность бедра, дельты", ["Упор лёжа.", "Быстро меняйте ноги.", "Таз ровно."], "Подъём таза.", 0, "Mountain Climbers"],
 ["Moving_Claw_Series", "cardio", "Беговой «захлёст»", "reps", "body", 0, "задняя поверхность бедра|икры, квадрицепсы", ["Бег на месте.", "Пятки к ягодицам.", "Быстро."], "Наклон.", 0, "Moving Claw Series"],
-["Muscle_Snatch", "legs", "Силовой рывок", "wr", "bb", 1, "задняя поверхность бедра|ягодичные, поясница, квадрицепсы, дельты, трицепс", ["Широкий хват.", "Взрыв и вывод над головой без подседа.", "Зафиксируйте."], "Жать руками.", 0, "Muscle Snatch"],
+["Muscle_Snatch", "legs", "Рывок без подседа", "wr", "bb", 1, "задняя поверхность бедра|ягодичные, поясница, квадрицепсы, дельты, трицепс", ["Широкий хват.", "Взрыв и вывод над головой без подседа.", "Зафиксируйте."], "Жать руками.", 0, "Muscle Snatch"],
 ["Muscle_Up", "back", "Выход силой", "reps", "bar", 1, "широчайшие|пресс, бицепс, предплечья, середина спины, дельты, трапеции, трицепс", ["Вис.", "Подтянитесь и выйдите в упор.", "Опуститесь."], "Раскачка.", 0, "Muscle Up"],
 ["Narrow_Stance_Hack_Squats", "legs", "Гакк-присед узкой стойкой", "wr", "machine", 1, "квадрицепсы|икры, ягодичные, задняя поверхность бедра", ["Стопы узко.", "Присядьте.", "Встаньте."], "Отрыв пяток.", 0, "Narrow Stance Hack Squats"],
 ["Narrow_Stance_Leg_Press", "legs", "Жим ногами узкой постановкой", "wr", "machine", 1, "квадрицепсы|икры, ягодичные, задняя поверхность бедра", ["Стопы узко.", "Опустите.", "Выжмите."], "Отрыв таза.", 0, "Narrow Stance Leg Press"],
@@ -2423,7 +2582,9 @@ const FX=[
 /* ---------- open base in the app: exercise objects, photos, technique card, YouTube ---------- */
 const FX_EQ={body:'вес тела',bar:'турник',pbars:'брусья',kb:'гиря',db:'гантели',band:'жгут',bb:'штанга',bench:'скамья',machine:'тренажёр',cable:'блок',ball:'мяч',roll:'ролик МФР',wheel:'ролик для пресса',special:'спецснаряд'};
 const FX_LVL=['новичок','средний уровень','опытный'];
-const FX_HIDE=new Set(Object.values(FX_DUP));
+const FX_HIDE=new Set(Object.values(FX_DUP).concat(Object.keys(FX_SAME)));
+// old records of a removed duplicate open as the exercise that stayed (same id kept, so history and plans still match)
+const EX_ALIAS={};Object.keys(FX_SAME).forEach(k=>{EX_ALIAS['x_'+k]=FX_SAME[k];});
 const FX_BY_ID=new Map(FX.map(r=>[r[0],r]));
 function fxDef(kind,tags){
   if(kind==='timem')return {t:1200};
@@ -2532,6 +2693,7 @@ function ensureDay(k){
 }
 function getEx(id){
   allEx();const e=EX_MAP.get(id);if(e)return e;
+  if(EX_ALIAS[id]){const k=EX_MAP.get(EX_ALIAS[id]);if(k)return Object.assign({},k,{id:id});}
   const p=dayPlan(UI.date).find(x=>x.ex===id);
   if(p)return {id:id,dir:p.dir,name:p.n,kind:p.k,tu:p.tu||'s',eq:'удалено из списка',def:KDEF[p.k]||KDEF.reps};
   const s=daySets(UI.date).find(x=>x.ex===id);
@@ -2616,7 +2778,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='21.10 19:56';
+const BUILD='21.10 21:13';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -2793,10 +2955,10 @@ function renderHeader(){
   $('dayRel').textContent=k===t?'Сегодня':k===addDays(t,-1)?'Вчера':k===addDays(t,1)?'Завтра':WD[dt.getDay()];
   $('dayDate').textContent=dateLong(k)+(dt.getFullYear()!==new Date().getFullYear()?' '+dt.getFullYear():'');
   $('nextDay').disabled=k>=addDays(t,60);
-  const ob=needOnboarding(),dated=!ob&&(UI.tab==='day'||UI.tab==='food'||UI.tab==='stats');
+  const ob=needOnboarding(),dated=!ob&&(UI.tab==='food'||UI.tab==='stats');
   $('todayBtn').hidden=!dated||k===t;
   ['prevDay','nextDay','dayLbl','syncDot'].forEach(id=>{const e=$(id);if(e)e.hidden=!dated;});
-  const st=$('scrTitle');if(st){st.hidden=dated;st.textContent=ob?'Знакомство':UI.tab==='settings'?'Настройки':UI.tab==='workout'?'Тренировка':'Тренер';}
+  const st=$('scrTitle');if(st){st.hidden=dated;st.textContent=ob?'Знакомство':UI.tab==='settings'?'Настройки':UI.tab==='workout'?'Тренировка':UI.tab==='day'?'Расписание':'Тренер';}
   const me=$('meBtn');if(me){const back=UI.tab==='settings'||UI.tab==='workout';me.hidden=ob;me.className='avatar press'+(back?' back':'');
     me.textContent=back?'✕':((coachCfg().name.trim()[0]||'Я').toUpperCase());me.setAttribute('aria-label',back?'Закрыть':'Профиль и настройки');}
 }
@@ -2941,7 +3103,7 @@ function goalTop(){
 function dayView(){
   const t=todayKey(),start=UI.date===t&&!isBuilding()&&dayPlan(t).length?'<button class="log tint press wide wkstart" data-wk="start">▶ '+(daySets(t).length?'Продолжить тренировку':'Начать тренировку')+'</button>':'';
   const v=dayView0(),i=v.indexOf('<section class="group">');
-  return i>0&&start?v.slice(0,i)+start+v.slice(i):v;
+  return icalView()+(i>0&&start?v.slice(0,i)+start+v.slice(i):v);
 }
 function isBuilding(){return UI.tab==='day'&&(UI.building||(!dayItems(UI.date).length&&UI.date>=todayKey()));}
 // exercises of a planned day that its place cannot host (plan saved before places or goal changed, or copied from another place)
@@ -3295,14 +3457,14 @@ function foodView(){
       '<input id="foodHint" class="fhint" placeholder="Уточнение: 300 г, без соуса" value="'+esc(FOOD.hint)+'" aria-label="Уточнение к фото">'+
       (FOOD.stage==='error'?'<p class="ferr">'+esc(FOOD.err)+'</p>'+(FOOD.blob?'<button class="ghost glass press" data-food="retry">Попробовать снова</button>':''):'')+
       (!eng?'<p class="cap">'+(window.claude?'Распознавание через Claude недоступно в этом окне.':'Чтобы распознавать фото, выберите ниже Claude или DeepSeek и вставьте ключ.')+' Пока можно добавить блюдо вручную.</p>':
-        '<p class="cap">'+(eng==='claude'?'Фото разбирает Claude. При первом разборе он спросит разрешение.':'Фото разбирает Claude по вашему ключу API.')+'</p>')+
+        '<p class="cap">'+(eng==='claude'?'Фото разбирает Claude. При первом разборе он спросит разрешение.':eng==='ds'?'Фото разбирает DeepSeek по вашему ключу.':'Фото разбирает Claude по вашему ключу API.')+'</p>')+
       (FOOD.manual?manualForm():'<button class="restore" data-food="manual">Добавить вручную</button>')+'</section>';
   }
   // meals of the day
   h+='<section class="group"><h3 class="glabel">Съедено '+(UI.date===todayKey()?'сегодня':dateLong(UI.date))+'<span class="n">'+meals.length+'</span></h3>';
   h+=meals.length?'<div class="exlist glass">'+meals.map(m=>{const tm=new Date(m.at);
-    return '<div class="meal">'+(m.thumb?'<img class="mthumb" src="'+m.thumb+'" alt="">':'<span class="mthumb mph" aria-hidden="true">'+CAM+'</span>')+
-      '<div class="minfo"><b>'+esc(m.name)+'</b><span>'+pad(tm.getHours())+':'+pad(tm.getMinutes())+' · Б '+r0(m.p)+' · Ж '+r0(m.f)+' · У '+r0(m.c)+'</span></div>'+
+    return '<div class="meal">'+(m.thumb?'<img class="mthumb" src="'+m.thumb+'" alt="">':'<span class="mthumb mph" aria-hidden="true">'+(m.src==='coach'?COACH_ICO:CAM)+'</span>')+
+      '<div class="minfo"><b>'+esc(m.name)+'</b><span>'+pad(tm.getHours())+':'+pad(tm.getMinutes())+(m.src==='coach'?' · тренер':'')+' · Б '+r0(m.p)+' · Ж '+r0(m.f)+' · У '+r0(m.c)+'</span></div>'+
       '<span class="mk">'+num(r0(m.kcal))+'<small> ккал</small></span><button class="xdel" data-meal="'+m.id+'" aria-label="Удалить: '+esc(m.name)+'">×</button></div>';}).join('')+'</div>'
     :'<p class="empty" style="margin:0 6px">Пока ничего. Сфотографируйте тарелку, и блюдо появится здесь с калориями и БЖУ.</p>';
   h+='</section>';
@@ -3606,26 +3768,26 @@ function equipChips(eq,attr){
     '<div class="chips2">'+EQUIP.map(e=>'<button class="eqc press" data-'+attr+'="'+e[0]+'" aria-pressed="'+(eq.indexOf(e[0])>=0)+'">'+e[1]+'</button>').join('')+'</div>';
 }
 const SLOTS={
-  vpull:['pullups','latpull','chinups','bandpulldown','invrow'],
+  vpull:['pullups','latpull','chinups','bandpulldown','invrow','b_straightarm'],
   hpush:['bbbench','dbbench','machpress','dips','pushups','bandpress'],
   ipush:['inclinebb','inclinedb','declinepu','pushups'],
   squat:['bbsquat','legpress','goblet','frontsquat','bulgarian','squat'],
-  hinge:['deadlift','rdl','dbrdl','kbdl','hyper','glute'],
-  glute:['hipthrust','glute','cablekick','abductor','bandwalk'],
-  lunge:['dblunge','bulgarian','stepup','lunges'],
+  hinge:['deadlift','rdl','dbrdl','kbdl','hyper','glute','b_deadlift'],
+  glute:['hipthrust','glute','cablekick','abductor','bandwalk','k_bridge','b_loopsquat'],
+  lunge:['dblunge','bulgarian','stepup','lunges','k_revlunge','b_splitsquat'],
   vpush:['ohp','dbpress','machshoulder','kbpress','pike'],
-  hrow:['bbrow','cablerow','dbrow','kbrow','invrow','bandrow'],
+  hrow:['bbrow','cablerow','dbrow','kbrow','invrow','bandrow','k_gorilla','b_onearmrow'],
   latr:['latraise','cablelat','bandlat','halo'],
   rear:['cablefp','facepull','reardelt','pullapart'],
   bic:['bbcurl','dbcurl','cablecurl','kbcurl','bandcurl','chinups'],
-  tri:['pushdown','skull','dbext','tricepdips','bandext','diamond'],
-  core:['hlr','abwheel','cablecrunch','vup','hollow','crunch'],
-  stab:['pallof','plank','sideplank','deadbug'],
-  ham:['legcurl','nordic','dbrdl','glute'],
-  quad:['legext','stepup','goblet','squat'],
-  calves:['calf','calfbw'],
+  tri:['pushdown','skull','dbext','tricepdips','bandext','diamond','k_ohext','b_pushdown'],
+  core:['hlr','abwheel','cablecrunch','vup','hollow','crunch','k_russian','b_crunch'],
+  stab:['pallof','plank','sideplank','deadbug','k_plankpull','k_suitcase'],
+  ham:['legcurl','nordic','dbrdl','glute','k_rdl','b_lyingcurl'],
+  quad:['legext','stepup','goblet','squat','k_stepup','b_loopsquat'],
+  calves:['calf','calfbw','k_calf'],
   chestiso:['pecdeck','cablecross','dbfly','bandfly'],
-  cond:['rower','swings','thruster','burpee','bike','rope','climbers'],
+  cond:['rower','swings','thruster','burpee','bike','rope','climbers','k_usswing','b_thruster'],
   cond2:['bike','snatch','boxjump','jumpsquat','burpee','climbers','rope']
 };
 // sessions: [slot, sets, reps|seconds]
@@ -3784,7 +3946,7 @@ function coachContext(){
     L.push('- '+k+' '+wdOf(k)+': '+Object.keys(by).map(id=>{const ex=getEx(id);return (ex?ex.name:id)+' ('+by[id].join(', ')+')';}).join('; '));}
   if(!did)L.push('- тренировок не отмечено');
   const mt=dayMeals(t),st=sumMeals(mt);
-  L.push('Съедено сегодня: '+r0(st.kcal)+' ккал, Б '+r0(st.p)+' Ж '+r0(st.f)+' У '+r0(st.c)+(mt.length?' — '+mt.map(m=>m.name+' '+r0(m.kcal)+' ккал').join('; '):'')+'.');
+  L.push('Съедено сегодня: '+r0(st.kcal)+' ккал, Б '+r0(st.p)+' Ж '+r0(st.f)+' У '+r0(st.c)+(mt.length?' — '+mt.map(m=>{const tm=new Date(m.at);return pad(tm.getHours())+':'+pad(tm.getMinutes())+' «'+m.name+'» '+r0(m.kcal)+' ккал';}).join('; '):'')+'.');
   const wk=[];for(let i=-1;i>-7;i--){const k=addDays(t,i),m=dayMeals(k);if(m.length)wk.push(k+' '+r0(sumMeals(m).kcal));}
   if(wk.length)L.push('Калории за прошлые дни: '+wk.join('; ')+'.');
   const eqs=coachEquips(pr),multi=eqs.length>1;
@@ -3828,12 +3990,16 @@ const COACH_TECH=`Всегда, независимо от инструкции �
 Формат ответа (обязательно)
 Отвечай только JSON-объектом без текста вокруг: {"reply":"текст для пользователя","actions":[]}
 "reply" — обычный текст по-русски: можно переносы строк, списки с "- " и **жирное**, без заголовков и таблиц.
-"actions" — изменения плана тренировок, только если пользователь прямо попросил или согласился на твоё предложение; иначе пустой список. Не пиши, что изменил план, если не вернул действие.
-Действия:
+"actions" — изменения плана тренировок и записи в дневник питания, только если пользователь прямо попросил, согласился на твоё предложение или сообщил, что съел; иначе пустой список. Не пиши, что изменил план или записал еду, если не вернул действие.
+Действия с планом:
 {"type":"replace","date":"ГГГГ-ММ-ДД","from":"id_старого","to":"id_нового"}
 {"type":"add","date":"ГГГГ-ММ-ДД","ex":"id","sets":3,"reps":10}
 {"type":"remove","date":"ГГГГ-ММ-ДД","ex":"id"}
-id — только из каталога ниже и только с инвентарём места этого дня; даты — сегодня или позже; для упражнений на время "reps" — секунды.`;
+id — только из каталога ниже и только с инвентарём места этого дня; даты — сегодня или позже; для упражнений на время "reps" — секунды.
+Действия с питанием:
+{"type":"meal","date":"ГГГГ-ММ-ДД","name":"Гречка с курицей","kcal":520,"p":42,"f":14,"c":55,"items":[{"name":"гречка варёная","grams":200,"kcal":220},{"name":"куриная грудка","grams":150,"kcal":250}]}
+{"type":"meal_del","date":"ГГГГ-ММ-ДД","name":"точное название из «Съедено сегодня»"}
+"meal" — когда пользователь пишет, что съел или выпил что-то, или просит записать блюдо: одно действие на блюдо или приём пищи. Порцию оценивай по обычным размерам, если вес не указан; p/f/c — белки, жиры, углеводы в граммах; "items" — по желанию. Дата — сегодня, если не сказано иное (не позже сегодня и не раньше 14 дней назад). В "reply" коротко назови, что записал и сколько ккал, и сколько осталось до нормы на сегодня. Не записывай то, что человек только планирует съесть, и не дублируй блюдо, которое уже есть в «Съедено сегодня».`;
 const COACH_OPTS={
   tone:[['ty','На «ты»','Обращайся к пользователю на «ты».'],['vy','На «вы»','Обращайся к пользователю на «вы».']],
   style:[['soft','Мягкий','Тон тёплый и поддерживающий: отмечай успехи, мягко возвращай к плану.'],
@@ -3887,12 +4053,33 @@ function planItemFor(ex,sets,reps){
 function dayLabel(k){const t=todayKey();return k===t?'Сегодня':k===addDays(t,1)?'Завтра':wdOf(k)+', '+dateLong(k);}
 function applyCoachActions(list){
   const acts=[],undo={},t=todayKey(),skipped=[];
-  const snap=k=>{if(!undo[k]){const d=day(k);undo[k]={plan:d&&d.plan?clone(d.plan):[],edited:!!(d&&d.planEdited)};}};
+  const snap=k=>{const u=undo[k]=undo[k]||{};if(!('plan' in u)){const d=day(k);u.plan=d&&d.plan?clone(d.plan):[];u.edited=!!(d&&d.planEdited);}};
+  const snapM=k=>{const u=undo[k]=undo[k]||{};if(!('meals' in u))u.meals=clone(dayMeals(k));};
+  const numv=(v,max)=>{const x=Math.round(+v);return isFinite(x)&&x>0?Math.min(max,x):0;};
   (Array.isArray(list)?list:[]).slice(0,12).forEach(a=>{
     if(!a||typeof a!=='object')return;
-    const k=/^\d{4}-\d{2}-\d{2}$/.test(String(a.date||''))?String(a.date):UI.date;
+    const type=String(a.type||''),okDate=/^\d{4}-\d{2}-\d{2}$/.test(String(a.date||''));
+    if(type==='meal'||type==='meal_del'){
+      const k=okDate?String(a.date):t;if(k>t||k<addDays(t,-14))return;
+      const name=String(a.name||'').trim().slice(0,80);if(!name)return;
+      if(type==='meal'){
+        const kcal=numv(a.kcal,5000);if(!kcal)return;
+        const items=(Array.isArray(a.items)?a.items:[]).slice(0,12).map(i=>i&&typeof i==='object'?{name:String(i.name||'').slice(0,60),grams:numv(i.grams,3000),kcal:numv(i.kcal,5000)}:null).filter(i=>i&&i.name);
+        snapM(k);const d=ensureDay(k);if(!d.meals)d.meals=[];
+        const now=new Date(),at=k===t?now.getTime():parseKey(k).getTime()+13*36e5;
+        d.meals.push({id:uid(),at:at,name:name,kcal:kcal,p:numv(a.p,500),f:numv(a.f,500),c:numv(a.c,1000),thumb:'',src:'coach',items:items.length?items:undefined});
+        d.meals.sort((x,y)=>x.at-y.at);persistDay(k);
+        acts.push({label:(k===t?'':dayLabel(k)+': ')+'записано в питание «'+name+'» — '+num(kcal)+' ккал'});
+      }else{
+        const ms=dayMeals(k),lo=normQ(name),m=ms.find(x=>normQ(x.name)===lo)||ms.find(x=>normQ(x.name).indexOf(lo)>=0||lo.indexOf(normQ(x.name))>=0);if(!m)return;
+        snapM(k);day(k).meals=ms.filter(x=>x!==m);persistDay(k);
+        acts.push({label:(k===t?'':dayLabel(k)+': ')+'убрано из питания «'+m.name+'»'});
+      }
+      return;
+    }
+    const k=okDate?String(a.date):UI.date;
     if(k<t||k>addDays(t,120))return;
-    const type=String(a.type||''),pl=dayPlan(k);
+    const pl=dayPlan(k);
     if(type==='replace'){
       const from=getEx(a.from),to=getEx(a.to);if(!from||!to||from.id===to.id)return;
       if(!exOk(to,dayEquip(k))){skipped.push(to.name);return;}
@@ -3915,11 +4102,15 @@ function applyCoachActions(list){
 }
 function undoCoach(i){
   const m=COACH.msgs[i];if(!m||!m.undo||m.undone)return;
-  Object.keys(m.undo).forEach(k=>{const u=m.undo[k],d=ensureDay(k);d.plan=clone(u.plan);d.planEdited=u.edited;persistDay(k);});
-  m.undone=true;saveCoach();render();toast('Изменения в плане отменены.');
+  let food=false,plan=false;
+  Object.keys(m.undo).forEach(k=>{const u=m.undo[k],d=ensureDay(k);
+    if('plan' in u){d.plan=clone(u.plan);d.planEdited=u.edited;plan=true;}
+    if('meals' in u){d.meals=clone(u.meals);food=true;}
+    persistDay(k);});
+  m.undone=true;saveCoach();render();toast(food&&!plan?'Записи в питании отменены.':food?'Изменения отменены.':'Изменения в плане отменены.');
 }
 function chatHistory(){
-  let h=COACH.msgs.slice(-16).map(m=>({role:m.role,content:m.role==='assistant'?m.text+(m.acts&&m.acts.length?'\n[Изменения в плане: '+m.acts.map(a=>a.label).join('; ')+(m.undone?' — пользователь отменил их':'')+']':'')+(m.skipped?'\n[Не поставлено, нет инвентаря: '+m.skipped.join(', ')+']':''):m.text}));
+  let h=COACH.msgs.slice(-16).map(m=>({role:m.role,content:m.role==='assistant'?m.text+(m.acts&&m.acts.length?'\n[Сделано: '+m.acts.map(a=>a.label).join('; ')+(m.undone?' — пользователь отменил их':'')+']':'')+(m.skipped?'\n[Не поставлено, нет инвентаря: '+m.skipped.join(', ')+']':''):m.text}));
   while(h.length&&h[0].role!=='user')h.shift();
   return h;
 }
@@ -3955,21 +4146,21 @@ function fmtReply(s){
 }
 const COACH_ICO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.9 11.5H21V7.5H9.5A6 6 0 1 0 13.9 11.5z"/><circle cx="9.5" cy="13.5" r="1.5"/><path d="M15 4.5l1-2M18.5 5l1.5-1.5M11.5 4.8 11 2.8"/></svg>';
 const SEND_ICO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"/></svg>';
-const COACH_SUG=['Что мне делать дальше?','Чем заменить упражнение в сегодняшней тренировке?','Что съесть после тренировки?','Как у меня дела с целью?'];
+const COACH_SUG=['Что мне делать дальше?','Чем заменить упражнение в сегодняшней тренировке?','Запиши: на обед гречка с курицей','Что съесть после тренировки?','Как у меня дела с целью?'];
 function coachView(){
   const eng=aiEngine(false);
   let h=todayCard();
   if(!eng)h+='<div class="eqbar glass"><span>Чтобы тренер отвечал в чате, подключите ИИ</span><button class="rm" data-coach="keys">Подключить</button></div>';
   h+='<div class="chat" id="chat" aria-live="polite">';
   if(!COACH.msgs.length){
-    h+='<p class="cintro">Спросите про технику, замену упражнения, питание или прогресс. Тренер видит вашу цель, план, отмеченные подходы и еду за день. Если попросите, он поменяет упражнения в плане.</p>'+
+    h+='<p class="cintro">Спросите про технику, замену упражнения, питание или прогресс. Тренер видит вашу цель, план, отмеченные подходы и еду за день. Если попросите, он поменяет упражнения в плане, а если напишете, что съели, — запишет блюдо в «Питание».</p>'+
       '<div class="csug">'+COACH_SUG.map(s=>'<button class="press" data-csug="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>';
   }
   COACH.msgs.forEach((m,i)=>{
     if(m.role==='user'){h+='<div class="msg me"><div class="bub">'+esc(m.text).replace(/\n/g,'<br>')+'</div></div>';return;}
     h+='<div class="msg bot"><div class="bub">'+fmtReply(m.text)+
       (m.acts&&m.acts.length?'<div class="cacts">'+m.acts.map(a=>'<span'+(m.undone?' class="off"':'')+'>'+(m.undone?'':'✓ ')+esc(a.label)+'</span>').join('')+
-        (m.undo&&!m.undone?'<button class="rm" data-cundo="'+i+'">Отменить изменения</button>':m.undone?'<i>Изменения отменены</i>':'')+'</div>':'')+
+        (m.undo&&!m.undone?'<button class="rm" data-cundo="'+i+'">Отменить</button>':m.undone?'<i>Изменения отменены</i>':'')+'</div>':'')+
       (m.skipped?'<div class="cacts"><i>Не поставлено, нет инвентаря в этот день: '+m.skipped.map(esc).join(', ')+'</i></div>':'')+
       '</div></div>';
   });
@@ -3994,7 +4185,21 @@ function coachClick(ds){
     COACH.msgs=[];COACH.err='';COACH.armClear=false;saveCoach();renderMain();return true;}
   return false;
 }
-function sizeCoachIn(el){el.style.height='auto';el.style.height=Math.min(120,el.scrollHeight)+'px';}
+function sizeCoachIn(el){el.style.height='auto';el.style.height=Math.min(120,el.scrollHeight)+'px';kbSync();}
+// iPhone: while typing, the composer follows the top edge of the keyboard and the tab bar steps aside
+const TOUCH=!!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches);
+function kbSync(){
+  const ae=document.activeElement,typing=TOUCH&&!!(ae&&ae.id==='coachIn'),f=$('coachForm'),vv=window.visualViewport;
+  const bc=String(document.body.className||'');if(/\bkb\b/.test(bc)!==typing)document.body.className=bc.replace(/\s*\bkb\b/g,'')+(typing?' kb':'');
+  if(!f)return;
+  if(typing&&vv){const top=vv.offsetTop+vv.height-f.offsetHeight-8;f.style.top=Math.max(vv.offsetTop+8,top)+'px';f.style.bottom='auto';}
+  else{f.style.top='';f.style.bottom='';}
+}
+document.addEventListener('focusin',e=>{if(e.target&&e.target.id==='coachIn'){kbSync();setTimeout(kbSync,60);setTimeout(()=>{kbSync();scrollCoach();},350);}});
+document.addEventListener('focusout',e=>{if(e.target&&e.target.id==='coachIn')setTimeout(kbSync,30);});
+// tapping «send» keeps the keyboard open and the composer in place
+document.addEventListener('mousedown',e=>{const s=e.target&&e.target.closest&&e.target.closest('#coachForm .send');if(s&&document.activeElement&&document.activeElement.id==='coachIn')e.preventDefault();});
+if(window.visualViewport){visualViewport.addEventListener('resize',kbSync);visualViewport.addEventListener('scroll',kbSync);}
 document.addEventListener('input',e=>{const id=e.target&&e.target.id;
   if(id==='coachIn'){COACH.draft=e.target.value;sizeCoachIn(e.target);}
   else if(id==='cName')setCoachCfg({name:e.target.value.slice(0,40)});
@@ -4197,6 +4402,52 @@ function obClick(v){
   renderMain();window.scrollTo({top:0});
 }
 
+/* ---------- «Расписание»: calendar like iPhone Calendar — week strip, month on tap, swipe between weeks ---------- */
+const CAL_WD=['пн','вт','ср','чт','пт','сб','вс'];
+const MON_N=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+function dayState(k){
+  const t=todayKey(),plan=dayPlan(k),n=daySets(k).length;
+  const goal=plan.reduce((a,p)=>a+(p.goal||0),0),done=plan.reduce((a,p)=>a+Math.min(p.goal||0,setsOf(k,p.ex)),0);
+  if(goal&&done>=goal)return 'done';
+  if(n)return 'part';
+  if(plan.length)return k<t?'miss':'plan';
+  return '';
+}
+function calCell(k,inMonth){
+  const d=parseKey(k),t=todayKey(),st=dayState(k),wd=(d.getDay()+6)%7;
+  return '<button class="icd'+(k===UI.date?' sel':'')+(k===t?' today':'')+(inMonth===false?' out':'')+(st?' '+st:'')+'" data-day="'+k+'" aria-pressed="'+(k===UI.date)+'" aria-label="'+WD[d.getDay()]+', '+dateLong(k)+(st==='done'?', тренировка выполнена':st==='part'?', тренировка начата':st==='plan'?', запланирована тренировка':st==='miss'?', тренировка пропущена':'')+'">'+
+    (inMonth===undefined?'<i>'+CAL_WD[wd]+'</i>':'')+'<b>'+d.getDate()+'</b><span class="dot" aria-hidden="true"></span></button>';
+}
+function icalView(){
+  const k=UI.date,mon=mondayOf(k),open=!!UI.calOpen,t=todayKey();
+  const m=open?(UI.calM||k.slice(0,7)):k.slice(0,7),y=+m.slice(0,4),mo=+m.slice(5,7)-1;
+  let h='<section class="card glass ical"><div class="icalh"><button class="icalm press" data-calopen="1" aria-expanded="'+open+'">'+MON_N[mo]+' '+y+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(open?'M6 15l6-6 6 6':'M6 9l6 6 6-6')+'"/></svg></button>'+
+    '<div class="icalnav">'+(k!==t?'<button class="ictoday press" data-day="'+t+'">Сегодня</button>':'')+
+    '<button class="navbtn" data-calnav="-1" aria-label="'+(open?'Предыдущий месяц':'Предыдущая неделя')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>'+
+    '<button class="navbtn" data-calnav="1" aria-label="'+(open?'Следующий месяц':'Следующая неделя')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></div></div>';
+  if(!open){
+    h+='<div class="wstrip" role="group" aria-label="Неделя">';for(let i=0;i<7;i++)h+=calCell(addDays(mon,i));h+='</div>';
+  }else{
+    const first=keyOf(new Date(y,mo,1)),start=mondayOf(first);
+    h+='<div class="mgrid"><div class="mwd">'+CAL_WD.map(w=>'<i>'+w+'</i>').join('')+'</div><div class="mdays">';
+    for(let i=0;i<42;i++){const kk=addDays(start,i);if(i>=35&&kk.slice(0,7)!==m)break;h+=calCell(kk,kk.slice(0,7)===m);}
+    h+='</div></div>';
+  }
+  h+='<div class="clegend icleg"><span><i class="lg plan"></i>план</span><span><i class="lg part"></i>начата</span><span><i class="lg done"></i>выполнена</span><span><i class="lg miss"></i>пропуск</span></div></section>';
+  const d=parseKey(k),si=schedInfo(k),pl=dayPlan(k),rel=k===t?'Сегодня':k===addDays(t,1)?'Завтра':k===addDays(t,-1)?'Вчера':'';
+  const wdn=WD[d.getDay()];h+='<div class="dayhd"><b>'+(rel?rel+', '+wdn:wdn.charAt(0).toUpperCase()+wdn.slice(1))+', '+dateLong(k)+'</b><span>'+(pl.length?(si?'Тренировка '+si.letter+(si.place&&multiPlace(prof())?' · '+PLACE_NAME[si.place]:'')+' · ':'')+pl.length+' '+plural(pl.length,UPR):k<t?'Без тренировки':'Тренировки нет — можно собрать')+'</span></div>';
+  return h;
+}
+function calNav(dir){
+  if(UI.calOpen){const m=UI.calM||UI.date.slice(0,7),dt=new Date(+m.slice(0,4),+m.slice(5,7)-1+dir,1);UI.calM=keyOf(dt).slice(0,7);renderMain();return;}
+  setDate(addDays(UI.date,7*dir));
+}
+// swipe the week strip (or the month) left and right
+let calTouch=null;
+document.addEventListener('touchstart',e=>{const s=e.target&&e.target.closest&&e.target.closest('.ical');if(!s||!e.touches||!e.touches[0])return;calTouch={x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
+document.addEventListener('touchend',e=>{if(!calTouch||!e.changedTouches||!e.changedTouches[0])return;const dx=e.changedTouches[0].clientX-calTouch.x,dy=e.changedTouches[0].clientY-calTouch.y;calTouch=null;
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5)calNav(dx<0?1:-1);},{passive:true});
+
 /* ---------- toast ---------- */
 let toastTimer=null,undoFn=null;
 function toast(msg,undo){
@@ -4265,7 +4516,9 @@ document.addEventListener('click',e=>{
     return;
   }
   if(ds.addex){UI.addOpen=ds.addex==='1';UI.focusNew=UI.addOpen;renderMain();return;}
-  if(ds.day){setDate(ds.day);return;}
+  if(ds.day){UI.calOpen=false;setDate(ds.day);return;}
+  if(ds.calopen){UI.calOpen=!UI.calOpen;UI.calM=UI.date.slice(0,7);renderMain();return;}
+  if(ds.calnav){calNav(+ds.calnav);return;}
   if(b.id==='meBtn'){if(UI.tab==='settings'){UI.goalEdit=false;UI.tab=UI.prevTab&&UI.prevTab!=='settings'?UI.prevTab:'coach';}else if(UI.tab==='workout'){UI.tab='coach';}else{UI.prevTab=UI.tab;UI.tab='settings';}render();window.scrollTo({top:0});if(UI.tab==='coach')scrollCoach();return;}
   if(b.id==='prevDay'){setDate(addDays(UI.date,-1));return;}
   if(b.id==='nextDay'){if(UI.date<addDays(todayKey(),60))setDate(addDays(UI.date,1));return;}
