@@ -694,6 +694,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .sheet-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .sheet-h h2{margin:0;font-family:var(--f-display);font-weight:500;font-size:22px;text-transform:uppercase;letter-spacing:.02em}
 .sfield{display:grid;gap:6px;min-width:0}
+.itform{display:grid;gap:8px}.itform input{width:100%;min-height:46px;border-radius:14px;border:1px solid var(--glass-edge);background:var(--glass-strong);color:var(--ink);font:inherit;font-size:16px;padding:0 14px;min-width:0}
 .flab{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .wdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .wday{height:46px;border-radius:14px;border:1px solid var(--glass-edge);background:var(--glass);font-weight:600;font-size:14px;color:var(--muted)}
@@ -749,6 +750,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
     </div>
     <div id="settingsView" class="stack" hidden>
       <div id="settingsBody" class="stack"></div>
+      <section class="card glass" id="itogiCard"><h2 class="sec">Итоги дня</h2><p class="cap">Отправлять тренировки и питание в бот «Итоги дня». Адрес и пароль приёма данных — из настроек бота.</p><div class="itform"><label class="sfield"><span class="flab">Адрес сервера</span><input type="url" id="itUrl" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…amvera.tech"></label><label class="sfield"><span class="flab">Пароль (INGEST_TOKEN)</span><input type="password" id="itTok" autocomplete="off" autocapitalize="off" spellcheck="false"></label><button class="log tint press" id="itSave">Сохранить и отправить неделю</button><p class="cap" id="itStatus" aria-live="polite"></p></div></section>
       <section class="card glass"><h2 class="sec">Резервная копия</h2><p class="cap">Записи хранятся только на этом телефоне. Сохраняйте копию время от времени, чтобы не потерять их при очистке данных браузера или смене телефона.</p><div class="duo"><button class="log tint press" id="exportBtn">Сохранить</button><label class="ghost glass press filebtn">Восстановить<input type="file" id="importFile" class="vh" accept="application/json,.json"></label></div></section>
       <p class="status" id="status">Загрузка…</p>
     </div>
@@ -2849,7 +2851,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='22.10 10:22';
+const BUILD='22.10 11:45';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -5509,6 +5511,63 @@ document.addEventListener('submit',e=>{if(e.target.id==='addForm'){e.preventDefa
 // keep "today" correct if the page stays open past midnight
 let lastToday=todayKey();
 setInterval(()=>{const t=todayKey();if(t!==lastToday){if(UI.date===lastToday)UI.date=t;lastToday=t;render();proactive();}},60000);
+
+/* ---------- «Итоги дня»: цифры за день уходят в бота ---------- */
+(function(){
+  const KEY='wt-itogi',timers={};
+  const cfg=()=>{try{return JSON.parse(lsGet(KEY)||'{}');}catch(e){return {};}};
+  const save=c=>lsSet(KEY,JSON.stringify(c));
+  const say=t=>{const el=$('itStatus');if(el)el.textContent=t;};
+  function dayMetrics(k,c){
+    const sets=daySets(k),meals=dayMeals(k),out=[];
+    let mins=0;
+    if(sets.length){
+      const at=sets.map(x=>x.at||0).filter(Boolean);
+      const span=at.length?(Math.max.apply(null,at)-Math.min.apply(null,at))/60000+3:0;
+      const timed=sets.reduce((a,x)=>a+((x.k==='time'||x.k==='dist')?(x.t||0)/60:0),0);
+      mins=Math.round(Math.min(Math.max(span,timed),240));
+    }
+    const ton=sets.reduce((a,x)=>a+(x.k==='wr'?(x.w||0)*(x.r||0):0),0);
+    const km=sets.reduce((a,x)=>a+(x.k==='dist'?(x.d||0):0),0);
+    out.push({metric:'workout_minutes',value:mins,unit:'мин'},{metric:'workout_sets',value:sets.length},
+      {metric:'workout_tonnage',value:Math.round(ton),unit:'кг'},{metric:'distance_km',value:Math.round(km*100)/100,unit:'км'});
+    // Питание отправляем, только если за день что-то записано (или было записано и удалено),
+    // иначе в отчёте день без записей выглядел бы как «съел 0 ккал».
+    c.food=c.food||{};
+    if(meals.length||c.food[k]){
+      const f=sumMeals(meals);
+      out.push({metric:'kcal_eaten',value:r0(f.kcal),unit:'ккал'},{metric:'protein_g',value:r0(f.p),unit:'г'});
+      c.food[k]=meals.length>0;
+    }
+    return out.map(m=>Object.assign(m,{day:k,source:'trenirovka'}));
+  }
+  async function send(keys){
+    const c=cfg();if(!c.url||!c.tok)return false;
+    const body=[];keys.forEach(k=>dayMetrics(k,c).forEach(m=>body.push(m)));
+    try{
+      const r=await fetch(c.url.replace(/\/+$/,'')+'/ingest/day',{method:'POST',headers:{'Content-Type':'application/json','X-Token':c.tok},body:JSON.stringify(body)});
+      if(r.status===401){say('Сервер не принял пароль. Проверьте INGEST_TOKEN.');return false;}
+      if(!r.ok){say('Сервер ответил ошибкой '+r.status+'.');return false;}
+      save(c);const t=new Date();say('Отправлено в '+pad(t.getHours())+':'+pad(t.getMinutes())+'.');return true;
+    }catch(e){say('Нет связи с сервером. Отправлю при следующей записи.');return false;}
+  }
+  const orig=persistDay;
+  persistDay=function(k){
+    orig(k);
+    if(!cfg().url)return;
+    clearTimeout(timers[k]);timers[k]=setTimeout(()=>send([k]),3000);
+  };
+  const u=$('itUrl'),t=$('itTok'),b=$('itSave');if(!u||!t||!b)return;
+  const c0=cfg();u.value=c0.url||'';t.value=c0.tok||'';
+  if(c0.url)say('Подключено. Записи отправляются автоматически.');
+  b.addEventListener('click',async()=>{
+    const url=u.value.trim(),tok=t.value.trim();
+    if(!/^https:\/\//.test(url)||!tok){say('Укажите адрес, начинающийся с https://, и пароль.');return;}
+    const c=cfg();c.url=url;c.tok=tok;save(c);
+    const keys=[];for(let i=6;i>=0;i--)keys.push(addDays(todayKey(),-i));
+    say('Отправляю…');if(await send(keys))toast('Подключено к «Итогам дня».');
+  });
+})();
 
 /* ---------- backup (installed app) ---------- */
 (function(){
