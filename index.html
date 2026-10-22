@@ -609,6 +609,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .bcbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px}.bcbtn svg{width:20px;height:20px}
 .fthumb.mph svg{width:30px;height:30px}
 .wkbar>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mdiag{display:grid;gap:8px}.mdiag pre{white-space:pre-wrap;min-height:60px;font-size:12.5px}
 /* schedule calendar (iPhone Calendar style) */
 .ical{gap:10px;padding:12px 12px 10px}
 .icalh{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -2848,7 +2849,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='22.10 08:27';
+const BUILD='22.10 10:06';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -4154,7 +4155,7 @@ function coachSettings(){
     '<label class="sfield"><span class="flab">Как к вам обращаться</span><input id="cName" class="fhint" maxlength="40" placeholder="Имя, необязательно" value="'+esc(c.name)+'"></label>'+
     seg('tone','Обращение')+seg('style','Характер')+seg('len','Длина ответов')+seg('emoji','Эмодзи')+
     '<div class="sfield"><span class="flab">Голос</span><div class="seg2"><button data-cset="voice|on" aria-pressed="'+(c.voice==='on')+'">Читать ответы вслух</button><button data-cset="voice|off" aria-pressed="'+(c.voice!=='on')+'">Только текст</button></div></div>'+
-    '<p class="cap">Микрофон в поле сообщения: скажите вопрос — он отправится сам. Если браузер не даёт распознавание речи (бывает на iPhone в приложении с экрана «Домой»), подскажу, как диктовать через 🎤 на клавиатуре.</p></section>'+
+    '<p class="cap">Микрофон в поле сообщения: скажите вопрос — он отправится сам. Если браузер не даёт распознавание речи (бывает на iPhone в приложении с экрана «Домой»), подскажу, как диктовать через 🎤 на клавиатуре.</p>'+micDiagView()+'</section>'+
     '<section class="card glass cset"><h2 class="sec">О себе для тренера</h2>'+
     '<p class="cap">Это тренер учитывает в каждом ответе. Травмы, что не любите, сколько времени на тренировку, режим и привычки в еде.</p>'+
     '<textarea id="cNotes" class="cta" rows="4" maxlength="1500" placeholder="Например: побаливает левое колено, не люблю бег, на тренировку 45 минут, ем 3 раза в день, вечером тяжело без сладкого.">'+esc(c.notes)+'</textarea></section>'+
@@ -5006,7 +5007,13 @@ function micFallback(why,inGesture){
   const i=$('coachIn');if(inGesture&&i)i.focus();
   toast((why?why+' ':'')+(inGesture?'Нажмите 🎤 на клавиатуре — это диктовка телефона, текст появится в поле.':'Нажмите на поле сообщения, затем 🎤 на клавиатуре — это диктовка телефона.'));
 }
+// iPhone apps opened from the Home Screen get no speech recognition from Apple (WebKit bug 225298) — the keyboard microphone works there
+const IOS_HOME=(()=>{try{const ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);return ios&&(navigator.standalone===true||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches));}catch(e){return false;}})();
 function micToggle(){
+  if(IOS_HOME){const i=$('coachIn');if(i)i.focus();
+    if(!lsGet('wt-dict-tip')){lsSet('wt-dict-tip','1');toast('В приложении с экрана «Домой» iPhone не даёт распознавать речь. Нажмите 🎤 на клавиатуре — это диктовка iPhone, потом «отправить».');}
+    else toast('Нажмите 🎤 на клавиатуре и говорите.');
+    return;}
   if(!SR){micFallback('',true);return;}
   if(MIC.on&&MIC.rec){try{MIC.rec.stop();}catch(e){}return;}
   if(srBad()){micFallback('',true);return;}
@@ -5340,6 +5347,46 @@ document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='barcodePic
 document.addEventListener('submit',e=>{if(e.target&&e.target.id==='bcForm'){e.preventDefault();const i=$('bcCode');if(i)lookupBarcode(i.value);}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(proactive,300);});
 
+/* ---------- voice check: shows on screen what the phone's browser does with speech ---------- */
+const MDIAG={log:[],t0:0,rec:null};
+function dlog(s){const t=MDIAG.t0?((Date.now()-MDIAG.t0)/1000).toFixed(1)+' с  ':'';MDIAG.log.push(t+s);if(MDIAG.log.length>40)MDIAG.log.shift();const el=$('micLog');if(el)el.textContent=MDIAG.log.join('\n');}
+function envLines(){
+  const ua=navigator.userAgent,ios=(ua.match(/OS (\d+)_(\d+)/)||[]),sa=navigator.standalone===true||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
+  let frame=false;try{frame=window.self!==window.top;}catch(e){frame=true;}
+  return ['Устройство: '+(/iPhone|iPad/.test(ua)?'iPhone/iPad, iOS '+(ios[1]?ios[1]+'.'+ios[2]:'?'):/Android/.test(ua)?'Android':'компьютер'),
+    'Открыто: '+(sa?'приложение с экрана «Домой»':frame?'внутри другой страницы (Claude)':'в браузере'),
+    'Распознавание речи в браузере: '+(window.SpeechRecognition?'есть':window.webkitSpeechRecognition?'есть (webkit)':'нет'),
+    'Доступ к микрофону (getUserMedia): '+(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia?'есть':'нет'),
+    (IOS_HOME?'Вывод: приложение с экрана «Домой» на iPhone — Apple здесь не даёт распознавание речи, работает только 🎤 на клавиатуре':'')+'',
+    'Метка «не работает» от прошлых попыток: '+(srBad()?'стоит (сброшена этой проверкой)':'нет')];
+}
+function micDiagView(){
+  if(!UI.micDiag)return '<button class="ghost glass press" data-micdiag="open">Проверить голосовой ввод</button>';
+  return '<div class="mdiag"><div class="duo"><button class="log tint press" data-micdiag="sr">1. Распознавание</button><button class="ghost glass press" data-micdiag="mic">2. Микрофон</button></div>'+
+    '<p class="cap">Нажмите «1», скажите пару слов и подождите 5 секунд. Потом «2». Сделайте скриншот того, что появится ниже, и пришлите мне.</p>'+
+    '<pre class="cfull" id="micLog">'+esc(MDIAG.log.join('\n'))+'</pre><button class="rm" data-micdiag="close" style="justify-self:start">Скрыть проверку</button></div>';
+}
+function diagSR(){
+  MDIAG.log=[];MDIAG.t0=Date.now();envLines().forEach(dlog);
+  try{localStorage.removeItem(SR_BAD_LS);}catch(e){}dlog('— Проверка распознавания —');
+  if(!SR){dlog('Нет SpeechRecognition — остаётся диктовка 🎤 на клавиатуре.');return;}
+  let rec;try{rec=new SR();}catch(e){dlog('Ошибка создания: '+(e&&e.message||e));return;}
+  MDIAG.rec=rec;rec.lang='ru-RU';rec.interimResults=true;rec.continuous=false;
+  ['start','audiostart','soundstart','speechstart','speechend','soundend','audioend','nomatch'].forEach(n=>{rec['on'+n]=()=>dlog('событие: '+n);});
+  rec.onresult=e=>{let s='';for(let i=0;i<e.results.length;i++)s+=e.results[i][0].transcript+(e.results[i].isFinal?' [итог]':' [черновик]');dlog('текст: '+s);};
+  rec.onerror=e=>dlog('ОШИБКА: '+((e&&e.error)||'?')+(e&&e.message?' — '+e.message:''));
+  rec.onend=()=>{dlog('событие: end');MDIAG.rec=null;};
+  try{speechSynthesis.cancel();}catch(e){}
+  try{rec.start();dlog('start() вызван — говорите');}catch(e){dlog('start() упал: '+(e&&e.name||'')+' '+(e&&e.message||e));}
+  setTimeout(()=>{if(MDIAG.rec){dlog('5 секунд прошло — останавливаю');try{MDIAG.rec.stop();}catch(e){}}},5500);
+}
+async function diagMic(){
+  dlog('— Проверка микрофона —');
+  if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){dlog('getUserMedia нет в этом режиме');return;}
+  try{const st=await navigator.mediaDevices.getUserMedia({audio:true});const tr=st.getAudioTracks();dlog('микрофон открыт: '+(tr[0]&&tr[0].label||'без названия'));tr.forEach(t=>t.stop());}
+  catch(e){dlog('микрофон: ОШИБКА '+(e&&e.name||'')+' '+(e&&e.message||''));}
+}
+
 /* ---------- toast ---------- */
 let toastTimer=null,undoFn=null;
 function toast(msg,undo){
@@ -5383,6 +5430,7 @@ document.addEventListener('click',e=>{
   if(ds.goto){UI.tab=ds.goto;if(ds.date)UI.date=ds.date;else if(ds.goto==='day')UI.date=todayKey();UI.building=ds.build==='1';UI.open=null;render();window.scrollTo({top:0});return;}
   if(ds.tset){const q=ds.tset.split('|');setTrain(q[0],q[1]);return;}
   if(ds.mic){micToggle();return;}
+  if(ds.micdiag){const v=ds.micdiag;if(v==='sr')diagSR();else if(v==='mic')diagMic();else{UI.micDiag=v==='open';renderMain();}return;}
   if(ds.feel){setFeel(+ds.feel);return;}
   if(ds.offer){offerClick(ds.offer);return;}
   if(ds.backup){if(ds.backup==='save'&&window.wtBackup)window.wtBackup();else{S.config.backupSnooze=addDays(todayKey(),3);persistConfig();renderMain();}return;}
