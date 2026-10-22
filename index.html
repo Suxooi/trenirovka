@@ -351,7 +351,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ftot span{font-size:13px;color:var(--muted)}
 .ferr{margin:0;font-size:14px;color:var(--ink);padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--p-red) 14%,transparent)}
 .mform{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.mform #mName{grid-column:1/-1}.mform #mKcal{grid-column:1/-1}
+
 .mform .log{grid-column:1/3}
 #keyForm{grid-template-columns:minmax(0,1fr) auto}#keyForm input{grid-column:auto}
 .meal{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;align-items:center;gap:4px 10px;padding:10px 4px 10px 12px}
@@ -540,6 +540,54 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .sprof{gap:12px}
 .ob{gap:14px}
 .obdots{display:flex;gap:6px}.obdots i{width:22px;height:5px;border-radius:3px;background:var(--sunk)}.obdots i.on{background:var(--acc)}
+/* workout extras: rest settings, today's target, chat sheet */
+.wkbar{grid-template-columns:1fr auto;align-items:center}.wkbar .wkprog{grid-column:1/-1}
+.wkrbtn{border:1px solid var(--glass-edge);background:var(--glass);color:var(--ink);border-radius:999px;min-height:34px;padding:0 12px;font-size:13px;font-weight:600;white-space:nowrap}
+.wkrcfg{border-radius:20px;padding:12px;display:grid;gap:10px}
+.wksug{margin:0;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.35;background:var(--sunk);color:var(--ink)}
+.wksug.up{background:color-mix(in srgb,var(--acc) 16%,transparent);border:1px solid color-mix(in srgb,var(--acc) 35%,transparent)}
+.wksug.down{background:color-mix(in srgb,var(--calm) 16%,transparent);border:1px solid color-mix(in srgb,var(--calm) 35%,transparent)}
+.wkpad{height:64px}
+.wkchatbtn{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;min-height:50px;padding:0 18px 0 14px;font-weight:600;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.wkchatbtn svg{width:22px;height:22px}
+.wksheet{position:fixed;z-index:15;left:50%;transform:translateX(-50%);bottom:0;width:min(620px,100%);max-height:72vh;display:flex;flex-direction:column;gap:8px;border-radius:24px 24px 0 0;padding:12px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0) 30%),rgba(15,19,21,.96);box-shadow:0 -10px 40px rgba(0,0,0,.5);animation:sheetUp .28s cubic-bezier(.2,.9,.3,1)}
+@keyframes sheetUp{from{transform:translate(-50%,40px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.wkshead{display:flex;align-items:center;gap:10px;padding:2px 2px 6px;border-bottom:1px solid var(--line)}
+.wkshead div{flex:1;min-width:0;display:grid}.wkshead b{font-size:16px}.wkshead span{font-size:12.5px;color:var(--muted)}
+.wkshead .cava{width:34px;height:34px;border-radius:11px}.wkshead .cava svg{width:18px;height:18px}
+.wkmsgs{flex:1 1 auto;min-height:80px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 2px;overscroll-behavior:contain}
+.csug.wksug2{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:none}.wksug2::-webkit-scrollbar{display:none}
+.csug.wksug2 button{flex:none;min-height:36px;padding:6px 12px;font-size:13.5px;white-space:nowrap}
+.wksheet .composer{position:static!important;transform:none!important;width:auto;flex:none;margin:0}
+.mic{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:0;padding:0;background:transparent;color:var(--muted);margin-left:-10px}
+.mic svg{width:20px;height:20px}
+.mic.on{color:var(--on-acc);background:var(--acc);animation:micPulse 1.2s ease-in-out infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--acc) 55%,transparent)}50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--acc) 0%,transparent)}}
+@media (prefers-reduced-motion:reduce){.mic.on{animation:none}.wksheet{animation:none}}
+/* strength and records */
+.strl{display:grid;gap:2px}
+.strow{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--ink);text-align:left;padding:10px 4px;border-radius:12px;border-bottom:1px solid var(--line)}
+.strow.on{background:var(--sunk)}
+.strn{flex:1;min-width:0;display:grid;gap:2px}.strn b{font-size:15px;font-weight:600}.strn i{font-style:normal;font-size:12.5px;color:var(--muted)}
+.strs{flex:none;color:var(--muted)}.strs.up{color:var(--acc)}.strs.down{color:var(--calm)}
+.spark{width:84px;height:26px;display:block}
+.strd{display:grid;gap:6px;padding:8px 6px 12px}
+.strd div{display:grid;grid-template-columns:86px 1fr;gap:8px;font-size:13.5px}.strd span{color:var(--muted)}.strd b{font-weight:500;font-family:var(--f-num)}
+.prb{font-style:normal;font-family:inherit;font-size:11px;font-weight:700;color:var(--on-acc);background:var(--acc);border-radius:999px;padding:1px 6px;margin-left:2px}
+/* calorie target from real data */
+.adapt{border-radius:20px;padding:14px;display:grid;gap:8px}
+.adapt b{font-size:15.5px}.adapt span{font-size:14px;line-height:1.4;color:var(--muted)}
+.adapt.ok b{color:var(--acc)}
+/* food by text */
+.ftext{display:grid;grid-template-columns:1fr auto;gap:8px}.ftext .log{padding:0 16px;min-height:46px}
+.ordiv{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em}
+.ordiv::before,.ordiv::after{content:"";flex:1;height:1px;background:var(--line)}
+.fthumb.mph{display:grid;place-items:center;background:var(--sunk);color:var(--acc);font-family:var(--f-num);font-weight:700;font-size:18px}
+.fthumb.mph small{font-size:11px;margin-left:1px;color:var(--muted)}
+.mf{display:grid;gap:4px;min-width:0}.mf span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding-left:4px}
+.mf.w2{grid-column:1/3}.mf.w3{grid-column:1/-1}
+.wkbtns{display:flex;gap:6px}.wkcbtn{display:inline-flex;align-items:center;gap:6px}.wkcbtn svg{width:16px;height:16px}
+.mauto{grid-column:1/-1;margin:0}
 /* schedule calendar (iPhone Calendar style) */
 .ical{gap:10px;padding:12px 12px 10px}
 .icalh{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -670,6 +718,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
     <div id="statsView" class="stack" hidden>
       <div id="goalStats"></div>
       <section class="stats glass" id="stats" aria-label="Итоги дня"></section>
+      <section class="card glass" id="strengthStats"></section>
       <section class="card glass" id="foodStats"></section>
       <div id="calStats"></div>
       <section class="card glass"><h2 class="sec">Журнал дня</h2><div id="daylog"></div></section>
@@ -2778,7 +2827,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='21.10 21:13';
+const BUILD='22.10 07:50';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -2850,12 +2899,14 @@ function logSet(exId){
   if(ex.kind==='reps'){if(!(d.r>0))return toast('Укажите количество повторов.');s.r=d.r;}
   if(ex.kind==='time'){if(!(d.t>0))return toast('Укажите время.');s.t=d.t;}
   if(ex.kind==='dist'){if(!(d.d>0))return toast('Укажите дистанцию.');s.d=d.d;s.t=d.t||0;}
-  const k=UI.date;
+  const k=UI.date,prev=bestBefore(ex.id,null);
+  if(prev>0&&setScore(s)>prev*1.0001)s.pr=true;
   ensureDay(k).sets.push(s);
   persistDay(k);render();
   const n=daySets(k).filter(x=>x.ex===ex.id).length;
   const p=dayPlan(k).find(x=>x.ex===ex.id);
-  toast(ex.name+' — подход '+n+(p&&p.goal?' из '+p.goal:'')+': '+fmtSet(s),()=>removeSet(k,s.id));
+  if(s.pr){toast('Новый рекорд! '+ex.name+': '+prText(s),()=>removeSet(k,s.id));if(UI.tab==='workout')speak('Новый рекорд!');}
+  else toast(ex.name+' — подход '+n+(p&&p.goal?' из '+p.goal:'')+': '+fmtSet(s),()=>removeSet(k,s.id));
 }
 function removeSet(k,id){
   if(!S.days[k])return;
@@ -2946,7 +2997,7 @@ function setField(ex,f,raw){
 function render(){
   const d=DIR[UI.dir],root=document.documentElement.style;
   root.setProperty('--dir','var(--lime)');root.setProperty('--on-dir','var(--on-lime)');root.setProperty('--plate','var(--p-'+d.c+')');
-  renderHeader();renderStats();renderFoodStats();renderTabs();renderMain();renderDayLog();renderWeek();renderHeat();
+  renderHeader();renderStats();renderFoodStats();renderStrength();renderTabs();renderMain();renderDayLog();renderWeek();renderHeat();
   const gs=$('goalStats');if(gs)gs.innerHTML=prof()&&prof().accepted?goalCard():'';
 }
 function renderHeader(){
@@ -3056,6 +3107,7 @@ function renderMain(){
   else if(UI.tab==='settings'){$('mainBody').innerHTML='';const sb=$('settingsBody');if(sb)sb.innerHTML=settingsView();}
   else $('mainBody').innerHTML=UI.tab==='day'?dayView():UI.tab==='food'?foodView():UI.tab==='coach'?coachView():UI.tab==='workout'?wkView():'';
   const ci=$('coachIn');if(ci&&ci.style){sizeCoachIn(ci);if(refocus)ci.focus();}
+  const wm=$('wkMsgs');if(wm)wm.scrollTop=wm.scrollHeight;
   if(UI.focusNew){UI.focusNew=false;const i=$('newName');if(i)i.focus();}
   startDemos();
 }
@@ -3354,11 +3406,45 @@ function foodPrompt(hint){
     '{"dish":"короткое название блюда","items":[{"name":"продукт","grams":150,"kcal":240,"protein":12,"fat":8,"carbs":30}],"confidence":"высокая|средняя|низкая","note":"одна фраза, что сильнее всего влияет на точность"}\n'+
     'Если на фото нет еды, верни {"error":"коротко, что на фото"}.';
 }
+// models sometimes break JSON: raw line breaks inside strings, trailing commas, a cut-off ending — mend before giving up
+function mendJSON(s){
+  let out='',inStr=false,esc=false;const stack=[];
+  for(const ch of s){
+    if(inStr){
+      if(esc){out+=ch;esc=false;continue;}
+      if(ch==='\\'){out+=ch;esc=true;continue;}
+      if(ch==='"'){inStr=false;out+=ch;continue;}
+      if(ch==='\n'){out+='\\n';continue;}if(ch==='\r')continue;if(ch==='\t'){out+='\\t';continue;}
+      out+=ch;continue;
+    }
+    if(ch==='"'){inStr=true;out+=ch;continue;}
+    if(ch==='{'||ch==='[')stack.push(ch==='{'?'}':']');
+    else if(ch==='}'||ch===']')stack.pop();
+    out+=ch;
+  }
+  if(esc)out=out.slice(0,-1);
+  if(inStr)out+='"';
+  out=out.replace(/,\s*$/,'');
+  while(stack.length)out+=stack.pop();
+  return out.replace(/,(\s*[}\]])/g,'$1');
+}
 function looseJSON(t){
+  t=String(t||'').trim();
   try{return JSON.parse(t);}catch(e){}
-  const m=t.match(/```(?:json)?\s*([\s\S]*?)```/);if(m){try{return JSON.parse(m[1]);}catch(e){}}
-  const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1));}catch(e){}}
-  throw {code:'invalid_json'};
+  const m=t.match(/```(?:json)?\s*([\s\S]*?)(?:```|$)/);if(m){const s=m[1].trim();try{return JSON.parse(s);}catch(e){}try{return JSON.parse(mendJSON(s));}catch(e){}}
+  const a=t.indexOf('{'),b=t.lastIndexOf('}');
+  if(a>=0){const s=b>a?t.slice(a,b+1):t.slice(a);try{return JSON.parse(s);}catch(e){}try{return JSON.parse(mendJSON(s));}catch(e){}try{return JSON.parse(mendJSON(t.slice(a)));}catch(e){}}
+  throw {code:'invalid_json',raw:t};
+}
+// the coach's answer: JSON when possible; otherwise pull the reply out of whatever came back
+function coachParse(t){
+  t=String(t||'').trim();
+  if(!t)throw {code:'empty'};
+  try{const o=looseJSON(t);if(o&&typeof o==='object'&&(o.reply||o.text||o.answer||Array.isArray(o.actions)))return o;}catch(e){}
+  const m=t.match(/"(?:reply|text|answer)"\s*:\s*"((?:[^"\\]|\\.)*)/);
+  if(m){let r=m[1];try{r=JSON.parse('"'+r.replace(/\n/g,'\\n')+'"');}catch(e){r=r.replace(/\\n/g,'\n').replace(/\\"/g,'"');}return {reply:r.trim(),actions:[]};}
+  if(/^[{\[]/.test(t))throw {code:'invalid_json',raw:t};
+  return {reply:t.replace(/^```\w*\s*|```$/g,'').trim(),actions:[]};
 }
 async function analyze(blob,hint,signal){
   const eng=foodEngine();
@@ -3382,6 +3468,7 @@ const FOOD_ERR={
   sampling_disabled:'Распознавание через Claude сейчас недоступно для вашего аккаунта.',
   image_rejected:'Не получилось прочитать фото. Попробуйте другой снимок.',
   invalid_json:'Ответ пришёл в неожиданном виде. Попробуйте ещё раз.',
+  empty:'Модель вернула пустой ответ. Отправьте ещё раз или переформулируйте вопрос.',
   api_401:'Ключ API не подошёл. Проверьте его в настройках ниже.',
   api_429:'Лимит запросов по ключу API. Подождите и попробуйте снова.',
   api_400:'Сервер не принял фото. Попробуйте другой снимок.',
@@ -3416,7 +3503,7 @@ function saveMeal(m){
   const k=UI.date,d=ensureDay(k);if(!d.meals)d.meals=[];
   d.meals.push(Object.assign({id:uid(),at:Date.now()},m));
   persistDay(k);
-  FOOD.stage='idle';FOOD.res=null;FOOD.thumb='';FOOD.blob=null;FOOD.hint='';FOOD.manual=false;
+  FOOD.stage='idle';FOOD.res=null;FOOD.thumb='';FOOD.blob=null;FOOD.hint='';FOOD.manual=false;FOOD.text='';
   render();toast('Добавлено: '+m.name+' — '+r0(m.kcal)+' ккал');
 }
 function addFromResult(){
@@ -3438,21 +3525,25 @@ function foodView(){
     '<div class="macros"><span><b>'+r0(t.p)+'</b> г белки</span><span><b>'+r0(t.f)+'</b> г жиры</span><span><b>'+r0(t.c)+'</b> г углеводы</span></div>'+
     (hasGoal?'<p class="cap">Норма по цели: '+num(prof().kcal)+' ккал · Б '+prof().p+' · Ж '+prof().f+' · У '+prof().c+'</p>':'<div class="goalrow"><span class="cap">Норма в день</span><div class="mstep"><button data-fgoal="-100" aria-label="Меньше">−</button><input id="foodGoal" class="fgoal" inputmode="numeric" value="'+goal+'" aria-label="Норма калорий в день"><button data-fgoal="100" aria-label="Больше">+</button></div></div><p class="cap">Поставьте цель во вкладке «Тренировка» — норма посчитается сама.</p>')+
     '</section>';
+  h+=adaptCard();
   // capture / analysis
   if(FOOD.stage==='busy'){
-    h+='<section class="card glass fcard"><div class="frow">'+(FOOD.thumb?'<img class="fthumb" src="'+FOOD.thumb+'" alt="">':'')+'<div class="fbusy"><span class="spin" aria-hidden="true"></span>Смотрю на фото и считаю калории…</div></div><button class="ghost glass press" data-food="stop">Остановить</button></section>';
+    h+='<section class="card glass fcard"><div class="frow">'+(FOOD.thumb?'<img class="fthumb" src="'+FOOD.thumb+'" alt="">':'')+'<div class="fbusy"><span class="spin" aria-hidden="true"></span>'+(FOOD.blob?'Смотрю на фото и считаю калории…':'Считаю калории и БЖУ…')+'</div></div><button class="ghost glass press" data-food="stop">Остановить</button></section>';
   }else if(FOOD.stage==='result'&&FOOD.res){
     const res=FOOD.res,tt=resTotals(res);
-    h+='<section class="card glass fcard"><div class="frow"><img class="fthumb" src="'+FOOD.thumb+'" alt=""><div class="fhead"><input id="foodDish" class="fdish" value="'+esc(res.dish)+'" aria-label="Название блюда">'+
+    h+='<section class="card glass fcard"><div class="frow">'+(FOOD.thumb?'<img class="fthumb" src="'+FOOD.thumb+'" alt="">':'<span class="fthumb mph" aria-hidden="true">'+(res.src==='local'?'100<small>г</small>':'ИИ')+'</span>')+'<div class="fhead"><input id="foodDish" class="fdish" value="'+esc(res.dish)+'" aria-label="Название блюда">'+
       (res.conf?'<span class="conf c-'+(res.conf.indexOf('выс')===0?'hi':res.conf.indexOf('низ')===0?'lo':'mid')+'">точность: '+esc(res.conf)+'</span>':'')+'</div></div>'+
       '<div class="fitems">'+res.items.map((i,n)=>'<div class="fitem"><span class="fname">'+esc(i.name)+'</span><div class="mstep sm"><button data-fstep="'+n+'|-10" aria-label="Меньше">−</button><input class="fgr" data-fi="'+n+'" inputmode="numeric" value="'+r0(i.grams)+'" aria-label="Граммы: '+esc(i.name)+'"><button data-fstep="'+n+'|10" aria-label="Больше">+</button></div><span class="fk" id="fk-'+n+'">'+r0(i.k*i.grams)+' ккал</span></div>').join('')+'</div>'+
       '<div class="ftot" id="foodTot">'+totLine(tt)+'</div>'+
       (res.note?'<p class="cap">'+esc(res.note)+'</p>':'')+
-      '<div class="duo"><button class="log tint press" data-food="add">Добавить в дневник</button><button class="ghost glass press" data-food="retry">Пересчитать</button></div><button class="rm" data-food="cancel" style="justify-self:center">Отмена</button>'+
-      '<p class="cap">Оценка по фото приблизительная: ошибка 15–30%. Поправьте граммы, если знаете вес.</p></section>';
+      '<div class="duo"><button class="log tint press" data-food="add">Добавить в дневник</button>'+(FOOD.blob||res.src==='ai'||aiEngine(false)?'<button class="ghost glass press" data-food="retry">'+(res.src==='local'?'Посчитать ИИ':'Пересчитать')+'</button>':'<button class="ghost glass press" data-food="cancel">Отмена</button>')+'</div>'+
+      (FOOD.blob||res.src==='ai'||aiEngine(false)?'<button class="rm" data-food="cancel" style="justify-self:center">Отмена</button>':'')+
+      (FOOD.blob?'<p class="cap">Оценка по фото приблизительная: ошибка 15–30%. Поправьте граммы, если знаете вес.</p>':'')+'</section>';
   }else{
     const eng=foodEngine();
-    h+='<section class="card glass fcard"><h2 class="sec">Блюдо по фото</h2>'+
+    h+='<section class="card glass fcard"><h2 class="sec">Добавить еду</h2>'+
+      '<form class="ftext" id="foodTextForm"><input id="foodText" class="fhint" enterkeyhint="done" autocomplete="off" placeholder="Напишите: гречка 200 г, курица 150 г" value="'+esc(FOOD.text||'')+'" aria-label="Что вы съели"><button class="log tint press" type="submit">Посчитать</button></form>'+
+      '<p class="cap">Калории и БЖУ посчитаются сами по названию и весу. Вес можно не писать — возьму обычную порцию.</p><div class="ordiv"><span>или по фото</span></div>'+
       '<div class="duo"><label class="log tint press filebtn">'+CAM+'Снять фото<input type="file" id="foodCam" class="vh" accept="image/*" capture="environment"></label><label class="ghost glass press filebtn">Из галереи<input type="file" id="foodPick" class="vh" accept="image/*"></label></div>'+
       '<input id="foodHint" class="fhint" placeholder="Уточнение: 300 г, без соуса" value="'+esc(FOOD.hint)+'" aria-label="Уточнение к фото">'+
       (FOOD.stage==='error'?'<p class="ferr">'+esc(FOOD.err)+'</p>'+(FOOD.blob?'<button class="ghost glass press" data-food="retry">Попробовать снова</button>':''):'')+
@@ -3466,16 +3557,16 @@ function foodView(){
     return '<div class="meal">'+(m.thumb?'<img class="mthumb" src="'+m.thumb+'" alt="">':'<span class="mthumb mph" aria-hidden="true">'+(m.src==='coach'?COACH_ICO:CAM)+'</span>')+
       '<div class="minfo"><b>'+esc(m.name)+'</b><span>'+pad(tm.getHours())+':'+pad(tm.getMinutes())+(m.src==='coach'?' · тренер':'')+' · Б '+r0(m.p)+' · Ж '+r0(m.f)+' · У '+r0(m.c)+'</span></div>'+
       '<span class="mk">'+num(r0(m.kcal))+'<small> ккал</small></span><button class="xdel" data-meal="'+m.id+'" aria-label="Удалить: '+esc(m.name)+'">×</button></div>';}).join('')+'</div>'
-    :'<p class="empty" style="margin:0 6px">Пока ничего. Сфотографируйте тарелку, и блюдо появится здесь с калориями и БЖУ.</p>';
+    :'<p class="empty" style="margin:0 6px">Пока ничего. Напишите блюдо с весом или сфотографируйте тарелку — калории и БЖУ посчитаются сами.</p>';
   h+='</section>';
   if(!(SAMPLE&&SAMPLE_IMG))h+=keyBlock();
   return h;
 }
 function totLine(t){return '<b>'+num(r0(t.kcal))+' ккал</b><span>Б '+r0(t.p)+' г · Ж '+r0(t.f)+' г · У '+r0(t.c)+' г</span>';}
 function manualForm(){
-  return '<form class="mform" id="mealForm"><input id="mName" placeholder="Блюдо" maxlength="80" aria-label="Блюдо"><input id="mKcal" inputmode="numeric" placeholder="ккал" aria-label="Калории">'+
-    '<input id="mP" inputmode="numeric" placeholder="Б, г" aria-label="Белки"><input id="mF" inputmode="numeric" placeholder="Ж, г" aria-label="Жиры"><input id="mC" inputmode="numeric" placeholder="У, г" aria-label="Углеводы">'+
-    '<button class="log tint press" type="submit">Добавить</button><button class="rm" type="button" data-food="nomanual">Отмена</button></form>';
+  const f=(id,lab,ph,cls)=>'<label class="mf'+(cls?' '+cls:'')+'"><span>'+lab+'</span><input id="'+id+'" inputmode="'+(id==='mName'?'text':'decimal')+'" placeholder="'+ph+'"'+(id==='mName'?' maxlength="80"':'')+'></label>';
+  return '<form class="mform" id="mealForm">'+f('mName','Блюдо','например, гречка','w2')+f('mG','Вес, г','200','')+f('mKcal','Ккал','—','w3')+f('mP','Белки, г','—','')+f('mF','Жиры, г','—','')+f('mC','Углев., г','—','')+
+    '<p class="cap mauto" id="mAuto" aria-live="polite">Впишите блюдо и вес — остальное заполнится само.</p><button class="log tint press" type="submit">Добавить</button><button class="rm" type="button" data-food="nomanual">Отмена</button></form>';
 }
 function keyBlock(){return aiBlock();}
 function updateFoodTotals(){
@@ -3493,8 +3584,9 @@ function setGoal(v){
 function foodClick(ds){
   if(ds.food==='stop'){if(FOOD.ctl)FOOD.ctl.abort();return true;}
   if(ds.food==='add'){addFromResult();return true;}
-  if(ds.food==='retry'){runAnalysis();return true;}
-  if(ds.food==='cancel'){FOOD.stage='idle';FOOD.res=null;FOOD.thumb='';FOOD.blob=null;renderMain();return true;}
+  if(ds.food==='retry'){if(FOOD.blob)runAnalysis();else foodFromText(FOOD.text,true);return true;}
+  if(ds.food==='mai'){manualAI();return true;}
+  if(ds.food==='cancel'){FOOD.stage='idle';FOOD.res=null;FOOD.thumb='';FOOD.blob=null;FOOD.text='';renderMain();return true;}
   if(ds.food==='manual'){FOOD.manual=true;renderMain();const i=$('mName');if(i)i.focus();return true;}
   if(ds.food==='nomanual'){FOOD.manual=false;renderMain();return true;}
   if(ds.food==='keyedit'){FOOD.keyEdit=true;renderMain();return true;}
@@ -3908,6 +4000,7 @@ if(window.__COACH)COACH.msgs=window.__COACH;
 function saveCoach(){if(window.__COACH)return;lsSet(COACH_LS,JSON.stringify({msgs:COACH.msgs.slice(-60)}));}
 const AI_ERR={net_ds:'Не удалось связаться с DeepSeek. Если интернет работает, значит DeepSeek не принимает запросы прямо из браузера, и понадобится сервер-посредник.',
   net:'Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.',
+  empty:'Модель вернула пустой ответ. Отправьте ещё раз или переформулируйте вопрос.',
   api_402:'На балансе DeepSeek закончились деньги. Пополните его на platform.deepseek.com.',
   api_401:'Ключ API не подошёл. Проверьте его в настройках ИИ.',
   api_429:'Слишком много запросов. Подождите минуту и попробуйте снова.',
@@ -3928,6 +4021,8 @@ function coachEquips(pr){
 function coachContext(){
   const t=todayKey(),pr=prof(),L=[];
   L.push('Сегодня '+t+' ('+wdOf(t)+'). В приложении открыт день '+UI.date+'.');
+  const wl=wkContextLine();if(wl)L.push(wl);
+  try{const ad=adaptInfo();if(ad&&ad.ok)L.push('По фактическим данным за 4 недели: среднее потребление '+ad.intake+' ккал, вес '+ad.week+' кг/нед, расход ≈ '+ad.tdee+' ккал; подходящая норма ≈ '+ad.target+' ккал.');}catch(e){}
   if(pr&&pr.accepted){
     L.push('Цель: '+GOALS[pr.goal].name+(pr.area&&DIR[pr.area]?' — '+DIR[pr.area].name:'')+'. Пол '+(pr.sex==='f'?'женский':'мужской')+', '+pr.age+' лет, рост '+pr.height+' см. Вес на старте '+pr.weight+' кг, сейчас '+curWeight(pr)+' кг, цель '+pr.target+' кг к '+pr.end+'.');
     L.push('Норма: '+pr.kcal+' ккал, белки '+pr.p+' г, жиры '+pr.f+' г, углеводы '+pr.c+' г.');
@@ -4010,7 +4105,7 @@ const COACH_OPTS={
        ['long','Подробно','Можно отвечать развёрнуто: объясняй, почему так, давай варианты.']],
   emoji:[['no','Без эмодзи','Без эмодзи.'],['few','Немного','Можно одно эмодзи на ответ, если к месту.']]
 };
-function coachCfg(){return Object.assign({tone:'vy',style:'soft',len:'mid',emoji:'no',name:'',notes:'',prompt:''},S.config.coach||{});}
+function coachCfg(){return Object.assign({tone:'vy',style:'soft',len:'mid',emoji:'no',name:'',notes:'',prompt:'',voice:'off'},S.config.coach||{});}
 let coachTimer=null;
 function setCoachCfg(patch,now){S.config.coach=Object.assign(coachCfg(),patch);clearTimeout(coachTimer);if(now)persistConfig();else coachTimer=setTimeout(persistConfig,700);}
 function optText(key,val){const o=COACH_OPTS[key].find(x=>x[0]===val)||COACH_OPTS[key][0];return o[2];}
@@ -4030,7 +4125,9 @@ function coachSettings(){
   const custom=!!c.prompt.trim(),pd=COACH.pdraft!=null?COACH.pdraft:(c.prompt.trim()||COACH_DEFAULT);
   let h='<section class="card glass cset"><h2 class="sec">Общение</h2>'+
     '<label class="sfield"><span class="flab">Как к вам обращаться</span><input id="cName" class="fhint" maxlength="40" placeholder="Имя, необязательно" value="'+esc(c.name)+'"></label>'+
-    seg('tone','Обращение')+seg('style','Характер')+seg('len','Длина ответов')+seg('emoji','Эмодзи')+'</section>'+
+    seg('tone','Обращение')+seg('style','Характер')+seg('len','Длина ответов')+seg('emoji','Эмодзи')+
+    '<div class="sfield"><span class="flab">Голос</span><div class="seg2"><button data-cset="voice|on" aria-pressed="'+(c.voice==='on')+'">Читать ответы вслух</button><button data-cset="voice|off" aria-pressed="'+(c.voice!=='on')+'">Только текст</button></div></div>'+
+    '<p class="cap">'+(SR?'Микрофон в поле сообщения: скажите вопрос — он отправится сам.':'Голосовой ввод: нажмите микрофон на клавиатуре телефона.')+'</p></section>'+
     '<section class="card glass cset"><h2 class="sec">О себе для тренера</h2>'+
     '<p class="cap">Это тренер учитывает в каждом ответе. Травмы, что не любите, сколько времени на тренировку, режим и привычки в еде.</p>'+
     '<textarea id="cNotes" class="cta" rows="4" maxlength="1500" placeholder="Например: побаливает левое колено, не люблю бег, на тренировку 45 минут, ем 3 раза в день, вечером тяжело без сладкого.">'+esc(c.notes)+'</textarea></section>'+
@@ -4123,20 +4220,21 @@ async function coachSend(text){
   const ctl=new AbortController();COACH.ctl=ctl;
   try{
     const sys=coachSystem(),hist=chatHistory();let o;
-    if(eng==='ds')o=looseJSON(await dsCall({max_tokens:1500,response_format:{type:'json_object'},messages:[{role:'system',content:sys}].concat(hist)},ctl.signal));
-    else if(eng==='api')o=looseJSON(await anthCall({system:sys,messages:hist},ctl.signal));
-    else o=await SAMPLE.json(sys+'\n\nПереписка (последнее сообщение — от пользователя, ответь на него):\n'+hist.map(m=>(m.role==='user'?'Пользователь: ':'Тренер: ')+m.content).join('\n\n'),{signal:ctl.signal});
+    if(eng==='ds')o=coachParse(await dsCall({max_tokens:3000,response_format:{type:'json_object'},messages:[{role:'system',content:sys}].concat(hist)},ctl.signal));
+    else if(eng==='api')o=coachParse(await anthCall({system:sys,messages:hist,max_tokens:3000},ctl.signal));
+    else o=coachParse(((await SAMPLE(sys+'\n\nПереписка (последнее сообщение — от пользователя, ответь на него):\n'+hist.map(m=>(m.role==='user'?'Пользователь: ':'Тренер: ')+m.content).join('\n\n'),{signal:ctl.signal,cache:false}))||{}).text);
     if(COACH.ctl!==ctl)return;
     const reply=String((o&&(o.reply||o.text||o.answer))||'').trim();
     const res=applyCoachActions(o&&o.actions);
     COACH.msgs.push({role:'assistant',text:(reply||'Готово.').slice(0,4000),at:Date.now(),acts:res.acts,undo:res.undo,skipped:res.skipped.length?res.skipped:undefined});
+    if(coachCfg().voice==='on')speak(plainSpeech(reply),true);
   }catch(e){
     if(COACH.ctl!==ctl)return;
     if(!(e&&(e.name==='AbortError'||e.code==='cancelled')))COACH.err=(e&&e.code)||'x';
   }
   COACH.busy=false;COACH.ctl=null;saveCoach();render();scrollCoach();
 }
-function scrollCoach(){if(UI.tab!=='coach')return;setTimeout(()=>{try{window.scrollTo({top:document.documentElement.scrollHeight,behavior:'smooth'});}catch(e){}},30);}
+function scrollCoach(){if(UI.tab==='workout'){setTimeout(()=>{const m=$('wkMsgs');if(m)m.scrollTop=m.scrollHeight;},30);return;}if(UI.tab!=='coach')return;setTimeout(()=>{try{window.scrollTo({top:document.documentElement.scrollHeight,behavior:'smooth'});}catch(e){}},30);}
 function fmtReply(s){
   const lines=esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').split('\n');let h='',inList=false;
   lines.forEach(l=>{const m=l.match(/^\s*(?:[-•*]|\d+[.)])\s+(.*)$/);
@@ -4156,7 +4254,14 @@ function coachView(){
     h+='<p class="cintro">Спросите про технику, замену упражнения, питание или прогресс. Тренер видит вашу цель, план, отмеченные подходы и еду за день. Если попросите, он поменяет упражнения в плане, а если напишете, что съели, — запишет блюдо в «Питание».</p>'+
       '<div class="csug">'+COACH_SUG.map(s=>'<button class="press" data-csug="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>';
   }
-  COACH.msgs.forEach((m,i)=>{
+  h+=chatItems(0);
+  if(COACH.msgs.length&&!COACH.busy)h+='<div class="cclear"><button class="rm" data-coach="clear">'+(COACH.armClear?'Точно очистить переписку?':'Очистить переписку')+'</button></div>';
+  h+='</div><div class="cspace" aria-hidden="true"></div>'+composerHTML();
+  return h;
+}
+function chatItems(from){
+  let h='';
+  COACH.msgs.forEach((m,i)=>{if(i<from)return;
     if(m.role==='user'){h+='<div class="msg me"><div class="bub">'+esc(m.text).replace(/\n/g,'<br>')+'</div></div>';return;}
     h+='<div class="msg bot"><div class="bub">'+fmtReply(m.text)+
       (m.acts&&m.acts.length?'<div class="cacts">'+m.acts.map(a=>'<span'+(m.undone?' class="off"':'')+'>'+(m.undone?'':'✓ ')+esc(a.label)+'</span>').join('')+
@@ -4166,11 +4271,11 @@ function coachView(){
   });
   if(COACH.busy)h+='<div class="msg bot"><div class="bub typing" aria-label="Тренер печатает"><i></i><i></i><i></i></div></div>';
   if(COACH.err)h+='<p class="ferr">'+esc(AI_ERR[COACH.err]||'Не получилось получить ответ. Попробуйте ещё раз.')+'</p>';
-  if(COACH.msgs.length&&!COACH.busy)h+='<div class="cclear"><button class="rm" data-coach="clear">'+(COACH.armClear?'Точно очистить переписку?':'Очистить переписку')+'</button></div>';
-  h+='</div><div class="cspace" aria-hidden="true"></div>'+
-    '<form class="composer glass" id="coachForm"><textarea id="coachIn" rows="1" maxlength="2000" placeholder="Спросите тренера…" aria-label="Сообщение тренеру">'+esc(COACH.draft)+'</textarea>'+
-    '<button class="send tint press" type="submit" aria-label="Отправить"'+(COACH.busy?' disabled':'')+'>'+SEND_ICO+'</button></form>';
   return h;
+}
+function composerHTML(){
+  return '<form class="composer glass" id="coachForm">'+micBtn()+'<textarea id="coachIn" rows="1" maxlength="2000" placeholder="'+(MIC.on?'Говорите…':'Спросите тренера…')+'" aria-label="Сообщение тренеру">'+esc(COACH.draft)+'</textarea>'+
+    '<button class="send tint press" type="submit" aria-label="Отправить"'+(COACH.busy?' disabled':'')+'>'+SEND_ICO+'</button></form>';
 }
 function coachClick(ds){
   if(ds.csug){coachSend(ds.csug);return true;}
@@ -4189,7 +4294,7 @@ function sizeCoachIn(el){el.style.height='auto';el.style.height=Math.min(120,el.
 // iPhone: while typing, the composer follows the top edge of the keyboard and the tab bar steps aside
 const TOUCH=!!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches);
 function kbSync(){
-  const ae=document.activeElement,typing=TOUCH&&!!(ae&&ae.id==='coachIn'),f=$('coachForm'),vv=window.visualViewport;
+  const ae=document.activeElement,typing=TOUCH&&!!(ae&&ae.id==='coachIn'),f0=$('coachForm'),f=f0&&((f0.closest&&f0.closest('.wksheet'))||f0),vv=window.visualViewport;
   const bc=String(document.body.className||'');if(/\bkb\b/.test(bc)!==typing)document.body.className=bc.replace(/\s*\bkb\b/g,'')+(typing?' kb':'');
   if(!f)return;
   if(typing&&vv){const top=vv.offsetTop+vv.height-f.offsetHeight-8;f.style.top=Math.max(vv.offsetTop+8,top)+'px';f.style.bottom='auto';}
@@ -4209,7 +4314,7 @@ document.addEventListener('submit',e=>{if(e.target&&e.target.id==='coachForm'){e
 
 /* ---------- home screen (coach), workout mode with timers, settings, first run ---------- */
 const WK={i:0,rest:null,tm:null,started:0,tech:false};
-function trainCfg(){return Object.assign({rest:90,sound:true},S.config.train||{});}
+function trainCfg(){return Object.assign({rest:90,sound:true,voice:true,restMode:'auto'},S.config.train||{});}
 function clock(s){s=Math.max(0,Math.round(s));const m=Math.floor(s/60),r=s%60;return m+':'+pad(r);}
 let ACtx=null;
 function audioInit(){try{ACtx=ACtx||new (window.AudioContext||window.webkitAudioContext)();if(ACtx.state==='suspended')ACtx.resume();}catch(e){}}
@@ -4265,15 +4370,18 @@ function startWorkout(){
   audioInit();UI.date=todayKey();UI.prevTab=UI.tab==='workout'?UI.prevTab:UI.tab;UI.tab='workout';
   if(!WK.started)WK.started=Date.now();WK.i=wkFirstOpen();WK.tm=null;WK.tech=false;
   render();window.scrollTo({top:0});startTick();
+  speakNext('Начинаем.');
 }
 function wkEx(){const pl=wkPlan();if(!pl.length)return null;WK.i=Math.max(0,Math.min(WK.i,pl.length-1));const p=pl[WK.i];return {p:p,ex:getEx(p.ex)||{id:p.ex,name:p.n,dir:p.dir,kind:p.k,tu:p.tu||'s',eq:'',def:KDEF[p.k]||KDEF.reps}};}
 function wkAfterSet(){
   const t=todayKey(),pl=wkPlan(),cur=pl[WK.i];if(!cur)return;
   const all=pl.every(p=>setsOf(t,p.ex)>=(p.goal||1));
   if(setsOf(t,cur.ex)>=(cur.goal||1)){const j=pl.findIndex((p,ix)=>ix>WK.i&&setsOf(t,p.ex)<(p.goal||1)),k=j<0?pl.findIndex(p=>setsOf(t,p.ex)<(p.goal||1)):j;if(k>=0)WK.i=k;}
-  WK.tm=null;
-  if(!all){const ex=wkEx().ex,sec=ex.kind==='time'||ex.dir==='mobility'?Math.min(trainCfg().rest,45):trainCfg().rest;WK.rest={end:Date.now()+sec*1000,total:sec};}
-  else WK.rest=null;
+  WK.tm=null;WK.rest=null;
+  const moved=pl[WK.i]&&pl[WK.i].ex!==cur.ex,tc=trainCfg();
+  if(all){speak('Тренировка завершена. Отличная работа!');renderMain();return;}
+  if(tc.restMode==='auto'){const sec=restSecFor(wkEx().ex);WK.rest={end:Date.now()+sec*1000,total:sec,warn:false};speak((moved?'Упражнение готово. ':'')+'Отдых '+(sec%60?sec+' секунд':sec/60+' '+plural(sec/60,['минута','минуты','минут'])));}
+  else speakNext(moved?'Следующее упражнение.':'');
   renderMain();startTick();
 }
 function wkDone(){const w=wkEx();if(!w)return;UI.date=todayKey();const before=setsOf(UI.date,w.ex.id);logSet(w.ex.id);if(setsOf(UI.date,w.ex.id)>before)wkAfterSet();}
@@ -4285,10 +4393,11 @@ function wkTick(){
   const now=Date.now(),e=$('wkElapsed');if(e&&WK.started)e.textContent=clock((now-WK.started)/1000);
   if(WK.rest){const left=Math.max(0,(WK.rest.end-now)/1000),r=$('wkRestT'),g=$('wkRestRing');
     if(r)r.textContent=clock(Math.ceil(left));if(g)g.style.setProperty('--pct',String(Math.round((1-left/WK.rest.total)*100)));
-    if(left<=0){WK.rest=null;beep(2);renderMain();}}
+    if(left<=10.2&&!WK.rest.warn&&WK.rest.total>20){WK.rest.warn=true;speak('Десять секунд');}
+    if(left<=0){WK.rest=null;beep(2);renderMain();speakNext('Отдых окончен.');}}
   if(WK.tm&&WK.tm.running){const el=(WK.tm.acc+now-WK.tm.start)/1000,c=$('wkClock'),g=$('wkClockRing');
     if(WK.tm.mode==='down'){const left=Math.max(0,WK.tm.target-el);if(c)c.textContent=clock(Math.ceil(left));if(g)g.style.setProperty('--pct',String(Math.round(Math.min(1,el/WK.tm.target)*100)));
-      if(left<=0){WK.tm.running=false;beep(3);wkLogTime(WK.tm.target);}}
+      if(left<=0){WK.tm.running=false;beep(3);speak('Время!');wkLogTime(WK.tm.target);}}
     else{if(c)c.textContent=clock(el);if(g)g.style.setProperty('--pct',String(Math.round((el%60)/60*100)));const sv=$('wkSave');if(sv){sv.textContent='Записать '+clock(el);sv.disabled=false;}}}
 }
 function wkTimerPanel(ex){
@@ -4306,14 +4415,19 @@ function wkView(){
   if(!pl.length)return '<section class="card glass today"><div class="thead"><div><span class="tlab">Тренировка</span><b>На сегодня упражнений нет</b><i>Соберите тренировку в «Расписании»</i></div></div><div class="duo"><button class="log tint press" data-goto="day" data-build="1">Собрать</button><button class="ghost glass press" data-wk="exit">К тренеру</button></div></section>';
   const goal=pl.reduce((a,p)=>a+(p.goal||0),0),done=pl.reduce((a,p)=>a+Math.min(p.goal||0,setsOf(t,p.ex)),0),all=goal>0&&done>=goal;
   const w=wkEx(),p=w.p,ex=w.ex,n=setsOf(t,ex.id),g=p.goal||1;
-  let h='<div class="wkbar"><div class="wkprog"><i style="width:'+(goal?Math.round(done/goal*100):0)+'%"></i></div><span>'+done+' из '+goal+' подходов · <b id="wkElapsed">'+clock(WK.started?(Date.now()-WK.started)/1000:0)+'</b></span></div>';
+  const tcf=trainCfg();
+  let h='<div class="wkbar"><div class="wkprog"><i style="width:'+(goal?Math.round(done/goal*100):0)+'%"></i></div><span>'+done+' из '+goal+' подходов · <b id="wkElapsed">'+clock(WK.started?(Date.now()-WK.started)/1000:0)+'</b></span>'+
+    '<span class="wkbtns"><button class="wkrbtn press" data-wk="rcfg" aria-expanded="'+!!WK.rcfg+'" aria-label="Настройки отдыха и голоса">⏱ '+esc(restLabel(tcf))+'</button><button class="wkrbtn wkcbtn press" data-wk="chat" aria-expanded="'+!!WK.chat+'">'+COACH_ICO+'Тренер</button></span></div>'+(WK.rcfg?wkRestCfg():'');
+  const chatUI=WK.chat?wkChatSheet():'';
   h+='<div class="chipscroll wkstrip" role="group" aria-label="Упражнения">'+pl.map((q,i)=>{const m=setsOf(t,q.ex),ok=m>=(q.goal||1);
     return '<button class="wkchip glass press'+(i===WK.i?' on':'')+(ok?' ok':'')+'" data-wki="'+i+'"><b>'+(ok?'✓ ':'')+esc(q.n)+'</b><i>'+m+'/'+(q.goal||0)+'</i></button>';}).join('')+'</div>';
   if(all&&!WK.rest){
     const secs=WK.started?(Date.now()-WK.started)/1000:0;
-    return h+'<section class="card glass wkfin"><span class="cava big">'+COACH_ICO+'</span><b>Тренировка завершена!</b><span>'+done+' '+plural(done,PODH)+' · '+clock(secs)+'</span><p class="cap">Запишите самочувствие тренеру — он учтёт его в следующих тренировках.</p><div class="duo"><button class="log tint press" data-wk="finish">К тренеру</button><button class="ghost glass press" data-wk="more">Ещё подход</button></div></section>';
+    const prs=daySets(t).filter(s=>s.pr).length;
+    return h+'<section class="card glass wkfin"><span class="cava big">'+COACH_ICO+'</span><b>Тренировка завершена!</b><span>'+done+' '+plural(done,PODH)+' · '+clock(secs)+(prs?' · '+prs+' '+plural(prs,['рекорд','рекорда','рекордов']):'')+'</span><p class="cap">Запишите самочувствие тренеру — он учтёт его в следующих тренировках.</p><div class="duo"><button class="log tint press" data-wk="finish">К тренеру</button><button class="ghost glass press" data-wk="more">Ещё подход</button></div></section>'+chatUI;
   }
-  h+='<section class="card glass wkcard"><div class="wkhead">'+eqImg(ex)+'<div><b>'+esc(ex.name)+'</b><span>Подход '+Math.min(n+1,g)+(n>=g?' (сверх плана)':'')+' из '+g+' · '+esc(goalTxt(p))+'</span></div></div>';
+  const sg=applySuggestion(ex,p);
+  h+='<section class="card glass wkcard"><div class="wkhead">'+eqImg(ex)+'<div><b>'+esc(ex.name)+'</b><span>Подход '+Math.min(n+1,g)+(n>=g?' (сверх плана)':'')+' из '+g+' · '+esc(goalTxt(p))+'</span></div></div>'+(sg&&!WK.rest&&!n?'<p class="wksug '+sg.kind+'">'+esc(sg.txt)+'</p>':'');
   if(WK.rest){
     const left=Math.max(0,(WK.rest.end-Date.now())/1000);
     h+='<div class="wkrest"><div class="bigring rest" id="wkRestRing" style="--pct:'+Math.round((1-left/WK.rest.total)*100)+'"><div><b id="wkRestT">'+clock(Math.ceil(left))+'</b><span>отдых</span></div></div>'+
@@ -4324,11 +4438,12 @@ function wkView(){
   }else{
     h+='<div class="fields">'+fieldsOf(ex).map(f=>'<div class="field"><label for="in-'+ex.id+'-'+f[0]+'">'+f[1]+'</label><div class="stepper">'+
       '<button data-step="'+ex.id+'|'+f[0]+'|-1" aria-label="Уменьшить">−</button><input id="in-'+ex.id+'-'+f[0]+'" class="num" inputmode="decimal" autocomplete="off" data-ex="'+ex.id+'" data-f="'+f[0]+'" value="'+shown(ex,f[0])+'"><button data-step="'+ex.id+'|'+f[0]+'|1" aria-label="Увеличить">+</button></div></div>').join('')+'</div>'+
-      '<button class="log tint press wide wkgo" data-wk="done">✓ Подход выполнен</button>';
+      '<button class="log tint press wide wkgo" data-wk="done">✓ Подход выполнен</button>'+
+      (tcf.restMode==='manual'?'<button class="ghost glass press wide" data-wk="rstart">⏱ Начать отдых · '+clock(restSecFor(ex))+'</button>':'');
   }
   h+='<button class="rm" data-wk="tech" aria-expanded="'+WK.tech+'" style="justify-self:start">'+(WK.tech?'Скрыть технику':'Показать технику')+'</button>'+(WK.tech?techBlock(ex):'')+'</section>';
   h+='<div class="duo"><button class="ghost glass press" data-wk="prev"'+(WK.i>0?'':' disabled')+'>← Назад</button><button class="ghost glass press" data-wk="next"'+(WK.i<pl.length-1?'':' disabled')+'>Дальше →</button></div>'+
-    '<button class="restore" data-wk="exit">Выйти из тренировки</button>';
+    '<button class="restore" data-wk="exit">Выйти из тренировки</button><div class="wkpad" aria-hidden="true"></div>'+chatUI;
   return h;
 }
 function wkClick(v){
@@ -4338,9 +4453,15 @@ function wkClick(v){
     if(v==='finish'){const t=todayKey(),n=daySets(t).length,secs=WK.started?(now-WK.started)/1000:0,c=coachCfg(),ty=c.tone==='ty';
       COACH.msgs.push({role:'assistant',text:(ty?'Тренировка закрыта: ':'Тренировка закрыта: ')+n+' '+plural(n,PODH)+' за '+clock(secs)+'. '+(ty?'Как самочувствие? Напиши, если что-то было тяжело или болело — подстрою план.':'Как самочувствие? Напишите, если что-то было тяжело или болело — подстрою план.'),at:now});saveCoach();WK.started=0;}
     WK.rest=null;WK.tm=null;UI.tab='coach';render();scrollCoach();return;}
+  if(v==='rcfg'){WK.rcfg=!WK.rcfg;renderMain();return;}
+  if(v==='chat'){WK.chat=!WK.chat;if(WK.chat)WK.rcfg=false;renderMain();if(WK.chat)scrollCoach();return;}
+  if(v.indexOf('rm:')===0){S.config.train=Object.assign(trainCfg(),{restMode:v.slice(3)});persistConfig();if(v.slice(3)!=='auto')WK.rest=null;renderMain();return;}
+  if(v.indexOf('rd:')===0){S.config.train=Object.assign(trainCfg(),{rest:+v.slice(3)});persistConfig();renderMain();return;}
+  if(v.indexOf('vo:')===0){S.config.train=Object.assign(trainCfg(),{voice:v.slice(3)==='1'});persistConfig();renderMain();if(v.slice(3)==='1')speak('Голосовые подсказки включены');return;}
+  if(v==='rstart'){const w0=wkEx();startRest(restSecFor(w0&&w0.ex));return;}
   if(v==='more'){const pl=wkPlan();WK.i=Math.max(0,pl.length-1);WK.rest=null;renderMain();return;}
   if(v==='done'){wkDone();return;}
-  if(v==='rskip'){WK.rest=null;renderMain();return;}
+  if(v==='rskip'){WK.rest=null;renderMain();speakNext('');return;}
   if(v==='r-15'||v==='r+15'){if(WK.rest){WK.rest.end+=(v==='r+15'?15:-15)*1000;WK.rest.total=Math.max(15,WK.rest.total+(v==='r+15'?15:-15));if(WK.rest.end<=now){WK.rest=null;renderMain();}else wkTick();}return;}
   if(v==='prev'||v==='next'){WK.i+=v==='next'?1:-1;WK.rest=null;WK.tm=null;WK.tech=false;renderMain();return;}
   if(v==='tech'){WK.tech=!WK.tech;renderMain();return;}
@@ -4364,11 +4485,13 @@ function settingsView(){
     '<button class="ghost glass press" data-setup="edit">'+(pr&&pr.accepted?'Изменить цель, параметры и расписание':'Поставить цель')+'</button></section>';
   h+='<section class="card glass"><h2 class="sec">Тренировки</h2>'+
     '<div class="sfield"><span class="flab">Отдых между подходами</span><div class="seg2">'+[60,90,120,180].map(s=>'<button data-tset="rest|'+s+'" aria-pressed="'+(tc.rest===s)+'">'+(s<120?s+' с':s/60+' мин')+'</button>').join('')+'</div></div>'+
+    '<div class="sfield"><span class="flab">Таймер отдыха</span><div class="seg2">'+REST_MODES.map(m=>'<button data-tset="restMode|'+m[0]+'" aria-pressed="'+(tc.restMode===m[0])+'">'+m[1]+'</button>').join('')+'</div></div>'+
+    '<div class="sfield"><span class="flab">Голосовые подсказки на тренировке</span><div class="seg2"><button data-tset="voice|1" aria-pressed="'+!!tc.voice+'">Включены</button><button data-tset="voice|0" aria-pressed="'+!tc.voice+'">Выключены</button></div></div>'+
     '<div class="sfield"><span class="flab">Звук и вибрация таймера</span><div class="seg2"><button data-tset="sound|1" aria-pressed="'+tc.sound+'">Включены</button><button data-tset="sound|0" aria-pressed="'+!tc.sound+'">Выключены</button></div></div>'+
     '<button class="ghost glass press" data-rem="1">Напоминание о тренировке'+(S.config.reminder&&S.config.reminder.on?' · включено':'')+'</button></section>';
   return h+coachSettings();
 }
-function setTrain(key,val){S.config.train=Object.assign(trainCfg(),{[key]:key==='rest'?+val:val==='1'});persistConfig();renderMain();}
+function setTrain(key,val){S.config.train=Object.assign(trainCfg(),{[key]:key==='rest'?+val:key==='restMode'?val:val==='1'});persistConfig();renderMain();if(key==='voice'&&val==='1')speak('Голосовые подсказки включены');}
 
 /* first run */
 function needOnboarding(){return !!UI.forceOb||(!S.config.onboarded&&!(prof()&&prof().accepted)&&!S.config.setupSkipped);}
@@ -4448,6 +4571,504 @@ document.addEventListener('touchstart',e=>{const s=e.target&&e.target.closest&&e
 document.addEventListener('touchend',e=>{if(!calTouch||!e.changedTouches||!e.changedTouches[0])return;const dx=e.changedTouches[0].clientX-calTouch.x,dy=e.changedTouches[0].clientY-calTouch.y;calTouch=null;
   if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5)calNav(dx<0?1:-1);},{passive:true});
 
+/* ---------- food table: typical values per 100 g (cooked where people usually weigh it cooked); works offline ---------- */
+// name | other names (comma) | kcal | protein | fat | carbs | usual portion, g | one piece, g (0 — not counted in pieces)
+const FOOD_TXT=`гречка варёная|гречка,гречневая каша,греча|110|4.2|1.1|21.3|200|0
+рис варёный|рис,рисовая каша|116|2.2|0.5|24.9|180|0
+бурый рис варёный|бурый рис|111|2.6|0.9|23|180|0
+овсянка на воде|овсянка,овсяная каша,геркулес,овсяные хлопья варёные|88|3|1.7|15|250|0
+овсянка на молоке|овсянка на молоке,овсяная каша на молоке|102|3.2|4.1|14.2|250|0
+овсяные хлопья сухие|овсяные хлопья,хлопья сухие|366|12|6|60|50|0
+пшённая каша|пшено,пшённая каша|90|3|0.7|17|200|0
+манная каша|манка,манная каша|98|3|3.2|15.3|250|0
+перловка|перловка,перловая каша|109|3.1|0.4|22.2|200|0
+булгур варёный|булгур|83|3.1|0.2|18.6|180|0
+кускус варёный|кускус|112|3.8|0.2|23|180|0
+киноа варёная|киноа|120|4.4|1.9|21.3|180|0
+каша|каша|100|3|2|17|250|0
+макароны варёные|макароны,паста,спагетти,лапша,рожки|130|4.5|0.7|26|200|0
+картофель варёный|картофель,картошка,варёная картошка,картофель в мундире|82|2|0.4|16.7|200|100
+картофельное пюре|пюре,картофельное пюре|90|2|3.3|13.5|200|0
+жареная картошка|жареная картошка,жареный картофель,картошка жареная|192|2.8|9.5|23.4|200|0
+картофель фри|фри,картошка фри,картофель фри|312|3.4|15|41|120|0
+хлеб белый|хлеб,батон,белый хлеб,тост|262|7.6|2.9|51|30|30
+хлеб ржаной|ржаной хлеб,чёрный хлеб,бородинский|210|6.6|1.2|40|30|30
+цельнозерновой хлеб|цельнозерновой хлеб|240|9|3|44|30|30
+лаваш|лаваш|275|9.1|1.1|56|60|60
+хлебцы|хлебцы|300|11|3|57|10|10
+куриная грудка|куриная грудка,куриное филе,филе курицы,грудка,филе грудки|137|29.8|1.8|0|150|0
+курица|курица,курятина,куриное мясо|190|20|12|0|150|0
+куриные бёдра|бедро,бёдра,куриное бедро,окорочок|185|21|11|0|150|120
+куриные крылья|крылья,крылышки|220|19|16|0|150|40
+индейка|индейка,филе индейки|150|28|4|0|150|0
+говядина|говядина,говяжий,телятина|220|25|13|0|150|0
+стейк|стейк|250|26|16|0|200|0
+свинина|свинина,свиной|260|23|19|0|150|0
+фарш|фарш|250|17|20|0|100|0
+котлета|котлета,котлеты|220|15|14|8|100|100
+тефтели|тефтели|190|12|11|10|150|30
+плов|плов|170|6|8|19|300|0
+шашлык|шашлык|230|20|16|0|200|0
+колбаса варёная|колбаса,докторская,варёная колбаса|257|12.8|22.2|1.5|50|20
+колбаса копчёная|копчёная колбаса,сервелат,салями|450|22|40|0|30|10
+сосиски|сосиска,сосиски,сардельки|260|11|23.9|1.6|100|50
+ветчина|ветчина|145|17|7|2|50|20
+бекон|бекон|500|23|45|0|30|10
+печень|печень,печёнка|135|20|4|4|150|0
+лосось|лосось,сёмга,форель,красная рыба|200|20|13|0|150|0
+тунец консервированный|тунец|110|24|1|0|100|0
+треска|треска,минтай,хек,белая рыба|80|18|0.7|0|150|0
+скумбрия|скумбрия|190|18|13|0|150|0
+сельдь|сельдь,селёдка|220|17|17|0|80|0
+креветки|креветки|95|20|1.5|0|100|0
+крабовые палочки|крабовые палочки|90|6|1|15|100|20
+яйцо|яйцо,яйца,варёное яйцо|155|12.7|11.5|0.7|55|55
+яичница|яичница,глазунья|196|13.6|15.3|0.9|110|0
+омлет|омлет|184|9.6|15.4|1.9|150|0
+белок яичный|белок,яичный белок|52|11|0.2|0.7|33|33
+творог 5%|творог|121|17.2|5|1.8|180|0
+творог обезжиренный|обезжиренный творог,творог обезжиренный,творог 0|85|18|0.6|1.8|180|0
+сырники|сырники,сырник|220|15|10|18|150|60
+запеканка творожная|запеканка,творожная запеканка|170|14|6|15|150|0
+молоко|молоко|52|2.8|2.5|4.7|250|0
+кефир|кефир|51|2.8|2.5|4|250|0
+ряженка|ряженка|67|2.9|4|4.2|250|0
+йогурт|йогурт|70|4.3|2.5|7|150|0
+греческий йогурт|греческий йогурт|66|9|2|4|150|0
+сметана|сметана|206|2.8|20|3.2|20|0
+сыр|сыр|360|24|29|0|30|20
+моцарелла|моцарелла|280|22|22|2|30|0
+сливочное масло|сливочное масло,масло сливочное|748|0.5|82.5|0.8|10|0
+растительное масло|масло,оливковое масло,подсолнечное масло,растительное масло|899|0|99.9|0|10|0
+протеин|протеин,протеиновый коктейль,сывороточный протеин|380|75|5|8|30|30
+огурец|огурец,огурцы|15|0.8|0.1|2.8|100|100
+помидор|помидор,помидоры,томат,томаты,черри|20|0.9|0.2|3.7|120|120
+овощной салат|салат,овощной салат,салат из овощей|90|1.2|7|5|200|0
+салат цезарь|цезарь|190|11|13|7|250|0
+оливье|оливье|198|5.5|16.5|7|200|0
+винегрет|винегрет|76|1.6|4.6|7.8|200|0
+капуста|капуста|27|1.8|0.1|4.7|150|0
+брокколи|брокколи|34|2.8|0.4|6.6|150|0
+морковь|морковь,морковка|35|1.3|0.1|6.9|80|80
+кабачок|кабачок,кабачки,цукини|24|0.6|0.3|4.6|150|0
+перец сладкий|перец,болгарский перец|27|1.3|0.1|5.3|100|150
+овощи тушёные|овощи,тушёные овощи,овощное рагу|50|1.5|2.5|6|200|0
+грибы|грибы,шампиньоны|27|4.3|1|0.1|100|0
+фасоль|фасоль|123|7.8|0.5|21.5|150|0
+чечевица|чечевица|116|9|0.4|20|150|0
+нут|нут|164|8.9|2.6|27|150|0
+банан|банан,бананы|96|1.5|0.2|21.8|120|120
+яблоко|яблоко,яблоки|47|0.4|0.4|9.8|160|160
+груша|груша,груши|47|0.4|0.3|10.3|170|170
+апельсин|апельсин,апельсины|43|0.9|0.2|8.1|180|180
+мандарин|мандарин,мандарины|38|0.8|0.2|7.5|70|70
+виноград|виноград|72|0.6|0.6|15.4|150|0
+киви|киви|47|1|0.5|10|75|75
+ягоды|ягоды,клубника,черника,малина,голубика|40|0.8|0.4|8|150|0
+арбуз|арбуз|27|0.6|0.1|5.8|300|0
+авокадо|авокадо|160|2|14.7|1.8|140|140
+финики|финики,финик|280|2.5|0.5|69|30|8
+сухофрукты|сухофрукты,курага,изюм,чернослив|260|3|0.5|62|30|0
+орехи|орехи,грецкие орехи,миндаль,фундук,кешью|610|18|54|13|30|0
+арахис|арахис|550|26|45|10|30|0
+арахисовая паста|арахисовая паста,арахисовое масло|600|25|50|15|20|0
+семечки|семечки|580|21|53|10|30|0
+борщ|борщ|50|2|2.5|5|300|0
+щи|щи|35|1.5|2|3|300|0
+суп|суп,куриный суп,суп с лапшой|40|2.5|1.5|4.5|300|0
+бульон|бульон|15|2|0.5|0.3|300|0
+солянка|солянка|70|4|4.5|3|300|0
+уха|уха|45|5|1.5|2.5|300|0
+пельмени|пельмени|250|11|12|25|200|12
+вареники|вареники|150|4|4|24|200|25
+блины|блин,блины,блинчики|230|6|9|30|150|50
+оладьи|оладьи,оладушки|250|6|11|31|150|40
+пицца|пицца|260|11|10|30|300|110
+бургер|бургер,гамбургер,чизбургер|250|13|12|24|220|220
+шаурма|шаурма,шаверма|220|10|11|20|350|350
+роллы|роллы,суши|150|6|3|25|200|30
+лазанья|лазанья|160|9|8|13|300|0
+голубцы|голубцы|110|7|5|9|250|125
+гречка с мясом|гречка с мясом,гречка с курицей|150|10|5|16|300|0
+макароны по-флотски|макароны по-флотски|190|9|8|20|300|0
+шоколад|шоколад|540|6|31|56|20|5
+печенье|печенье|440|6|17|67|30|12
+мороженое|мороженое,пломбир|200|3.5|11|22|80|80
+торт|торт|380|5|20|45|100|100
+конфета|конфета,конфеты|450|3|20|65|12|12
+мёд|мёд|304|0.3|0|82|20|0
+сахар|сахар|398|0|0|99.8|5|5
+варенье|варенье,джем|270|0.4|0|70|20|0
+круассан|круассан|400|8|21|45|60|60
+булочка|булочка,плюшка|330|8|8|55|70|70
+мюсли|мюсли,гранола|400|10|13|60|50|0
+протеиновый батончик|батончик,протеиновый батончик|350|20|10|40|50|50
+хумус|хумус|250|8|17|14|50|0
+кетчуп|кетчуп|100|1.5|0.2|24|20|0
+майонез|майонез|630|1|67|2.6|15|0
+соус|соус|150|1.5|12|8|30|0
+кофе|кофе,американо,эспрессо|2|0.2|0|0|200|0
+капучино|капучино|40|2|2|3.5|250|0
+латте|латте|45|2.5|2.3|3.7|300|0
+чай|чай|1|0|0|0.2|250|0
+сок|сок|45|0.5|0.1|10|250|0
+кола|кола,газировка,лимонад|42|0|0|10.6|330|0
+пиво|пиво|43|0.5|0|3.6|500|0
+вино|вино,вина|75|0|0|2.6|150|0`;
+const FOODDB=FOOD_TXT.split('\n').map(l=>{const a=l.split('|');return {n:a[0],v:a[1].split(','),k:+a[2],p:+a[3],f:+a[4],c:+a[5],por:+a[6],pc:+a[7]};});
+function fdStem(w){
+  w=normQ(w);
+  for(const s of ['ями','ами','ого','его','ому','ему','ыми','ими','ой','ей','ий','ый','ая','яя','ое','ее','ые','ие','ых','их','ам','ям','ах','ях','ом','ем','ов','ев','ью','а','я','ы','и','у','ю','е','о','ь'])
+    if(w.length>4&&w.endsWith(s))return w.slice(0,-s.length);
+  return w;
+}
+const fdWords=s=>normQ(s).replace(/[^a-zа-я0-9% -]/g,' ').split(/[\s-]+/).filter(Boolean);
+FOODDB.forEach(e=>{e.vs=[e.n].concat(e.v);e.vt=e.vs.map(v=>fdWords(v).map(fdStem));});
+// best food for a text: the variant whose word stems all appear, longest wins
+function fdMatch(text){
+  const tw=fdWords(text);if(!tw.length)return null;
+  let best=null,bs=0;
+  FOODDB.forEach(e=>e.vt.forEach((vt,vi)=>{
+    if(!vt.length||!vt.every(s=>tw.some(w=>w.startsWith(s))))return;
+    const sc=vt.reduce((a,s)=>a+s.length,0)+vt.length*0.5;
+    if(sc>bs){bs=sc;best={e:e,vi:vi};}
+  }));
+  return best;
+}
+const FD_NUM={'один':1,'одна':1,'одно':1,'два':2,'две':2,'три':3,'четыре':4,'пять':5,'шесть':6,'полтора':1.5,'полторы':1.5,'половина':0.5,'половинка':0.5,'пол':0.5};
+// pulls «200 г», «2 шт», «два», «стакан» out of the text; returns grams-or-pieces and the rest of the text
+function fdQty(text){
+  let s=' '+normQ(text)+' ',q=null;
+  const m=s.match(/(\d+(?:[.,]\d+)?)\s*(кг|килограмм\S*|граммов|грамма|грамм|гр\.?|г\.?|мл|литр\S*|л\.?|штук\S*|шт\.?|ломтик\S*|кусоч\S*|кус\S*|ст\.?\s?л\.?|столов\S*\s+ложк\S*|ч\.?\s?л\.?|чайн\S*\s+ложк\S*|ложк\S*|стакан\S*|чашк\S*|кружк\S*|тарелк\S*|порци\S*)?(?=[\s,.;]|$)/);
+  if(m){const n=parseFloat(m[1].replace(',','.')),u=(m[2]||'').replace(/\s+/g,'');q={n:n,u:u};s=s.replace(m[0],' ');}
+  else{const w=s.match(/\s(один|одна|одно|два|две|три|четыре|пять|шесть|полтора|полторы|половина|половинка|пол)\s+/);if(w){q={n:FD_NUM[w[1]],u:'шт'};s=s.replace(w[0],' ');}
+    const u=s.match(/\s(стакан\S*|чашк\S*|кружк\S*|тарелк\S*|порци\S*|ложк\S*|ломтик\S*|кусок|кусочек)\s/);if(u){q={n:q?q.n:1,u:u[1]};s=s.replace(u[0],' ');}}
+  return {q:q,rest:s.trim()};
+}
+function fdGrams(q,e){
+  if(!q)return e.por;
+  const u=q.u,n=q.n;
+  if(/^кг|^килограмм/.test(u))return n*1000;
+  if(/^г|^гр|^грамм/.test(u)||u==='мл')return n;
+  if(/^л|^литр/.test(u))return n*1000;
+  if(/^ст\.?л|^столов/.test(u))return n*15;
+  if(/^ч\.?л|^чайн/.test(u))return n*5;
+  if(/^ложк/.test(u))return n*15;
+  if(/^стакан|^чашк|^кружк/.test(u))return n*250;
+  if(/^тарелк/.test(u))return n*300;
+  if(/^порци/.test(u))return n*e.por;
+  if(/^шт|^штук|^ломтик|^кус/.test(u))return n*(e.pc||e.por);
+  // a bare number: pieces for countable foods, otherwise grams
+  return e.pc&&n<=12?n*e.pc:n<=12?n*e.por:n;
+}
+// «гречка 200 г, куриная грудка 150 г» → items in the same shape as the photo result
+const FD_JOIN=/\s+(?:с|со|и)\s+/;
+function foodLocal(text){
+  const items=[],miss=[];
+  String(text||'').split(/\s*(?:[,;+\n]|\sплюс\s)\s*/).map(x=>x.trim()).filter(Boolean).forEach(seg=>{
+    // a known combined dish as a whole: «гречка с курицей 300 г»
+    const wq=fdQty(seg),wh=fdMatch(wq.rest);
+    if(wh&&/\s(с|со|и)\s/.test(' '+wh.e.vs[wh.vi]+' ')){items.push(fdItem(wh.e,fdGrams(wq.q,wh.e)));return;}
+    const got=seg.split(FD_JOIN).filter(Boolean).map(p=>{const pq=fdQty(p),m=fdMatch(pq.rest);return {txt:p.trim(),q:pq.q,e:m&&m.e};});
+    got.filter(g=>!g.e).forEach(g=>miss.push(g.txt));
+    const ok=got.filter(g=>g.e);if(!ok.length)return;
+    const withQ=ok.filter(g=>g.q),last=ok[ok.length-1];
+    // only the last part has a weight and it is a whole plate: share it by usual portions
+    if(ok.length>1&&withQ.length===1&&withQ[0]===last&&/^(г|гр|грамм|кг)/.test(last.q.u||'г')&&fdGrams(last.q,last.e)>=150&&fdGrams(last.q,last.e)>last.e.por*1.3){
+      const tot=fdGrams(last.q,last.e),sum=ok.reduce((a,g)=>a+g.e.por,0);
+      ok.forEach(g=>items.push(fdItem(g.e,tot*g.e.por/sum)));
+    }else ok.forEach(g=>items.push(fdItem(g.e,fdGrams(g.q,g.e))));
+  });
+  return {items:items,miss:miss};
+}
+function fdItem(e,g){g=Math.max(1,Math.round(g));return {name:e.n,g0:g,grams:g,k:e.k/100,p:e.p/100,f:e.f/100,c:e.c/100};}
+function fdDish(text){
+  const s=String(text||'').replace(/(\d+(?:[.,]\d+)?)\s*(кг|граммов|грамма|грамм|гр|г|мл|л|штук\S*|шт|куск\S*|кусоч\S*|ломтик\S*)\.?(?=[\s,.;]|$)/gi,'').replace(/^\s*\d+\s+/,'').replace(/\s+/g,' ').replace(/\s+([,;])/g,'$1').replace(/[,;\s]+$/,'').trim();
+  return (s.charAt(0).toUpperCase()+s.slice(1)).slice(0,80)||'Блюдо';
+}
+
+/* ---------- progression: what to lift today, records, strength history ---------- */
+const KB_LADDER=[4,6,8,10,12,14,16,20,24,28,32,36,40,44,48];
+function wStep(ex,w){
+  const t=tagsOf(ex);
+  if(t.indexOf('kb')>=0){const nx=KB_LADDER.find(x=>x>w+0.01);return nx?nx-w:4;}
+  if(t.indexOf('bb')>=0)return 2.5;
+  if(t.indexOf('db')>=0)return w<10?1:2;
+  if(t.indexOf('machine')>=0||t.indexOf('cable')>=0)return w<20?2.5:5;
+  return 2.5;
+}
+function wDown(ex,w){
+  const t=tagsOf(ex);
+  if(t.indexOf('kb')>=0){const lo=KB_LADDER.filter(x=>x<w-0.01);return lo.length?lo[lo.length-1]:w;}
+  const st=wStep(ex,w*0.9);return Math.max(0,Math.round(w*0.9/st)*st);
+}
+// past sessions of one exercise, newest first (today excluded)
+function sessionsOf(id,before){
+  const out=[],keys=Object.keys(S.days).sort().reverse();
+  for(const k of keys){if(k>=before)continue;const s=daySets(k).filter(x=>x.ex===id);if(s.length)out.push({k:k,sets:s});if(out.length>=6)break;}
+  return out;
+}
+const e1rm=(w,r)=>w*(1+Math.min(r,15)/30);
+function setScore(s){if(s.k==='wr')return s.w>0?e1rm(s.w,s.r):s.r;if(s.k==='reps')return s.r||0;if(s.k==='time')return s.t||0;if(s.k==='dist')return s.d||0;return 0;}
+function fmtW(w){return num(Math.round(w*100)/100);}
+// double progression: all planned sets at the target reps → add weight; three sessions stuck → lighter week
+function suggestFor(ex,p){
+  const t=todayKey(),ss=sessionsOf(ex.id,t),g=p.goal||3;
+  const tr=p.r||(ex.def&&ex.def.r)||10;
+  if(!ss.length){
+    if(ex.kind==='wr')return {kind:'first',txt:'Первый раз: подберите вес, с которым '+tr+' повторов даются с запасом 1–2'};
+    return null;
+  }
+  const last=ss[0].sets;
+  if(ex.kind==='wr'&&last.some(s=>s.w>0)){
+    const lw=Math.max.apply(null,last.map(s=>s.w||0)),top=last.filter(s=>s.w===lw),reps=top.map(s=>s.r);
+    const hit=top.length>=g&&reps.every(r=>r>=tr);
+    if(hit){const nw=Math.round((lw+wStep(ex,lw))*100)/100;
+      return {kind:'up',w:nw,r:tr,txt:'↑ '+fmtW(nw)+' кг × '+tr+': в прошлый раз '+top.length+' '+plural(top.length,PODH)+' по '+tr+'+ с '+fmtW(lw)+' кг'};}
+    // stuck: the same top weight missed in the last three sessions
+    const stuck=ss.slice(0,3).filter(x=>{const w=Math.max.apply(null,x.sets.map(s=>s.w||0)),tp=x.sets.filter(s=>s.w===w);return w===lw&&!(tp.length>=g&&tp.every(s=>s.r>=tr));}).length;
+    if(stuck>=3&&ss.length>=3){const dw=wDown(ex,lw);
+      return {kind:'down',w:dw,r:tr,txt:'↓ '+fmtW(dw)+' кг: три тренировки без роста — лёгкий подход, потом снова вверх'};}
+    return {kind:'hold',w:lw,r:tr,txt:'= '+fmtW(lw)+' кг: добейте по '+tr+' повторов во всех подходах — потом прибавим (было '+reps.join(', ')+')'};
+  }
+  if(ex.kind==='reps'||ex.kind==='wr'){
+    const mn=Math.min.apply(null,last.map(s=>s.r||0));
+    if(last.length>=Math.min(g,last.length)&&mn>=tr){const nr=Math.min(60,Math.max(tr,mn)+1);return {kind:'up',r:nr,txt:'↑ '+nr+' '+plural(nr,['повтор','повтора','повторов'])+': в прошлый раз все подходы по '+mn+'+'};}
+    return {kind:'hold',r:tr,txt:'= '+tr+' повторов: в прошлый раз '+last.map(s=>s.r).join(', ')};
+  }
+  if(ex.kind==='time'&&ex.tu!=='m'){
+    const tt=p.t||(ex.def&&ex.def.t)||30,mn=Math.min.apply(null,last.map(s=>s.t||0));
+    if(mn>=tt){const nt=tt+(tt<60?5:10);return {kind:'up',t:nt,txt:'↑ '+dur(nt)+': в прошлый раз все подходы по '+dur(mn)+'+'};}
+    return {kind:'hold',t:tt,txt:'= '+dur(tt)+': в прошлый раз '+last.map(s=>dur(s.t||0)).join(', ')};
+  }
+  return null;
+}
+const SUG_DONE={};
+function applySuggestion(ex,p){
+  const t=todayKey(),key=t+'|'+ex.id;
+  const sg=suggestFor(ex,p);
+  if(sg&&!SUG_DONE[key]&&!setsOf(t,ex.id)){
+    const d=draftFor(ex);if(sg.w!=null&&'w' in d)d.w=sg.w;if(sg.r!=null&&'r' in d)d.r=sg.r;if(sg.t!=null&&'t' in d)d.t=sg.t;
+  }
+  SUG_DONE[key]=1;
+  return sg;
+}
+// best earlier result for a record check
+function bestBefore(id,skipId){
+  let b=0;
+  Object.keys(S.days).forEach(k=>daySets(k).forEach(s=>{if(s.ex===id&&s.id!==skipId){const v=setScore(s);if(v>b)b=v;}}));
+  return b;
+}
+function prText(s){
+  if(!s)return '—';
+  if(s.k==='wr'&&s.w>0)return fmtW(s.w)+' кг × '+s.r+' (≈ '+fmtW(Math.round(e1rm(s.w,s.r)*10)/10)+' кг на 1 раз)';
+  if(s.k==='time')return dur(s.t);if(s.k==='dist')return num(s.d)+' км';return s.r+' повт.';
+}
+/* strength history in «Прогресс» */
+function strengthData(){
+  const by={};
+  Object.keys(S.days).sort().forEach(k=>daySets(k).forEach(s=>{
+    if(s.k==='dist')return;const o=by[s.ex]=by[s.ex]||{id:s.ex,n:s.n,k:s.k,ses:[],best:0,bestSet:null,prs:0};
+    let ses=o.ses[o.ses.length-1];if(!ses||ses.k!==k){ses={k:k,sets:[],top:0};o.ses.push(ses);}
+    ses.sets.push(s);const v=setScore(s);if(v>ses.top)ses.top=v;
+    if(v>o.best||!o.bestSet){o.best=v;o.bestSet=s;}if(s.pr)o.prs++;}));
+  return Object.values(by).sort((a,b)=>a.ses[a.ses.length-1].k<b.ses[b.ses.length-1].k?1:-1);
+}
+function spark(vals){
+  if(vals.length<2)return '';
+  const mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals),rg=mx-mn||1,w=84,h=26;
+  const pts=vals.map((v,i)=>(i/(vals.length-1)*w).toFixed(1)+','+(h-3-(v-mn)/rg*(h-6)).toFixed(1)).join(' ');
+  return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function renderStrength(){
+  const el=$('strengthStats');if(!el)return;
+  const data=strengthData();
+  if(!data.length){el.innerHTML='<h2 class="sec">Сила и рекорды</h2><p class="empty">Отметьте подходы — здесь появятся рекорды и рост по каждому упражнению.</p>';return;}
+  const since=addDays(todayKey(),-30);let prs30=0;
+  data.forEach(o=>o.ses.forEach(x=>{if(x.k>=since)x.sets.forEach(s=>{if(s.pr)prs30++;});}));
+  const list=UI.strAll?data:data.slice(0,8);
+  let h='<div class="calh"><h2 class="sec">Сила и рекорды</h2><span class="ctag on">'+prs30+' '+plural(prs30,['рекорд','рекорда','рекордов'])+' за 30 дней</span></div><div class="strl">';
+  list.forEach(o=>{
+    const vals=o.ses.slice(-10).map(x=>x.top),open=UI.strOpen===o.id,last=o.ses[o.ses.length-1];
+    const tr=vals.length>1?(vals[vals.length-1]>vals[0]*1.01?'up':vals[vals.length-1]<vals[0]*0.99?'down':''):'';
+    h+='<button class="strow press'+(open?' on':'')+'" data-str="'+esc(o.id)+'" aria-expanded="'+open+'"><span class="strn"><b>'+esc(o.n)+'</b><i>рекорд: '+esc(prText(o.bestSet))+'</i></span><span class="strs '+tr+'">'+spark(vals)+'</span></button>';
+    if(open)h+='<div class="strd">'+o.ses.slice(-6).reverse().map(x=>'<div><span>'+dateLong(x.k)+'</span><b>'+x.sets.map(s=>esc(fmtSet(s))+(s.pr?' <i class="prb">рекорд</i>':'')).join(', ')+'</b></div>').join('')+
+      '<p class="cap">Всего тренировок с этим упражнением: '+o.ses.length+', последняя — '+dateLong(last.k)+'.</p></div>';
+  });
+  h+='</div>'+(data.length>8?'<button class="rm" data-str="__all" style="justify-self:start">'+(UI.strAll?'Свернуть':'Все упражнения ('+data.length+')')+'</button>':'');
+  el.innerHTML=h;
+}
+
+/* ---------- calorie target that follows real weight change (like MacroFactor) ---------- */
+function adaptInfo(){
+  const pr=prof();if(!pr||!pr.accepted)return null;
+  const t=todayKey(),from=addDays(t,-28);
+  const ws=(pr.weights||[]).filter(w=>w.d>=from&&w.d<t||w.d===t);
+  const fd=[];for(let i=1;i<=28;i++){const k=addDays(t,-i),kc=sumMeals(dayMeals(k)).kcal;if(kc>=800)fd.push({k:k,kc:kc});}
+  const need={food:Math.min(10,fd.length),weights:Math.min(2,ws.length),span:ws.length>1?Math.round((parseKey(ws[ws.length-1].d)-parseKey(ws[0].d))/864e5):0};
+  if(fd.length<10||ws.length<2||need.span<10)return {ok:false,need:need};
+  // weight trend: least squares slope, kg per day
+  const x0=parseKey(ws[0].d);const xs=ws.map(w=>(parseKey(w.d)-x0)/864e5),ys=ws.map(w=>w.kg);
+  const mx=xs.reduce((a,b)=>a+b,0)/xs.length,my=ys.reduce((a,b)=>a+b,0)/ys.length;
+  const slope=xs.reduce((a,x,i)=>a+(x-mx)*(ys[i]-my),0)/Math.max(1e-6,xs.reduce((a,x)=>a+(x-mx)*(x-mx),0));
+  const intake=fd.reduce((a,d)=>a+d.kc,0)/fd.length;
+  const tdee=intake-slope*7700;
+  const rate=pr.rate||0,mode=pr.mode;
+  let target=mode==='lose'?tdee-rate*7700/7:mode==='gain'?tdee+rate*7700/7:tdee;
+  target=Math.max(target,(pr.bmr||1400)*1.05,pr.sex==='f'?1300:1500);
+  const cur=foodGoal(),diff=target-cur,step=Math.max(-200,Math.min(200,diff));
+  const next=Math.round((cur+step)/10)*10;
+  return {ok:true,need:need,intake:Math.round(intake),slope:slope,week:Math.round(slope*7*100)/100,tdee:Math.round(tdee/10)*10,target:Math.round(target/10)*10,cur:cur,next:next,delta:next-cur};
+}
+function adaptCard(){
+  const pr=prof();if(!pr||!pr.accepted||UI.date!==todayKey())return '';
+  const a=adaptInfo();if(!a)return '';
+  if(!a.ok)return '<div class="adapt glass"><b>Норма подстроится под вас</b><span>Когда наберётся 10 дней записей еды и 2 взвешивания с разницей от 10 дней, я сравню съеденное с изменением веса и уточню норму. Сейчас: еда '+a.need.food+' из 10 дней, взвешивания '+a.need.weights+' из 2.</span></div>';
+  const fc=S.config.food||{};
+  if(Math.abs(a.delta)<50)return '<div class="adapt glass ok"><b>Норма подтверждена</b><span>Фактический расход ≈ '+num(a.tdee)+' ккал: в среднем вы ели '+num(a.intake)+' ккал, вес '+(a.week>0?'+':'')+String(a.week).replace('.',',')+' кг в неделю.</span></div>';
+  if(fc.adaptSnooze&&fc.adaptSnooze>todayKey())return '';
+  return '<div class="adapt glass"><b>Пора уточнить норму</b><span>За 4 недели вы ели в среднем '+num(a.intake)+' ккал, вес '+(a.week>0?'+':'')+String(a.week).replace('.',',')+' кг в неделю — значит, расход ≈ '+num(a.tdee)+' ккал. Для цели предлагаю '+num(a.next)+' ккал вместо '+num(a.cur)+(Math.abs(a.target-a.next)>20?' (дальше подстрою ещё, менять резко не стоит)':'')+'.</span>'+
+    '<div class="duo"><button class="log tint press" data-adapt="apply">Поставить '+num(a.next)+' ккал</button><button class="ghost glass press" data-adapt="later">Позже</button></div></div>';
+}
+function adaptApply(){
+  const a=adaptInfo(),pr=prof();if(!a||!a.ok||!pr)return;
+  const old=foodGoal();pr.kcal=a.next;pr.c=Math.max(0,Math.round((a.next-pr.p*4-pr.f*9)/4));
+  pr.adapted=(pr.adapted||[]).concat({d:todayKey(),from:old,to:a.next}).slice(-20);
+  S.config.food=Object.assign({},S.config.food,{goal:a.next,adaptSnooze:addDays(todayKey(),7)});persistConfig();
+  const ty=coachCfg().tone==='ty';
+  COACH.msgs.push({role:'assistant',text:'Пересчитал норму по фактическим данным: '+num(old)+' → '+num(a.next)+' ккал (белки '+pr.p+' г, жиры '+pr.f+' г, углеводы '+pr.c+' г). Расход по факту ≈ '+num(a.tdee)+' ккал. Через неделю '+(ty?'посмотрю':'посмотрю')+' снова.',at:Date.now()});saveCoach();
+  render();toast('Норма: '+num(a.next)+' ккал в день.');
+}
+
+/* ---------- voice: spoken cues in a workout, coach replies aloud, voice input ---------- */
+let VOICE_RU=null;
+function ruVoice(){
+  try{if(VOICE_RU)return VOICE_RU;const vs=speechSynthesis.getVoices()||[];VOICE_RU=vs.find(v=>/^ru/i.test(v.lang)&&/milena|yuri|google/i.test(v.name))||vs.find(v=>/^ru/i.test(v.lang))||null;return VOICE_RU;}catch(e){return null;}
+}
+try{if(window.speechSynthesis)speechSynthesis.onvoiceschanged=()=>{VOICE_RU=null;ruVoice();};}catch(e){}
+function speak(text,force){
+  if(!text||!window.speechSynthesis||typeof SpeechSynthesisUtterance==='undefined')return;
+  if(!force&&!trainCfg().voice)return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text).slice(0,600));u.lang='ru-RU';const v=ruVoice();if(v)u.voice=v;u.rate=1.05;speechSynthesis.speak(u);}catch(e){}
+}
+const plainSpeech=s=>String(s||'').replace(/\*\*/g,'').replace(/^\s*[-•]\s+/gm,'').replace(/[«»"]/g,'').replace(/\s*\n+\s*/g,'. ');
+function setSpeech(ex,p,n){
+  const d=draftFor(ex),g=p.goal||1,parts=['Подход '+Math.min(n+1,g)+' из '+g+'.',ex.name+'.'];
+  if(ex.kind==='wr')parts.push((d.w?fmtW(d.w)+' '+plural(Math.round(d.w),['килограмм','килограмма','килограмм'])+', ':'')+d.r+' '+plural(d.r,['повтор','повтора','повторов'])+'.');
+  else if(ex.kind==='reps')parts.push(d.r+' '+plural(d.r,['повтор','повтора','повторов'])+'.');
+  else if(ex.kind==='time')parts.push(dur(d.t||30).replace(/ с$/,' секунд').replace(/ мин/,' минут')+'.');
+  return parts.join(' ');
+}
+function speakNext(prefix){const w=wkEx();if(!w)return;speak((prefix?prefix+' ':'')+setSpeech(w.ex,w.p,setsOf(todayKey(),w.ex.id)));}
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
+const MIC={rec:null,on:false,base:''};
+function micBtn(){return SR?'<button class="mic press'+(MIC.on?' on':'')+'" type="button" data-mic="1" aria-label="'+(MIC.on?'Остановить запись':'Сказать голосом')+'" aria-pressed="'+MIC.on+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>':'';}
+function micSync(){document.querySelectorAll('[data-mic]').forEach(b=>{b.className='mic press'+(MIC.on?' on':'');b.setAttribute('aria-pressed',String(MIC.on));});const i=$('coachIn');if(i)i.placeholder=MIC.on?'Говорите…':'Спросите тренера…';}
+function micToggle(){
+  if(!SR)return;
+  if(MIC.on&&MIC.rec){try{MIC.rec.stop();}catch(e){}return;}
+  let rec;try{rec=new SR();}catch(e){toast('Голосовой ввод недоступен в этом браузере.');return;}
+  const inp=$('coachIn');MIC.base=inp&&inp.value.trim()?inp.value.trim()+' ':'';let fin='',said='';
+  rec.lang='ru-RU';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
+  rec.onresult=e=>{let tmp='';fin='';for(let i=0;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)fin+=r[0].transcript;else tmp+=r[0].transcript;}
+    said=(fin+tmp).trim();const i=$('coachIn');if(i){i.value=MIC.base+said;COACH.draft=i.value;sizeCoachIn(i);}};
+  rec.onerror=e=>{MIC.on=false;micSync();if(e&&(e.error==='not-allowed'||e.error==='service-not-allowed'))toast('Нет доступа к микрофону. Разрешите его в настройках браузера или используйте диктовку на клавиатуре.');else if(e&&e.error==='no-speech')toast('Ничего не услышал — попробуйте ещё раз.');};
+  rec.onend=()=>{MIC.on=false;MIC.rec=null;micSync();const text=(MIC.base+fin).trim();if(fin.trim()&&!COACH.busy)coachSend(text);};
+  try{speechSynthesis.cancel();}catch(e){}
+  try{rec.start();MIC.rec=rec;MIC.on=true;micSync();}catch(e){toast('Не получилось включить микрофон.');}
+}
+
+/* ---------- food from a written description: table first, AI for the rest ---------- */
+function foodTextPrompt(text){
+  return 'Ты — нутрициолог. Пользователь написал, что съел: «'+text+'».\n'+
+    'Разбей на продукты, оцени вес каждого в граммах (если вес указан — используй его; если указан общий вес блюда — распредели между частями; если не указан — обычная порция) и посчитай пищевую ценность по стандартным таблицам.\n'+
+    'Ответь только JSON без пояснений, по-русски, числа целые:\n'+
+    '{"dish":"короткое название","items":[{"name":"продукт","grams":150,"kcal":240,"protein":12,"fat":8,"carbs":30}],"confidence":"высокая|средняя|низкая","note":"одна фраза, что сильнее всего влияет на точность"}\n'+
+    'Если это не еда, верни {"error":"коротко почему"}.';
+}
+async function foodTextAI(text,signal){
+  const eng=aiEngine(false),pr=foodTextPrompt(text);
+  if(eng==='claude')return await SAMPLE.json(pr,{signal});
+  if(eng==='api')return looseJSON(await anthCall({messages:[{role:'user',content:pr}]},signal));
+  if(eng==='ds')return looseJSON(await dsCall({max_tokens:1200,response_format:{type:'json_object'},messages:[{role:'user',content:pr}]},signal));
+  throw {code:'no_engine'};
+}
+async function foodFromText(text,forceAI){
+  text=String(text||'').trim();if(!text)return;
+  if(FOOD.ctl)FOOD.ctl.abort();
+  FOOD.text=text;FOOD.blob=null;FOOD.thumb='';FOOD.manual=false;
+  const loc=foodLocal(text),eng=aiEngine(false);
+  if(!forceAI&&loc.items.length&&!loc.miss.length){
+    FOOD.res={dish:fdDish(text),items:loc.items,conf:'',note:'Посчитано по таблице продуктов (значения на 100 г). Поправьте граммы, если знаете точный вес.',src:'local'};FOOD.stage='result';renderMain();return;}
+  if(eng){
+    const ctl=new AbortController();FOOD.ctl=ctl;FOOD.stage='busy';FOOD.err='';renderMain();
+    try{const o=await foodTextAI(text,ctl.signal);if(FOOD.ctl!==ctl)return;FOOD.res=Object.assign(normResult(o),{src:'ai'});FOOD.stage='result';}
+    catch(e){if(FOOD.ctl!==ctl)return;
+      if(e&&(e.code==='cancelled'||e.name==='AbortError'))FOOD.stage='idle';
+      else if(loc.items.length){FOOD.res={dish:fdDish(text),items:loc.items,conf:'',note:'ИИ не ответил, посчитал по таблице. Не нашёл: '+loc.miss.join(', ')+'.',src:'local'};FOOD.stage='result';}
+      else{FOOD.stage='error';FOOD.err=e&&e.code==='not_food'?'Похоже, это не еда'+(e.message?': '+e.message:'')+'.':(FOOD_ERR[e&&e.code]||AI_ERR[e&&e.code]||'Не получилось посчитать. Попробуйте ещё раз или введите КБЖУ вручную.');}}
+    FOOD.ctl=null;renderMain();return;
+  }
+  if(loc.items.length){FOOD.res={dish:fdDish(text),items:loc.items,conf:'',note:'Не нашёл в таблице: '+loc.miss.join(', ')+' — подключите ИИ ниже или добавьте их вручную.',src:'local'};FOOD.stage='result';}
+  else{FOOD.stage='error';FOOD.err='Не нашёл «'+text+'» в таблице продуктов. Подключите ИИ ниже — он посчитает любое блюдо, — или введите КБЖУ вручную.';}
+  renderMain();
+}
+// manual form: name + weight → calories and macros fill in by themselves
+let mfTimer=null;
+function manualAuto(){
+  const n=$('mName'),g=$('mG'),st=$('mAuto');if(!n||!st)return;
+  const name=n.value.trim();if(!name){st.textContent='';return;}
+  const grams=g&&parseFloat(String(g.value).replace(',','.'));
+  const loc=foodLocal(name+(grams>0?' '+grams+' г':''));
+  if(!loc.items.length||loc.miss.length){st.innerHTML=aiEngine(false)?'Не нашёл в таблице. <button class="rm" type="button" data-food="mai">Посчитать ИИ</button>':'Не нашёл в таблице — впишите калории сами.';return;}
+  const t=resTotals({items:loc.items});
+  [['mKcal',t.kcal],['mP',t.p],['mF',t.f],['mC',t.c]].forEach(x=>{const e=$(x[0]);if(e&&!e.dataset.touched)e.value=r0(x[1]);});
+  if(g&&!(grams>0)&&!g.dataset.touched)g.value=loc.items.reduce((a,i)=>a+i.grams,0);
+  st.textContent='Посчитано: '+loc.items.map(i=>i.name+' '+i.grams+' г').join(', ')+'. Можно поправить.';
+}
+async function manualAI(){
+  const n=$('mName'),g=$('mG'),st=$('mAuto');if(!n||!n.value.trim())return;
+  const grams=g&&parseFloat(String(g.value).replace(',','.'));
+  if(st)st.textContent='Считаю…';
+  try{const res=normResult(await foodTextAI(n.value.trim()+(grams>0?' '+grams+' г':''),undefined)),t=resTotals(res);
+    [['mKcal',t.kcal],['mP',t.p],['mF',t.f],['mC',t.c]].forEach(x=>{const e=$(x[0]);if(e)e.value=r0(x[1]);});
+    if(g&&!(grams>0))g.value=res.items.reduce((a,i)=>a+i.grams,0);
+    if(st)st.textContent='Посчитал ИИ: '+res.items.map(i=>i.name+' '+r0(i.grams)+' г').join(', ')+'. Проверьте.';}
+  catch(e){if(st)st.textContent=AI_ERR[e&&e.code]||FOOD_ERR[e&&e.code]||'Не получилось посчитать.';}
+}
+document.addEventListener('input',e=>{const t=e.target;if(!t||!t.id)return;
+  if(t.id==='mName'||t.id==='mG'){if(t.id==='mG')t.dataset.touched='1';clearTimeout(mfTimer);mfTimer=setTimeout(manualAuto,300);}
+  else if(t.id==='mKcal'||t.id==='mP'||t.id==='mF'||t.id==='mC')t.dataset.touched='1';
+  else if(t.id==='foodText')FOOD.text=t.value;});
+document.addEventListener('submit',e=>{if(e.target&&e.target.id==='foodTextForm'){e.preventDefault();const i=$('foodText');if(i){i.blur();foodFromText(i.value);}}});
+
+/* ---------- workout: rest timer mode, chat with the coach on top ---------- */
+const REST_MODES=[['auto','Сам после подхода'],['manual','По кнопке'],['off','Без таймера']];
+function restLabel(tc){return tc.restMode==='off'?'без отдыха':tc.restMode==='manual'?'по кнопке · '+clock(tc.rest):'авто · '+clock(tc.rest);}
+function startRest(sec){WK.rest={end:Date.now()+sec*1000,total:sec,warn:false};speak('Отдых '+(sec%60?sec+' секунд':sec/60+' '+plural(sec/60,['минута','минуты','минут'])));renderMain();startTick();}
+function restSecFor(ex){const tc=trainCfg();return ex&&(ex.kind==='time'||ex.dir==='mobility')?Math.min(tc.rest,45):tc.rest;}
+function wkRestCfg(){
+  const tc=trainCfg();
+  return '<div class="wkrcfg glass"><div class="sfield"><span class="flab">Таймер отдыха</span><div class="seg2">'+REST_MODES.map(m=>'<button data-wk="rm:'+m[0]+'" aria-pressed="'+(tc.restMode===m[0])+'">'+m[1]+'</button>').join('')+'</div></div>'+
+    (tc.restMode!=='off'?'<div class="sfield"><span class="flab">Длительность</span><div class="seg2">'+[45,60,90,120,180].map(s=>'<button data-wk="rd:'+s+'" aria-pressed="'+(tc.rest===s)+'">'+(s<120?s+' с':s/60+' мин')+'</button>').join('')+'</div></div>':'')+
+    '<div class="sfield"><span class="flab">Голосовые подсказки</span><div class="seg2"><button data-wk="vo:1" aria-pressed="'+!!tc.voice+'">Включены</button><button data-wk="vo:0" aria-pressed="'+!tc.voice+'">Выключены</button></div></div></div>';
+}
+const WK_SUG=['Чем заменить это упражнение?','Слишком тяжело — что сделать?','Как правильно выполнять?','Болит — продолжать?'];
+function wkChatSheet(){
+  const from=Math.max(0,COACH.msgs.length-12);
+  return '<div class="wksheet glass" role="dialog" aria-label="Чат с тренером"><div class="wkshead"><span class="cava">'+COACH_ICO+'</span><div><b>Тренер</b><span>видит текущее упражнение и подходы</span></div><button class="xdel" data-wk="chat" aria-label="Закрыть чат">×</button></div>'+
+    '<div class="wkmsgs chat" id="wkMsgs" aria-live="polite">'+(from>0?'<p class="cap" style="text-align:center">Раньше — во вкладке «Тренер»</p>':'')+chatItems(from)+'</div>'+
+    '<div class="csug wksug2">'+WK_SUG.map(s=>'<button class="press" data-csug="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>'+composerHTML()+'</div>';
+}
+function wkContextLine(){
+  if(UI.tab!=='workout'||!WK.started)return '';
+  const w=wkEx();if(!w)return '';
+  const t=todayKey(),n=setsOf(t,w.ex.id),d=draftFor(w.ex);
+  return 'Сейчас идёт тренировка (сегодня '+t+'): текущее упражнение «'+w.ex.name+'» (id '+w.ex.id+'), подход '+Math.min(n+1,w.p.goal||1)+' из '+(w.p.goal||1)+
+    (w.ex.kind==='wr'?', рабочий вес '+(d.w||0)+' кг × '+d.r:w.ex.kind==='reps'?', '+d.r+' повторов':'')+(WK.rest?', сейчас отдых':'')+'. Время тренировки '+clock((Date.now()-WK.started)/1000)+
+    '. Отвечай коротко — человек между подходами. Если просит заменить текущее упражнение — верни replace на сегодня.';
+}
+
 /* ---------- toast ---------- */
 let toastTimer=null,undoFn=null;
 function toast(msg,undo){
@@ -4490,6 +5111,9 @@ document.addEventListener('click',e=>{
   if(ds.wki!==undefined){WK.i=+ds.wki;WK.rest=null;WK.tm=null;WK.tech=false;renderMain();return;}
   if(ds.goto){UI.tab=ds.goto;if(ds.date)UI.date=ds.date;else if(ds.goto==='day')UI.date=todayKey();UI.building=ds.build==='1';UI.open=null;render();window.scrollTo({top:0});return;}
   if(ds.tset){const q=ds.tset.split('|');setTrain(q[0],q[1]);return;}
+  if(ds.mic){micToggle();return;}
+  if(ds.str){if(ds.str==='__all')UI.strAll=!UI.strAll;else UI.strOpen=UI.strOpen===ds.str?null:ds.str;renderStrength();return;}
+  if(ds.adapt){if(ds.adapt==='apply')adaptApply();else{S.config.food=Object.assign({},S.config.food,{adaptSnooze:addDays(todayKey(),7)});persistConfig();renderMain();}return;}
   if(ds.rem){openRem();return;}
   if(ds.ob){obClick(ds.ob);return;}
   if(ds.copy){copyPlan(ds.copy);return;}
