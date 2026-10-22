@@ -2863,7 +2863,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='22.10 15:47';
+const BUILD='22.10 18:40';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -4003,6 +4003,27 @@ function sessionTemplates(pr,eqArg){
 }
 function eqToggle(list,tag){const i=list.indexOf(tag);if(i>=0){if(list.length>1)list.splice(i,1);}else list.push(tag);return list;}
 
+/* ---------- общая память с ботом «Итоги дня»: тренер читает факты и базу знаний, сохраняет новые факты ---------- */
+function itogiCfg(){try{const c=JSON.parse(lsGet('wt-itogi')||'{}');return c.url&&c.tok?c:null;}catch(e){return null;}}
+async function itogiMemory(q){
+  const c=itogiCfg();if(!c)return '';
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),4000);
+  try{
+    const r=await fetch(c.url.replace(/\/+$/,'')+'/memory/context?q='+encodeURIComponent(String(q||'').slice(0,300)),{headers:{'X-Token':c.tok},signal:ctl.signal});
+    if(!r.ok)return '';
+    const j=await r.json(),mem=(j.memories||[]).map(m=>'- '+m.text+(m.category?' ('+m.category+')':'')),kb=(j.knowledge||[]).map(k=>'«'+k.title+'»: '+k.text);
+    return (mem.length?'Память о пользователе (общая с ботом «Итоги дня», учитывай всегда):\n'+mem.join('\n'):'')+
+      (kb.length?'\n\nИз базы знаний пользователя (может пригодиться для ответа):\n'+kb.join('\n\n'):'');
+  }catch(e){return '';}finally{clearTimeout(tm);}
+}
+function itogiRemember(text,category){
+  const c=itogiCfg();if(!c)return;
+  fetch(c.url.replace(/\/+$/,'')+'/memory',{method:'POST',headers:{'Content-Type':'application/json','X-Token':c.tok},
+    body:JSON.stringify({text:String(text).slice(0,300),category:category?String(category).slice(0,40):null,source:'trenirovka'})}).catch(()=>{});
+}
+const COACH_MEM=`Общая память
+{"type":"remember","text":"факт одной фразой","category":"здоровье"}
+"remember" — когда узнал о пользователе устойчивый факт, который пригодится и дальше: травма или ограничение, предпочтения в еде и тренировках, режим, цель, важное решение. Не сохраняй разовые цифры (вес, съеденное, подходы — они и так в журнале) и то, что уже есть в «Памяти о пользователе». Категории: здоровье, питание, тренировки, режим, цели.`;
 /* ---------- AI provider: Claude (built-in sampling or Anthropic key) or DeepSeek key; keys stay on this device ---------- */
 const DS_KEY_LS='wt-ds-key',PROV_LS='wt-ai-prov',DS_MODEL='deepseek-flash';
 function dsKey(){return lsGet(DS_KEY_LS)||'';}
@@ -4175,7 +4196,7 @@ function coachStyle(c){
 }
 function coachSystem(){
   const c=coachCfg();
-  return (c.prompt.trim()||COACH_DEFAULT)+'\n\n'+coachStyle(c)+'\n\n'+COACH_TECH+'\n\n'+
+  return (c.prompt.trim()||COACH_DEFAULT)+'\n\n'+coachStyle(c)+'\n\n'+COACH_TECH+'\n\n'+(itogiCfg()?COACH_MEM+'\n\n':'')+
     (c.notes.trim()?'Пользователь о себе (учитывай всегда):\n'+c.notes.trim()+'\n\n':'')+
     'Данные пользователя:\n'+coachContext();
 }
@@ -4216,6 +4237,10 @@ function applyCoachActions(list){
   (Array.isArray(list)?list:[]).slice(0,12).forEach(a=>{
     if(!a||typeof a!=='object')return;
     const type=String(a.type||''),okDate=/^\d{4}-\d{2}-\d{2}$/.test(String(a.date||''));
+    if(type==='remember'){
+      const txt=String(a.text||'').trim();if(!txt||!itogiCfg())return;
+      itogiRemember(txt,a.category);acts.push({label:'запомнил: «'+txt.slice(0,80)+'»'});return;
+    }
     if(type==='meal'||type==='meal_del'){
       const k=okDate?String(a.date):t;if(k>t||k<addDays(t,-14))return;
       const name=String(a.name||'').trim().slice(0,80);if(!name)return;
@@ -4291,7 +4316,7 @@ async function coachSend(text){
   saveCoach();renderMain();scrollCoach();
   const ctl=new AbortController();COACH.ctl=ctl;
   try{
-    const sys=coachSystem(),hist=chatHistory();
+    const mem=await itogiMemory(text),sys=coachSystem()+(mem?'\n\n'+mem:''),hist=chatHistory();
     const o=coachParse(await coachAsk(eng,sys,hist,ctl.signal));
     if(COACH.ctl!==ctl)return;
     const reply=String((o&&(o.reply||o.text||o.answer))||'').trim();
