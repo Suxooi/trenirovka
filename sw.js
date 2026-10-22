@@ -1,5 +1,5 @@
 // Журнал тренировок — офлайн-кэш. Меняйте VERSION при каждом обновлении файлов.
-const VERSION = 'trenirovki-202610222018';
+const VERSION = 'trenirovki-202610222049';
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192-v2.png", "./icons/icon-512-v2.png", "./icons/apple-touch-icon-v2.png", "./icons/favicon-32-v2.png"];
 
 self.addEventListener('install', (e) => {
@@ -9,8 +9,8 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+    caches.keys() // только свои кэши: на домене живёт и тестовая версия
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('trenirovki-') && k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });

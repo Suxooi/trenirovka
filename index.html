@@ -2889,7 +2889,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='22.10 20:18';
+const BUILD='22.10 20:49';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
