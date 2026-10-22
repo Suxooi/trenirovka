@@ -394,7 +394,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .pday i{font-style:normal;font-family:var(--f-num);color:var(--muted);font-size:12.5px}
 .gcard{gap:10px}
 .ghead{display:flex;gap:12px;align-items:center;min-width:0}
-.gico{width:44px;height:44px;border-radius:12px;object-fit:cover;flex:none}
+.gico{width:52px;height:52px;border-radius:15px;object-fit:cover;flex:none;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
 .ghead div{display:grid;gap:2px;min-width:0}.ghead b{font-size:16px}.ghead span{font-size:13px;color:var(--muted)}
 .gbar{height:8px;border-radius:4px;background:var(--sunk);overflow:hidden}
 .gbar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,color-mix(in srgb,var(--dir) 60%,transparent),var(--dir))}
@@ -791,8 +791,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 
 <nav class="tabbar glass" id="tabbar" role="tablist" aria-label="Разделы">
   <span class="tab-ind" aria-hidden="true"></span>
-  <button class="tab" role="tab" id="tab-coach" data-tab="coach" aria-selected="true"><img class="tabimg" id="tabImgCoach" alt="" aria-hidden="true">Тренер</button>
-  <button class="tab" role="tab" id="tab-day" data-tab="day" aria-selected="false"><img class="tabimg" id="tabImgCal" alt="" aria-hidden="true">Расписание<span class="tc" id="tabCount" hidden></span></button>
+  <button class="tab" role="tab" id="tab-coach" data-tab="coach" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.9 11.5H21V7.5H9.5A6 6 0 1 0 13.9 11.5z"/><circle cx="9.5" cy="13.5" r="1.5"/><path d="M15 4.5l1-2M18.5 5l1.5-1.5M11.5 4.8 11 2.8"/></svg>Тренер</button>
+  <button class="tab" role="tab" id="tab-day" data-tab="day" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01"/></svg>Расписание<span class="tc" id="tabCount" hidden></span></button>
   <button class="tab" role="tab" id="tab-food" data-tab="food" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 21V3c-2.2 1.2-3.5 3.6-3.5 7v3H17"/></svg>Питание</button>
   <button class="tab" role="tab" id="tab-stats" data-tab="stats" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9"/><path d="M15 6h5v5"/></svg>Прогресс</button>
 </nav>
@@ -2887,7 +2887,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='22.10 19:46';
+const BUILD='22.10 19:55';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -3155,7 +3155,6 @@ function renderTabs(){
   $('tabbar').hidden=ob||UI.tab==='workout';
   if(UI.tab==='coach')UI.unread=false;
   tabs.forEach(t=>$('tab-'+t).setAttribute('aria-selected',String(UI.tab===t)));
-  [['tabImgCoach','coach'],['tabImgCal','cal']].forEach(x=>{const im=$(x[0]);if(im&&im.setAttribute){const src=gIco(x[1]);if(im.getAttribute&&im.getAttribute('src')!==src)im.setAttribute('src',src);}});
   const tcb=$('tab-coach');if(tcb&&tcb.classList&&tcb.classList.toggle)tcb.classList.toggle('unread',!!UI.unread);
   $('tabbar').style.setProperty('--ti',String(Math.max(0,tabs.indexOf(UI.tab))));
   const n=dayItems(UI.date).length,tc=$('tabCount');
@@ -3873,7 +3872,7 @@ function setupView(){
 function goalCard(){
   const pr=prof(),gi=GOALS[pr.goal],cw=curWeight(pr),tot=Math.max(1,(parseKey(pr.end)-parseKey(pr.start))/864e5),el=Math.max(0,Math.min(tot,(parseKey(todayKey())-parseKey(pr.start))/864e5));
   const wp=pr.target!==pr.weight?Math.max(0,Math.min(100,Math.round((cw-pr.weight)/(pr.target-pr.weight)*100))):null,left=Math.max(0,Math.ceil((tot-el)/7));
-  return '<section class="card glass gcard"><div class="ghead">'+(EQI[gi.icon]?'<img class="gico" src="'+EQI[gi.icon]+'" alt="">':'')+'<div><b>'+gi.name+(pr.area?': '+(pr.area==='core'?'пресс':DIR[pr.area].name.toLowerCase()):'')+'</b><span>'+pr.weight+' → '+pr.target+' кг · до '+dateLong(pr.end)+' · осталось '+left+' '+plural(left,['неделя','недели','недель'])+'</span></div></div>'+
+  return '<section class="card glass gcard"><div class="ghead">'+'<img class="gico" src="'+(gIco(pr.goal)||EQI[gi.icon])+'" alt="">'+'<div><b>'+gi.name+(pr.area?': '+(pr.area==='core'?'пресс':DIR[pr.area].name.toLowerCase()):'')+'</b><span>'+pr.weight+' → '+pr.target+' кг · до '+dateLong(pr.end)+' · осталось '+left+' '+plural(left,['неделя','недели','недель'])+'</span></div></div>'+
     '<div class="gbar" title="Прошло времени"><i style="width:'+Math.round(el/tot*100)+'%"></i></div>'+
     '<div class="gfoot"><span>'+num(pr.kcal)+' ккал · Б '+pr.p+' · Ж '+pr.f+' · У '+pr.c+'</span>'+(wp!==null?'<span>к цели '+wp+'%</span>':'')+'</div>'+
     '<div class="goalrow"><span class="cap">Вес сегодня, кг</span><div class="mstep"><button data-wstep="-0.1" aria-label="Меньше">−</button><input id="wToday" class="fgoal" inputmode="decimal" value="'+String(cw).replace('.',',')+'" aria-label="Вес сегодня"><button data-wstep="0.1" aria-label="Больше">+</button></div></div>'+
@@ -3903,7 +3902,7 @@ function goalClick(ds){
   if((ds.ssplit||ds.sdp2||ds.sdg)&&splitClick(ds))return true;
   if(ds.sgoal){SETUP.d.goal=ds.sgoal;if(ds.sgoal!=='area')SETUP.d.area='';renderMain();return true;}
   if(ds.sarea){SETUP.d.area=ds.sarea;renderMain();return true;}
-  if(ds.ssex){readSetup();SETUP.d.sex=ds.ssex;accSetSex(ds.ssex);renderMain();renderTabs();return true;}
+  if(ds.ssex){readSetup();SETUP.d.sex=ds.ssex;accSetSex(ds.ssex);renderMain();return true;}
   if(ds.sday){readSetup();const w=+ds.sday,l=SETUP.d.days,i=l.indexOf(w);if(i>=0){if(l.length>1)l.splice(i,1);}else if(l.length<6)l.push(w);renderMain();return true;}
   if(ds.splace){readSetup();const l=SETUP.d.places,i=l.indexOf(ds.splace);if(i>=0){if(l.length>1)l.splice(i,1);}else l.push(ds.splace);if(UI.speq&&l.indexOf(UI.speq)<0)UI.speq=null;renderMain();return true;}
   if(ds.sdp){readSetup();const d=SETUP.d,w=+ds.sdp,cur=d.places.indexOf(d.dayPlace[w])>=0?d.dayPlace[w]:d.places[0];d.dayPlace[w]=d.places[(d.places.indexOf(cur)+1)%d.places.length];renderMain();return true;}
