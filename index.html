@@ -615,6 +615,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .accbar i{display:block;height:100%}.accbar .a-exact{background:var(--acc)}.accbar .a-approx{background:var(--calm)}.accbar .a-est{background:#D9A26A}
 .fask{display:grid;gap:6px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--calm) 12%,transparent);border:1px solid color-mix(in srgb,var(--calm) 35%,transparent)}
 .fask b{font-size:14px}.fask span{font-size:14px;color:var(--ink)}.fask .qchips{flex-wrap:wrap}
+.drows{display:grid;gap:8px}
+.drow{display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:start;border-radius:16px;padding:10px}
+.drow>b{font-size:15px;padding-top:6px}.dcol{display:grid;gap:6px;min-width:0}
+.dchips{display:flex;flex-wrap:wrap;gap:6px}
+.dch{border:1px solid var(--glass-edge);background:var(--glass);color:var(--muted);border-radius:999px;min-height:34px;padding:0 12px;font-size:13.5px;font-weight:600}
+.dch[aria-pressed="true"]{color:var(--on-acc);background:var(--acc);border-color:transparent}
+.dch.g[aria-pressed="true"]{background:var(--c);color:#0B0E10}
 /* schedule calendar (iPhone Calendar style) */
 .ical{gap:10px;padding:12px 12px 10px}
 .icalh{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -2758,7 +2765,7 @@ function allEx(){
   EX_CACHE=list;EX_KEY=key;EX_MAP=new Map(list.map(e=>[e.id,e]));
   return list;
 }
-function dayEquip(k){const si=schedInfo(k),pr=prof();return si&&si.place?placeEquip(pr,si.place):equipNow();}
+function dayEquip(k){const si=schedInfo(k),pr=prof();return si&&si.place?unionEq(pr,si.places&&si.places.length?si.places:[si.place]):equipNow();}
 function catalog(dir){const h=S.config.hidden,eq=dayEquip(UI.date);return allEx().filter(e=>e.dir===dir&&h.indexOf(e.id)<0&&exOk(e,eq));}
 function day(k){return S.days[k]||null;}
 function daySets(k){const d=day(k);return (d&&d.sets)||[];}
@@ -2856,7 +2863,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='22.10 15:30';
+const BUILD='22.10 15:47';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -3173,7 +3180,7 @@ function heroCard(){
   const doneSets=plan.reduce((a,p)=>a+Math.min(p.goal||0,cnt(p.ex)),0);
   const doneEx=plan.filter(p=>p.goal&&cnt(p.ex)>=p.goal).length;
   const pct=goalSum?Math.round(doneSets/goalSum*100):0;
-  return '<section class="hero glass">'+(si?'<div class="slabel">Тренировка '+si.letter+(si.place&&multiPlace(pr)?' · '+PLACE_NAME[si.place]:'')+' · неделя '+(si.week+1)+' из '+pr.weeks+'</div>':'')+'<div class="hero-top"><div><div class="hero-n">'+s.length+'</div><div class="hero-l">'+plural(s.length,PODH)+' отмечено</div></div>'+
+  return '<section class="hero glass">'+(si?'<div class="slabel">Тренировка '+si.letter+(si.groups?' · '+groupsTxt(si.groups):'')+(si.place&&multiPlace(pr)?' · '+placeTxt(si):'')+' · неделя '+(si.week+1)+' из '+pr.weeks+'</div>':'')+'<div class="hero-top"><div><div class="hero-n">'+s.length+'</div><div class="hero-l">'+plural(s.length,PODH)+' отмечено</div></div>'+
     (plan.length?'<div class="ring" style="--pct:'+pct+'" role="img" aria-label="План выполнен на '+pct+'%"><span>'+pct+'%</span></div>':'')+'</div>'+
     (plan.length?'<div class="hero-sub">'+doneEx+' из '+plan.length+' '+plural(plan.length,UPR)+' готово · '+doneSets+' из '+goalSum+' подходов по плану</div>':'')+'</section>';
 }
@@ -3192,7 +3199,7 @@ function isBuilding(){return UI.tab==='day'&&(UI.building||(!dayItems(UI.date).l
 // exercises of a planned day that its place cannot host (plan saved before places or goal changed, or copied from another place)
 function misfits(k){const si=schedInfo(k);if(!si||!si.place||k<todayKey())return [];const eq=dayEquip(k);return dayPlan(k).filter(p=>{const e=getEx(p.ex);return e&&!exOk(e,eq);});}
 function placeWarn(k){
-  const m=misfits(k);if(!m.length)return '';const pn=PLACE_NAME[schedInfo(k).place];
+  const m=misfits(k);if(!m.length)return '';const pn=placeTxt(schedInfo(k));
   return '<section class="pwarn glass"><b>Не подходит месту «'+pn+'»: '+m.map(p=>esc(getEx(p.ex).name)).join(', ')+'</b>'+
     '<span>Этот день сохранён со старым набором упражнений, а по календарю он теперь «'+pn+'», где нужного инвентаря нет.</span>'+
     '<div class="duo"><button class="log tint press" data-fixday="reset">План для «'+pn+'»</button><button class="ghost glass press" data-fixday="drop">Убрать только эти</button></div></section>';
@@ -3229,7 +3236,7 @@ function dayView0(){
 function buildView(){
   const plan=dayPlan(UI.date),inPlan={};plan.forEach(p=>inPlan[p.ex]=p);
   const si=schedInfo(UI.date),eqn=dayEquip(UI.date);
-  let html=(si&&si.place?'<div class="eqbar glass"><span><b>По плану:</b> '+PLACE_NAME[si.place]+' · '+esc(equipSummary(eqn))+'</span><button class="rm" data-setup="edit">Изменить</button></div>':
+  let html=(si&&si.place?'<div class="eqbar glass"><span><b>По плану:</b> '+placeTxt(si)+(si.groups?' · '+groupsTxt(si.groups):'')+' · '+esc(equipSummary(eqn))+'</span><button class="rm" data-setup="edit">Изменить</button></div>':
     '<div class="eqbar glass"><span><b>Инвентарь:</b> '+esc(equipSummary(eqn))+'</span><button class="rm" data-eqopen="1">'+(UI.eqOpen?'Готово':'Изменить')+'</button></div>'+(UI.eqOpen?'<div class="eqpanel glass">'+equipChips(eqn,'beq')+'</div>':''))+
     '<h2 class="sec">Направление</h2><div class="chipscroll" role="group" aria-label="Направления">'+DIRS.map(d=>{
     const n=plan.filter(p=>p.dir===d.id).length;
@@ -3695,12 +3702,12 @@ function calcProfile(d){
   if(tb<18.5)warn='Целевой вес ниже нормы для вашего роста (ИМТ '+tb.toFixed(1)+'). Лучше обсудить цель с врачом.';
   const p=Math.round(w*(mode==='lose'?2.0:1.8)),f=Math.round(w*0.9),c=Math.max(0,Math.round((kcal-p*4-f*9)/4));
   const start=todayKey(),end=addDays(start,weeks*7);
-  return {equip:(d.equip||equipNow()).slice(),goal:d.goal,area:d.area||null,sex:d.sex,age:a,height:h,weight:w,target:t,ndays:days,days:wdays,places:(d.places&&d.places.length?d.places:['gym']).slice(),placeEq:clone(d.placeEq||{}),dayPlace:Object.assign({},d.dayPlace||{}),
+  return {equip:(d.equip||equipNow()).slice(),goal:d.goal,area:d.area||null,sex:d.sex,age:a,height:h,weight:w,target:t,ndays:days,days:wdays,places:(d.places&&d.places.length?d.places:['gym']).slice(),placeEq:clone(d.placeEq||{}),dayPlace:Object.assign({},d.dayPlace||{}),dayPlaces:clone(d.dayPlaces||{}),dayGroups:clone(d.dayGroups||{}),split:d.split==='groups'?'groups':'auto',
     bmr:Math.round(bmr),tdee:Math.round(tdee),kcal:Math.round(kcal/10)*10,p:p,f:f,c:c,rate:Math.round(rate*100)/100,mode:mode,weeks:weeks,start:start,end:end,bmi:Math.round(bmi*10)/10,warn:warn};
 }
 function planItem(row,week){
   const ex=allEx().find(e=>e.id===row[0]);if(!ex)return null;
-  const it={ex:ex.id,n:ex.name,dir:ex.dir,k:ex.kind,tu:ex.tu,goal:row[1]};
+  const it={ex:ex.id,n:ex.name,dir:ex.dir,k:ex.kind,tu:ex.tu,goal:row[1]};if(row[3])it.pl=row[3];
   const bump=Math.min(4,Math.floor(week/2));                // +1 rep every two weeks, up to +4
   if(ex.kind==='time')it.t=row[2]+bump*5;
   else{it.r=row[2]+(ex.kind==='dist'?0:bump);if(ex.kind==='wr')it.w=(ex.def&&ex.def.w)||16;}
@@ -3712,7 +3719,7 @@ const LETTERS='АБВГДЕЖИКЛ';
 function placeEquip(pr,pl){return (pr&&pr.placeEq&&pr.placeEq[pl])||EQUIP_PRESET[pl]||(pr&&pr.equip)||equipNow();}
 function dayPlaceOf(pr,wd){const ps=pr.places&&pr.places.length?pr.places:null;if(!ps)return null;const p=pr.dayPlace&&pr.dayPlace[wd];return ps.indexOf(p)>=0?p:ps[0];}
 // places actually used by the training days (a selected place with no days does not count)
-function usedPlaces(pr){const ps=pr.places&&pr.places.length?pr.places:[];return ps.filter(p=>(pr.days||[]).some(wd=>dayPlaceOf(pr,wd)===p));}
+function usedPlaces(pr){const ps=pr.places&&pr.places.length?pr.places:[];return ps.filter(p=>(pr.days||[]).some(wd=>dayPlacesOf(pr,wd).indexOf(p)>=0));}
 function multiPlace(pr){return usedPlaces(pr).length>1;}
 // each place keeps its own rotation of workouts: only the days the user set for that place
 function placeProfile(pr,pl){const ds=(pr.days||[]).filter(wd=>dayPlaceOf(pr,wd)===pl);return Object.assign({},pr,{days:ds,ndays:ds.length});}
@@ -3723,22 +3730,29 @@ function placeGroups(pr){
 function schedInfo(k){
   const pr=prof();if(!pr||!pr.accepted||k<pr.start||k>pr.end)return null;
   const wd=parseKey(k).getDay();if(pr.days.indexOf(wd)<0)return null;
+  const places=dayPlacesOf(pr,wd),gs=dayGroupsOf(pr,wd);
+  if(gs){const order=[1,2,3,4,5,6,0].filter(w=>pr.days.indexOf(w)>=0),idx=order.indexOf(wd),wk=Math.floor((parseKey(k)-parseKey(mondayOf(pr.start)))/(7*864e5));
+    return {n:wk*order.length+idx,L:order.length,li:idx,letter:LETTERS[idx],place:places[0]||null,places:places,groups:gs,week:wk,wd:wd,pp:pr};}
   const place=dayPlaceOf(pr,wd),g=placeGroups(pr).find(x=>!x.place||x.place===place)||placeGroups(pr)[0];
   const days=g.pp.days,idx=days.indexOf(wd);
   const week=Math.floor((parseKey(k)-parseKey(mondayOf(pr.start)))/(7*864e5));
   // sessions are counted from the first planned day of this place, so its first workout is always its first letter
   let first=0;const sw=parseKey(pr.start).getDay();for(let i=0;i<days.length;i++){if(((days[i]+6)%7)>=((sw+6)%7)){first=i;break;}if(i===days.length-1)first=days.length;}
   const n=week*days.length+idx-first,L=g.L,li=((n%L)+L)%L;
-  return {n:n,L:L,li:li,letter:LETTERS[g.off+li],place:place,week:week,wd:wd,pp:g.pp};
+  return {n:n,L:L,li:li,letter:LETTERS[g.off+li],place:place,places:places,week:week,wd:wd,pp:g.pp};
 }
 const schedCache={};
 function schedPlan(k){
   const pr=prof(),si=schedInfo(k);if(!si)return [];
-  const eq=si.place?placeEquip(pr,si.place):(pr.equip||equipNow());
-  const ck=pr.start+pr.goal+(pr.area||'')+pr.sex+pr.days.join('')+'|'+(si.place||'')+si.pp.days.join('')+'|'+si.li+eq.join('')+S.config.hidden.length+k;
+  const eq=si.places&&si.places.length?unionEq(pr,si.places):(pr.equip||equipNow());
+  const ck=pr.start+pr.goal+(pr.area||'')+pr.sex+pr.days.join('')+'|'+(si.places||[]).join('+')+'|'+(si.groups||[]).join('+')+'|'+si.pp.days.join('')+'|'+si.li+eq.join('')+S.config.hidden.length+JSON.stringify(pr.placeEq||{})+k;
   if(schedCache[ck])return schedCache[ck];
-  const tpl=sessionTemplates(si.pp,eq);
-  return schedCache[ck]=(tpl[si.li]||[]).map(r=>planItem(r,si.week)).filter(Boolean);
+  let rows;
+  if(si.groups)rows=groupRows(pr,si.groups,si.places||[],si.week,groupOcc(pr,si.wd));
+  else{rows=(sessionTemplates(si.pp,eq)[si.li]||[]).map(r=>r.slice());
+    // with two places in a day each exercise goes where it can be done, the first place first
+    rows=assignPlaces(pr,rows,si.places||[]);}
+  return schedCache[ck]=rows.map(r=>planItem(r,si.week)).filter(Boolean);
 }
 // a day's plan becomes its own (editable) copy the first time it is changed
 function ownPlan(k){
@@ -3767,6 +3781,7 @@ function logWeight(kg){
   clearTimeout(goalTimer);goalTimer=setTimeout(persistConfig,600);
 }
 function rotationNote(pr){
+  if(pr.split==='groups')return '<p class="cap">По группам мышц: '+[1,2,3,4,5,6,0].filter(w=>pr.days.indexOf(w)>=0).map(w=>'<b>'+weekdayName(w)+'</b> — '+groupsTxt(dayGroupsOf(pr,w)||[])+(dayPlacesOf(pr,w).length>1||multiPlace(pr)?' ('+dayPlacesOf(pr,w).map(p=>PLACE_NAME[p]).join(' + ')+')':'')).join('; ')+'. Если группа повторяется в неделе, во второй день идут другие упражнения.</p>';
   const gs=placeGroups(pr),seq=g=>{const ls=[];for(let i=0;i<g.L;i++)ls.push(LETTERS[g.off+i]);return ls.join(' → ')+' → снова '+ls[0];};
   if(gs.length>1)return '<p class="cap">У каждого места свои тренировки, они идут только в его дни:<br>'+gs.map(g=>'<b>'+PLACE_NAME[g.place]+'</b> ('+g.pp.days.map(weekdayName).join(', ')+'): '+seq(g)).join('<br>')+'</p>';
   const g=gs[0],nd=pr.days.length;
@@ -3777,12 +3792,12 @@ function planPreview(pr){
   let h='<div class="ppre">';const seen={},multi=multiPlace(tmp);
   for(let w=0;w<2;w++){
     const mon=addDays(mondayOf(pr.start),w*7),cells=[];
-    for(let i=0;i<7;i++){const k=addDays(mon,i),si=schedInfo(k);if(si)cells.push('<span class="wk"><b>'+weekdayName(si.wd)+'</b>'+si.letter+(multi?'<i>'+PLACE_NAME[si.place]+'</i>':'')+'</span>');
+    for(let i=0;i<7;i++){const k=addDays(mon,i),si=schedInfo(k);if(si)cells.push('<span class="wk"><b>'+weekdayName(si.wd)+'</b>'+si.letter+(multi?'<i>'+placeTxt(si)+'</i>':'')+'</span>');
       if(si&&!seen[si.letter]){seen[si.letter]={si:si,k:k};}}
     h+='<div class="wrow"><span class="wlab">'+(w?'Неделя 2':'Неделя 1')+'</span>'+cells.join('')+'</div>';
   }
   Object.keys(seen).sort().forEach(key=>{const o=seen[key];const items=schedPlan(o.k);
-    h+='<div class="pday"><b>Тренировка '+o.si.letter+(multi?' · '+PLACE_NAME[o.si.place]:'')+'</b><ul>'+items.map(it=>'<li>'+esc(it.n)+' <i>'+it.goal+'×'+(it.k==='time'?it.t+' с':it.r)+'</i></li>').join('')+'</ul></div>';});
+    const two=o.si.places&&o.si.places.length>1;h+='<div class="pday"><b>Тренировка '+o.si.letter+(o.si.groups?' · '+groupsTxt(o.si.groups):'')+(multi?' · '+placeTxt(o.si):'')+'</b><ul>'+items.map(it=>'<li>'+esc(it.n)+(two&&it.pl?' <i>'+PLACE_NAME[it.pl]+' ·</i>':'')+' <i>'+it.goal+'×'+(it.k==='time'?it.t+' с':it.r)+'</i></li>').join('')+'</ul></div>';});
   S.config.profile=old;
   return h+'</div>';
 }
@@ -3793,15 +3808,15 @@ function placeDaysUI(d){
   const order=[1,2,3,4,5,6,0];
   let h='<div class="sfield"><span class="flab">Дни тренировок · '+d.days.length+' в неделю</span><div class="wdays">'+order.map(w=>'<button class="wday press" data-sday="'+w+'" aria-pressed="'+(d.days.indexOf(w)>=0)+'">'+weekdayName(w)+'</button>').join('')+'</div></div>';
   h+='<div class="sfield"><span class="flab">Где тренируетесь · можно несколько</span><div class="seg2">'+Object.keys(PLACE_NAME).map(p=>'<button data-splace="'+p+'" aria-pressed="'+(d.places.indexOf(p)>=0)+'">'+PLACE_NAME[p]+'</button>').join('')+'</div></div>';
-  if(d.places.length>1){
-    h+='<div class="sfield"><span class="flab">Какой день где · нажмите, чтобы сменить</span><div class="dplace">'+order.filter(w=>d.days.indexOf(w)>=0).map(w=>{const p=d.places.indexOf(d.dayPlace[w])>=0?d.dayPlace[w]:d.places[0];return '<button class="dpl press" data-sdp="'+w+'"><b>'+weekdayName(w)+'</b><span>'+PLACE_NAME[p]+'</span></button>';}).join('')+'</div></div>';
-  }
+  h+='<div class="sfield"><span class="flab">Как строить тренировки</span><div class="seg2"><button data-ssplit="auto" aria-pressed="'+(d.split!=='groups')+'">Программа целиком</button><button data-ssplit="groups" aria-pressed="'+(d.split==='groups')+'">По группам мышц</button></div>'+
+    '<p class="cap">'+(d.split==='groups'?'Каждый день — свои группы мышц, упражнения подберу под место этого дня.':'Тренировки А, Б… идут по кругу и прорабатывают всё тело.')+'</p></div>';
+  h+=dayRowsUI(d);
   h+='<div class="sfield"><span class="flab">Инвентарь</span><div class="toolrow">'+d.places.map(p=>'<button class="ghost glass press" data-speq="'+p+'" aria-pressed="'+(UI.speq===p)+'">'+PLACE_NAME[p]+': '+(d.placeEq[p]?'свой набор':'стандарт')+'</button>').join('')+'</div>'+
     (UI.speq&&d.places.indexOf(UI.speq)>=0?'<div class="eqpanel glass">'+EQUIP.map(e=>{const l=d.placeEq[UI.speq]||EQUIP_PRESET[UI.speq];return '<button class="eqc press" data-seqt="'+e[0]+'" aria-pressed="'+(l.indexOf(e[0])>=0)+'">'+e[1]+'</button>';}).join('')+'</div>':'')+'</div>';
   return h;
 }
 function setupView(){
-  const d=SETUP.d||(SETUP.d=Object.assign({goal:'',area:'',sex:'m',age:'',height:'',weight:'',target:'',ndays:3,days:DAYSETS[3].slice(),places:['gym'],placeEq:{},dayPlace:{}},prof()?{days:prof().days.slice(),places:(prof().places||['gym']).slice(),placeEq:clone(prof().placeEq||{}),dayPlace:Object.assign({},prof().dayPlace||{}),goal:prof().goal,area:prof().area||'',sex:prof().sex,age:prof().age,height:prof().height,weight:curWeight(prof()),target:prof().target,ndays:prof().ndays}:{}));
+  const d=SETUP.d||(SETUP.d=Object.assign({goal:'',area:'',sex:'m',age:'',height:'',weight:'',target:'',ndays:3,days:DAYSETS[3].slice(),places:['gym'],placeEq:{},dayPlace:{}},prof()?{days:prof().days.slice(),places:(prof().places||['gym']).slice(),placeEq:clone(prof().placeEq||{}),dayPlace:Object.assign({},prof().dayPlace||{}),dayPlaces:clone(prof().dayPlaces||{}),dayGroups:clone(prof().dayGroups||{}),split:prof().split||'auto',goal:prof().goal,area:prof().area||'',sex:prof().sex,age:prof().age,height:prof().height,weight:curWeight(prof()),target:prof().target,ndays:prof().ndays}:{}));
   const steps=['goal','data','result'],si=steps.indexOf(SETUP.step);
   let h='<section class="card glass setup"><div class="sstep">'+['Цель','Данные','План'].map((s,i)=>'<span class="'+(i<=si?'on':'')+'">'+(i+1)+'. '+s+'</span>').join('')+'</div>';
   if(SETUP.step==='goal'){
@@ -3860,6 +3875,7 @@ function calView(){
     '<p class="cap">За месяц: '+done+' '+plural(done,['тренировка','тренировки','тренировок'])+(kd?' · в среднем '+num(Math.round(kc/kd))+' ккал в день':'')+'. Нажмите на день, чтобы открыть его.</p></section>';
 }
 function goalClick(ds){
+  if((ds.ssplit||ds.sdp2||ds.sdg)&&splitClick(ds))return true;
   if(ds.sgoal){SETUP.d.goal=ds.sgoal;if(ds.sgoal!=='area')SETUP.d.area='';renderMain();return true;}
   if(ds.sarea){SETUP.d.area=ds.sarea;renderMain();return true;}
   if(ds.ssex){readSetup();SETUP.d.sex=ds.ssex;renderMain();return true;}
@@ -4070,13 +4086,13 @@ function coachContext(){
   if(pr&&pr.accepted){
     L.push('Цель: '+GOALS[pr.goal].name+(pr.area&&DIR[pr.area]?' — '+DIR[pr.area].name:'')+'. Пол '+(pr.sex==='f'?'женский':'мужской')+', '+pr.age+' лет, рост '+pr.height+' см. Вес на старте '+pr.weight+' кг, сейчас '+curWeight(pr)+' кг, цель '+pr.target+' кг к '+pr.end+'.');
     L.push('Норма: '+pr.kcal+' ккал, белки '+pr.p+' г, жиры '+pr.f+' г, углеводы '+pr.c+' г.');
-    L.push('Дни тренировок: '+pr.days.map(d=>weekdayName(d)+(dayPlaceOf(pr,d)?' — '+PLACE_NAME[dayPlaceOf(pr,d)]:'')).join(', ')+'.');
+    L.push('Дни тренировок: '+pr.days.map(d=>weekdayName(d)+(dayPlacesOf(pr,d).length?' — '+dayPlacesOf(pr,d).map(p=>PLACE_NAME[p]).join(' + '):'')+(dayGroupsOf(pr,d)?' ('+groupsTxt(dayGroupsOf(pr,d))+')':'')).join(', ')+'.');
     const ws=(pr.weights||[]).slice(-6);if(ws.length>1)L.push('Взвешивания: '+ws.map(w=>w.d+' '+w.kg).join('; ')+'.');
   }else L.push('Цель и программа не заданы. Норма калорий '+foodGoal()+' ккал.');
   L.push('План тренировок (id «название» подходы×повторы):');
   let any=false;
   for(let i=-1;i<10;i++){const k=addDays(t,i),pl=dayPlan(k);if(!pl.length)continue;any=true;const si=schedInfo(k);
-    L.push('- '+k+' '+wdOf(k)+(si&&si.place?' · '+PLACE_NAME[si.place]:'')+(si?' · тренировка '+si.letter:'')+': '+pl.map(planLine).join('; '));}
+    L.push('- '+k+' '+wdOf(k)+(si&&si.place?' · '+placeTxt(si):'')+(si&&si.groups?' · '+groupsTxt(si.groups):'')+(si?' · тренировка '+si.letter:'')+': '+pl.map(planLine).join('; '));}
   if(!any)L.push('- плана нет');
   L.push('Сделано за 7 дней:');
   let did=false;
@@ -4399,7 +4415,7 @@ function todayCard(){
   const ti=todayInfo(),pr=prof();
   if(ti.plan.length){
     const all=dayDone(ti.t);
-    const head=ti.si?'Тренировка '+ti.si.letter+(ti.si.place&&multiPlace(pr)?' · '+PLACE_NAME[ti.si.place]:''):'Тренировка дня';
+    const head=ti.si?'Тренировка '+ti.si.letter+(ti.si.groups?' · '+groupsTxt(ti.si.groups):'')+(ti.si.place&&multiPlace(pr)?' · '+placeTxt(ti.si):''):'Тренировка дня';
     let nx='';
     if(all){const prs=ti.sets.filter(s=>s.pr).length,d0=day(ti.t),mins=d0&&d0.wkSec?Math.round(d0.wkSec/60):0;
       nx='<div class="tnext ok"><span>Готово</span><b>Тренировка выполнена</b><i>'+ti.sets.length+' '+plural(ti.sets.length,PODH)+(mins?' · '+mins+' мин':'')+(prs?' · '+prs+' '+plural(prs,['рекорд','рекорда','рекордов']):'')+' · теперь восстановление</i></div>';}
@@ -4484,7 +4500,7 @@ function wkView(){
     return h+'<section class="card glass wkfin"><span class="cava big">'+COACH_ICO+'</span><b>Тренировка завершена!</b><span>'+done+' '+plural(done,PODH)+' · '+clock(secs)+(prs?' · '+prs+' '+plural(prs,['рекорд','рекорда','рекордов']):'')+'</span><p class="cap">Запишите самочувствие тренеру — он учтёт его в следующих тренировках.</p><div class="duo"><button class="log tint press" data-wk="finish">К тренеру</button><button class="ghost glass press" data-wk="more">Ещё подход</button></div></section>'+chatUI;
   }
   const sg=applySuggestion(ex,p);
-  h+='<section class="card glass wkcard"><div class="wkhead">'+eqImg(ex)+'<div><b>'+esc(ex.name)+'</b><span>Подход '+Math.min(n+1,g)+(n>=g?' (сверх плана)':'')+' из '+g+' · '+esc(goalTxt(p))+'</span></div></div>'+wkFeelRow()+(sg&&!WK.rest&&!n?'<p class="wksug '+sg.kind+'">'+esc(sg.txt)+'</p>':'');
+  h+='<section class="card glass wkcard"><div class="wkhead">'+eqImg(ex)+'<div><b>'+esc(ex.name)+'</b><span>Подход '+Math.min(n+1,g)+(n>=g?' (сверх плана)':'')+' из '+g+' · '+esc(goalTxt(p))+(p.pl&&(dayPlacesOf(prof()||{},parseKey(t).getDay())||[]).length>1?' · '+PLACE_NAME[p.pl]:'')+'</span></div></div>'+wkFeelRow()+(sg&&!WK.rest&&!n?'<p class="wksug '+sg.kind+'">'+esc(sg.txt)+'</p>':'');
   if(WK.rest){
     const left=Math.max(0,(WK.rest.end-Date.now())/1000);
     h+='<div class="wkrest"><div class="bigring rest" id="wkRestRing" style="--pct:'+Math.round((1-left/WK.rest.total)*100)+'"><div><b id="wkRestT">'+clock(Math.ceil(left))+'</b><span>отдых</span></div></div>'+
@@ -4616,7 +4632,7 @@ function icalView(){
   }
   h+='<div class="clegend icleg"><span><i class="lg plan"></i>план</span><span><i class="lg part"></i>начата</span><span><i class="lg done"></i>выполнена</span><span><i class="lg miss"></i>пропуск</span></div></section>';
   const d=parseKey(k),si=schedInfo(k),pl=dayPlan(k),rel=k===t?'Сегодня':k===addDays(t,1)?'Завтра':k===addDays(t,-1)?'Вчера':'';
-  const wdn=WD[d.getDay()];h+='<div class="dayhd"><b>'+(rel?rel+', '+wdn:wdn.charAt(0).toUpperCase()+wdn.slice(1))+', '+dateLong(k)+'</b><span>'+(pl.length?(si?'Тренировка '+si.letter+(si.place&&multiPlace(prof())?' · '+PLACE_NAME[si.place]:'')+' · ':'')+pl.length+' '+plural(pl.length,UPR):k<t?'Без тренировки':'Тренировки нет — можно собрать')+'</span></div>';
+  const wdn=WD[d.getDay()];h+='<div class="dayhd"><b>'+(rel?rel+', '+wdn:wdn.charAt(0).toUpperCase()+wdn.slice(1))+', '+dateLong(k)+'</b><span>'+(pl.length?(si?'Тренировка '+si.letter+(si.groups?' · '+groupsTxt(si.groups):'')+(si.place&&multiPlace(prof())?' · '+placeTxt(si):'')+' · ':'')+pl.length+' '+plural(pl.length,UPR):k<t?'Без тренировки':'Тренировки нет — можно собрать')+'</span></div>';
   return h;
 }
 function calNav(dir){
@@ -5833,6 +5849,109 @@ function accSummary(meals){
     '<p class="cap">Точность записей: '+['exact','approx','est'].filter(k=>tot[k]).map(k=>ACC_N[k]+' '+pc(k)+'%').join(' · ')+(tot.est>all*0.4?'. Взвесьте порции или сканируйте штрихкод — так точнее.':'')+'</p></div>';
 }
 
+/* ---------- muscle-group split by day, up to two places per day ---------- */
+const GROUP_IDS=['chest','back','legs','shoulders','arms','core','cardio'];
+const GROUP_NAME={chest:'Грудь',back:'Спина',legs:'Ноги',shoulders:'Плечи',arms:'Руки',core:'Пресс',cardio:'Кардио'};
+// best first; the place's equipment decides what is actually used
+const GROUP_BEST={
+  chest:['bbbench','dbbench','inclinebb','inclinedb','dips','machpress','pushups','k_bench','cablecross','pecdeck','dbfly','declinepu','k_pushup','widepu','archerpu','kbfloor','b_pushup','bandpress','bandfly'],
+  back:['pullups','bbrow','latpull','cablerow','dbrow','deadlift','widepull','invrow','kbrow','k_gorilla','pullover','k_pullover','b_onearmrow','bandpulldown','b_straightarm','bandrow','b_seatedrow','hyper','shrug','superman','muscleup'],
+  legs:['bbsquat','legpress','rdl','hipthrust','bulgarian','frontsquat','dblunge','goblet','k_bulgarian','k_rdl','legcurl','legext','kbdl','k_revlunge','stepup','k_stepup','nordic','dbrdl','glute','k_bridge','lunges','pistol','squat','k_cossack','b_deadlift','b_rdl','b_splitsquat','b_loopsquat','calf','k_calf','calfbw','cablekick','abductor','bandwalk'],
+  shoulders:['ohp','dbpress','latraise','kbpress','cablelat','cablefp','reardelt','machshoulder','k_kneelpress','pike','facepull','bandlat','pullapart','k_bottomsup','halo','b_yraise','b_frontraise','hspu','wallhs'],
+  arms:['chinups','closebench','bbcurl','skull','dbcurl','pushdown','hammer','dbext','cablecurl','tricepdips','kbcurl','k_ohext','diamond','bandcurl','bandext','b_hammer','b_pushdown','b_kickback'],
+  core:['hlr','abwheel','plank','cablecrunch','pallof','sideplank','hollow','k_russian','vup','deadbug','k_plankpull','russian','crunch','b_crunch','b_woodchop','k_woodchop','lsit','dragon','windmill','tgu','k_deadbug','b_deadbug'],
+  cardio:['run','rower','bike','rope','swings','k_usswing','burpee','climbers','thruster','jumpsquat','boxjump','snatch','b_thruster']
+};
+const ARM_BIC=['chinups','bbcurl','dbcurl','hammer','cablecurl','kbcurl','bandcurl','b_hammer'];
+// a classic split for N training days
+function splitPreset(n){
+  const P={1:[['chest','back','legs']],2:[['chest','back','shoulders','arms'],['legs','core']],3:[['chest','arms'],['back','arms'],['legs','shoulders']],
+    4:[['chest','arms'],['back','core'],['legs'],['shoulders','arms']],5:[['chest'],['back'],['legs'],['shoulders','core'],['arms','cardio']],
+    6:[['chest','shoulders'],['back','arms'],['legs','core'],['chest','shoulders'],['back','arms'],['legs','core']]};
+  return P[Math.max(1,Math.min(6,n))].map(g=>g.slice(0,3));
+}
+function groupsTxt(gs){return (gs||[]).map(g=>GROUP_NAME[g]||g).join(' + ');}
+function dayPlacesOf(pr,wd){
+  const ps=pr&&pr.places&&pr.places.length?pr.places:null;if(!ps)return [];
+  const l=pr.dayPlaces&&Array.isArray(pr.dayPlaces[wd])?pr.dayPlaces[wd].filter(p=>ps.indexOf(p)>=0).slice(0,2):[];
+  return l.length?l:[dayPlaceOf(pr,wd)].filter(Boolean);
+}
+function dayGroupsOf(pr,wd){return pr&&pr.split==='groups'&&pr.dayGroups&&Array.isArray(pr.dayGroups[wd])&&pr.dayGroups[wd].length?pr.dayGroups[wd].filter(g=>GROUP_BEST[g]):null;}
+function unionEq(pr,places){const s=new Set();(places&&places.length?places:[null]).forEach(p=>(p?placeEquip(pr,p):(pr.equip||equipNow())).forEach(t=>s.add(t)));return Array.from(s);}
+function placeTxt(si){return si&&si.places&&si.places.length?si.places.map(p=>PLACE_NAME[p]).join(' + '):si&&si.place?PLACE_NAME[si.place]:'';}
+// how many of each group: 1 group → 5, 2 → 3+3 (small groups get fewer), 3 → 2+2+2
+function groupCounts(gs){
+  const small={arms:1,core:1,cardio:1,shoulders:0};
+  if(gs.length===1)return [gs[0]==='cardio'?3:5];
+  if(gs.length===2){const a=small[gs[0]],b=small[gs[1]];return a&&!b?[2,4]:b&&!a?[4,2]:[3,3];}
+  return gs.map(()=>2);
+}
+function groupRows(pr,gs,places,week,occ){
+  const lose=pr.goal==='lose'||pr.mode==='lose',gain=pr.mode==='gain',cnt=groupCounts(gs),used={},rows=[];
+  const eqs=(places.length?places:[null]).map(p=>({p:p,eq:p?placeEquip(pr,p):(pr.equip||equipNow())}));
+  gs.forEach((g,gi)=>{
+    let list=GROUP_BEST[g].slice();
+    if(g==='arms'){const bic=ARM_BIC;if(gs.indexOf('back')>=0)list=list.filter(i=>bic.indexOf(i)>=0).concat(list.filter(i=>bic.indexOf(i)<0));
+      else if(gs.indexOf('chest')>=0)list=list.filter(i=>bic.indexOf(i)<0).concat(list.filter(i=>bic.indexOf(i)>=0));}
+    const exs=list.filter(id=>S.config.hidden.indexOf(id)<0).map(id=>allEx().find(e=>e.id===id)).filter(Boolean);
+    // the second day of the same group in a week takes the next exercises in line
+    const o=(occ&&occ[g])||0,n=cnt[gi];
+    const per=eqs.map(x=>{const l=exs.filter(ex=>exOk(ex,x.eq));const s=Math.min(o*n,Math.max(0,l.length-n));return l.slice(s).concat(l.slice(0,s));});
+    // one place: best n; two places: about half from each, so both places are really used
+    const want=eqs.length>1?[Math.ceil(n/2),Math.floor(n/2)]:[n];
+    const picked=[];
+    const take=(pi,k)=>{for(const ex of per[pi]){if(k<=0)break;if(used[ex.id])continue;used[ex.id]=1;picked.push({ex:ex,pl:eqs[pi].p});k--;}return k;};
+    let left=want.map((k,pi)=>take(pi,k));
+    // a place that ran out hands its share to the other
+    left.forEach((k,pi)=>{if(k>0)eqs.forEach((x,pj)=>{if(pj!==pi&&k>0)k=take(pj,k);});});
+    picked.forEach((x,i)=>{const ex=x.ex;
+      let r=ex.kind==='time'?[ex.id,3,lose?45:30]:ex.kind==='dist'?[ex.id,1,0]:[ex.id,i<2&&g!=='core'&&g!=='cardio'?4:3,lose?15:i<2?(gain?8:10):12];
+      r[3]=x.pl;rows.push(r);});
+  });
+  if(places.length>1)rows.sort((a,b)=>places.indexOf(a[3])-places.indexOf(b[3]));
+  return rows;
+}
+// two places in one day: what only one place can do goes there, the rest is shared evenly; then blocks by place
+function assignPlaces(pr,rows,places){
+  if(!places||places.length<2)return rows;
+  const eqs=places.map(p=>placeEquip(pr,p)),cnt=places.map(()=>0),can=rows.map(r=>{const ex=allEx().find(e=>e.id===r[0]);return places.map((p,i)=>!!(ex&&exOk(ex,eqs[i])));});
+  rows.forEach((r,i)=>{const c=can[i];if(c.filter(Boolean).length===1){const j=c.indexOf(true);r[3]=places[j];cnt[j]++;}});
+  rows.forEach((r,i)=>{const c=can[i];if(c.filter(Boolean).length===2){const j=cnt[1]<cnt[0]?1:0;r[3]=places[j];cnt[j]++;}});
+  return rows.sort((a,b)=>places.indexOf(a[3])-places.indexOf(b[3]));
+}
+
+function groupOcc(pr,wd){const order=[1,2,3,4,5,6,0],occ={};order.filter(w=>pr.days.indexOf(w)>=0&&((w+6)%7)<((wd+6)%7)).forEach(w=>(dayGroupsOf(pr,w)||[]).forEach(g=>{occ[g]=(occ[g]||0)+1;}));return occ;}
+// setup screen: one row per training day with its places and muscle groups
+function ensureDayDefaults(d){
+  if(!d.dayPlaces)d.dayPlaces={};if(!d.dayGroups)d.dayGroups={};
+  const order=[1,2,3,4,5,6,0],days=order.filter(w=>d.days.indexOf(w)>=0),pre=splitPreset(days.length);
+  days.forEach((w,i)=>{
+    let pl=(d.dayPlaces[w]||[]).filter(p=>d.places.indexOf(p)>=0);if(!pl.length)pl=[d.places.indexOf(d.dayPlace[w])>=0?d.dayPlace[w]:d.places[0]];d.dayPlaces[w]=pl.slice(0,2);d.dayPlace[w]=pl[0];
+    if(!d.dayGroups[w]||!d.dayGroups[w].length)d.dayGroups[w]=(pre[i]||pre[0]).slice();
+  });
+}
+function dayRowsUI(d){
+  ensureDayDefaults(d);
+  const order=[1,2,3,4,5,6,0],days=order.filter(w=>d.days.indexOf(w)>=0),showP=d.places.length>1,showG=d.split==='groups';
+  if(!showP&&!showG)return '';
+  return '<div class="sfield"><span class="flab">'+(showG&&showP?'Группы мышц и места по дням':showG?'Группы мышц по дням · до 3 в день':'Места по дням · можно два в один день')+'</span><div class="drows">'+days.map(w=>
+    '<div class="drow glass"><b>'+weekdayName(w)+'</b><div class="dcol">'+
+      (showP?'<div class="dchips">'+d.places.map(p=>'<button class="dch press" data-sdp2="'+w+'|'+p+'" aria-pressed="'+(d.dayPlaces[w].indexOf(p)>=0)+'">'+PLACE_NAME[p]+'</button>').join('')+'</div>':'')+
+      (showG?'<div class="dchips">'+GROUP_IDS.map(g=>'<button class="dch g press" data-sdg="'+w+'|'+g+'" aria-pressed="'+(d.dayGroups[w].indexOf(g)>=0)+'" style="--c:var(--p-'+DIR[g].c+')">'+GROUP_NAME[g]+'</button>').join('')+'</div>':'')+
+    '</div></div>').join('')+'</div>'+
+    (showG?'<button class="rm" data-ssplit="preset" style="justify-self:start">Подставить стандартный сплит</button>':'')+
+    (showP?'<p class="cap">Если в дне два места, упражнения пойдут блоками: сначала первое место, потом второе.</p>':'')+'</div>';
+}
+function splitClick(ds){
+  const d=SETUP.d;if(!d)return false;readSetup();
+  if(ds.ssplit){if(ds.ssplit==='preset'){d.dayGroups={};}else d.split=ds.ssplit;ensureDayDefaults(d);renderMain();return true;}
+  if(ds.sdp2){const q=ds.sdp2.split('|'),w=+q[0],p=q[1];ensureDayDefaults(d);const l=d.dayPlaces[w],i=l.indexOf(p);
+    if(i>=0){if(l.length>1)l.splice(i,1);}else{if(l.length>=2)l.shift();l.push(p);}d.dayPlace[w]=l[0];renderMain();return true;}
+  if(ds.sdg){const q=ds.sdg.split('|'),w=+q[0],g=q[1];ensureDayDefaults(d);const l=d.dayGroups[w],i=l.indexOf(g);
+    if(i>=0){if(l.length>1)l.splice(i,1);}else{if(l.length>=3){toast('Не больше трёх групп в день — так тренировка останется в пределах часа.');return true;}l.push(g);}renderMain();return true;}
+  return false;
+}
+
 /* ---------- toast ---------- */
 let toastTimer=null,undoFn=null;
 function toast(msg,undo){
@@ -5849,7 +5968,7 @@ document.addEventListener('click',e=>{
   if(ds.eqopen){UI.eqOpen=!UI.eqOpen;renderMain();return;}
   if(ds.beq||ds.beqpre){S.config.equip=ds.beqpre?EQUIP_PRESET[ds.beqpre].slice():eqToggle(equipNow().slice(),ds.beq);persistConfig();renderMain();return;}
   if(ds.seq||ds.seqpre){readSetup();SETUP.d.equip=ds.seqpre?EQUIP_PRESET[ds.seqpre].slice():eqToggle((SETUP.d.equip||equipNow()).slice(),ds.seq);renderMain();return;}
-  if((ds.sgoal||ds.sarea||ds.ssex||ds.sday||ds.splace||ds.sdp||ds.speq||ds.seqt||ds.setup||ds.calm||ds.wstep)&&goalClick(ds))return;
+  if((ds.sgoal||ds.sarea||ds.ssex||ds.sday||ds.splace||ds.sdp||ds.sdp2||ds.sdg||ds.ssplit||ds.speq||ds.seqt||ds.setup||ds.calm||ds.wstep)&&goalClick(ds))return;
   if((ds.csug||ds.coach||ds.cset||ds.cundo!==undefined)&&coachClick(ds))return;
   if((ds.food||ds.aiprov||ds.fstep||ds.fgoal||ds.meal||ds.fans!==undefined)&&foodClick(ds))return;
   if(!ds.xdel&&UI.armed){UI.armed=null;if(isBuilding()&&!ds.pick&&!ds.goal&&!ds.pstep)renderMain();}
