@@ -746,6 +746,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .aava.f{background:color-mix(in srgb,#ff7ab6 16%,transparent);border-color:color-mix(in srgb,#ff7ab6 45%,transparent)}
 .pinrow{display:flex;gap:8px}.pinrow .sin{flex:1}
 .gopt{grid-template-columns:60px minmax(0,1fr)}.gopt img{width:60px;height:60px;border-radius:16px;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+#meBtn{background:var(--glass-strong);border-color:var(--glass-edge);color:var(--ink)}#meBtn svg{width:22px;height:22px}#meBtn.back{color:var(--muted)}
+.cmore{display:flex;justify-content:center;margin:2px 0 4px}.cmore button{min-height:36px;padding:0 16px;border-radius:999px;font-size:13px;font-weight:600;color:var(--muted)}
 .filebtn{display:inline-flex;align-items:center;cursor:pointer}
 .itform{display:grid;gap:8px}.itform input{width:100%;min-height:46px;border-radius:14px;border:1px solid var(--glass-edge);background:var(--glass-strong);color:var(--ink);font:inherit;font-size:16px;padding:0 14px;min-width:0}
 </style>
@@ -764,7 +766,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
       <button class="navbtn" id="nextDay" aria-label="Следующий день"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
       <button class="navbtn" id="remBtn" hidden aria-label="Напоминание о тренировке" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><i class="bell-dot" id="remDot" hidden></i></button>
       <button class="todaybtn tint press" id="todayBtn" hidden>Сегодня</button>
-      <button class="avatar press" id="meBtn" aria-label="Профиль и настройки">Я</button>
+      <button class="avatar press" id="meBtn" aria-label="Профиль и настройки"></button>
     </div>
   </header>
 
@@ -2887,7 +2889,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='22.10 20:01';
+const BUILD='22.10 20:18';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -3060,6 +3062,8 @@ function render(){
   renderHeader();renderStats();renderFoodStats();renderStrength();renderTabs();renderMain();renderDayLog();renderWeek();renderHeat();
   const gs=$('goalStats');if(gs)gs.innerHTML=prof()&&prof().accepted?goalCard():'';
 }
+const ME_ICO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-3.6 4.1-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>',
+  ME_X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>';
 function renderHeader(){
   renderPlate();
   const t=todayKey(),k=UI.date,dt=parseKey(k);
@@ -3071,7 +3075,7 @@ function renderHeader(){
   ['prevDay','nextDay','dayLbl','syncDot'].forEach(id=>{const e=$(id);if(e)e.hidden=!dated;});
   const st=$('scrTitle');if(st){st.hidden=dated;st.textContent=ob?(UI.auth?'Вход':'Знакомство'):UI.tab==='settings'?'Настройки':UI.tab==='workout'?'Тренировка':UI.tab==='day'?'Расписание':'Тренер';}
   const me=$('meBtn');if(me){const back=UI.tab==='settings'||UI.tab==='workout';me.hidden=ob;me.className='avatar press'+(back?' back':'');
-    me.textContent=back?'✕':((coachCfg().name.trim()[0]||'Я').toUpperCase());me.setAttribute('aria-label',back?'Закрыть':'Профиль и настройки');}
+    me.innerHTML=back?ME_X:ME_ICO;me.setAttribute('aria-label',back?'Закрыть':'Профиль и настройки');}
 }
 function streak(){
   let k=todayKey();if(!daySets(k).length)k=addDays(k,-1);
@@ -4212,7 +4216,7 @@ const COACH_OPTS={
 };
 function coachCfg(){const c=Object.assign({tone:'vy',style:'fun',len:'mid',emoji:'no',name:'',notes:'',prompt:'',voice:'off'},S.config.coach||{});if(c.style==='soft')c.style='fun';return c;}
 let coachTimer=null;
-function setCoachCfg(patch,now){S.config.coach=Object.assign(coachCfg(),patch);clearTimeout(coachTimer);if(now)persistConfig();else coachTimer=setTimeout(persistConfig,700);}
+function setCoachCfg(patch,now){S.config.coach=Object.assign(coachCfg(),patch);if(patch&&patch.name!==undefined){const a=accCur();if(a&&a.name!==String(patch.name).trim()){a.name=String(patch.name).trim();accSave();}}clearTimeout(coachTimer);if(now)persistConfig();else coachTimer=setTimeout(persistConfig,700);}
 function optText(key,val){const o=COACH_OPTS[key].find(x=>x[0]===val)||COACH_OPTS[key][0];return o[2];}
 function coachStyle(c){
   return 'Стиль общения\n'+(c.name.trim()?'- Пользователя зовут '+c.name.trim()+'.\n':'')+
@@ -4373,7 +4377,9 @@ function coachView(){
     h+='<div class="cwho">'+coachAva('big')+'<div><b>Ваш тренер</b><span>'+(eng?'на связи':'подключите ИИ, чтобы общаться')+'</span></div></div><p class="cintro">Спросите про технику, замену упражнения, питание или прогресс. Тренер видит вашу цель, план, отмеченные подходы и еду за день. Если попросите, он поменяет упражнения в плане, а если напишете, что съели, — запишет блюдо в «Питание».</p>'+
       '<div class="csug">'+COACH_SUG.map(s=>'<button class="press" data-csug="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>';
   }
-  h+=chatItems(0);
+  const keep=8,from=COACH.showAll?0:Math.max(0,COACH.msgs.length-keep);
+  if(COACH.msgs.length>keep)h+='<div class="cmore"><button class="ghost glass press" data-coach="'+(from>0?'more':'less')+'">'+(from>0?'Показать ранние сообщения · '+from:'Свернуть переписку')+'</button></div>';
+  h+=chatItems(from);
   if(COACH.msgs.length&&!COACH.busy)h+='<div class="cclear"><button class="rm" data-coach="clear">'+(COACH.armClear?'Точно очистить переписку?':'Очистить переписку')+'</button></div>';
   h+='</div><div class="cspace" aria-hidden="true"></div>'+composerHTML();
   return h;
@@ -4399,6 +4405,7 @@ function composerHTML(){
 function coachClick(ds){
   if(ds.csug){coachSend(ds.csug);return true;}
   if(ds.cundo!==undefined){undoCoach(+ds.cundo);return true;}
+  if(ds.coach==='more'||ds.coach==='less'){COACH.showAll=ds.coach==='more';renderMain();if(!COACH.showAll)scrollCoach();return true;}
   if(ds.coach==='keys'){UI.prevTab=UI.tab==='settings'?UI.prevTab:UI.tab;UI.tab='settings';FOOD.keyEdit=false;COACH.pfull=false;render();window.scrollTo({top:0});return true;}
   if(ds.cset){const q=ds.cset.split('|');setCoachCfg({[q[0]]:q[1]},true);renderMain();renderHeader();return true;}
   if(ds.coach==='psave'){const v=(COACH.pdraft!=null?COACH.pdraft:coachCfg().prompt||COACH_DEFAULT).trim();
@@ -4602,9 +4609,9 @@ function wkClick(v){
 /* settings screen */
 function settingsView(){
   if(UI.goalEdit)return setupView();
-  const pr=prof(),c=coachCfg(),tc=trainCfg(),ini=(c.name.trim()[0]||'Я').toUpperCase();
-  let h='<section class="card glass sprof"><div class="ghead"><span class="avatar big" aria-hidden="true">'+esc(ini)+'</span><div><b>'+esc(c.name.trim()||'Ваш профиль')+'</b><span>'+
-    (pr&&pr.accepted?esc(GOALS[pr.goal].name)+' · '+pr.weight+' → '+pr.target+' кг · до '+dateLong(pr.end):'Цель не задана')+'</span></div></div>'+
+  const pr=prof(),tc=trainCfg();
+  let h='<section class="card glass sprof"><div class="ghead">'+(pr&&pr.accepted?'<img class="gico" src="'+gIco(pr.goal)+'" alt="">':'')+'<div><b>'+(pr&&pr.accepted?esc(GOALS[pr.goal].name):'Цель не задана')+'</b><span>'+
+    (pr&&pr.accepted?pr.weight+' → '+pr.target+' кг · до '+dateLong(pr.end):'Поставьте цель — соберу план и посчитаю калории')+'</span></div></div>'+
     '<button class="ghost glass press" data-setup="edit">'+(pr&&pr.accepted?'Изменить цель, параметры и расписание':'Поставить цель')+'</button></section>'+accCard();
   h+='<section class="card glass"><h2 class="sec">Тренировки</h2>'+
     '<div class="sfield"><span class="flab">Отдых между подходами</span><div class="seg2">'+[60,90,120,180].map(s=>'<button data-tset="rest|'+s+'" aria-pressed="'+(tc.rest===s)+'">'+(s<120?s+' с':s/60+' мин')+'</button>').join('')+'</div></div>'+
@@ -6113,7 +6120,7 @@ async function authClick(ds){
 function accCard(){
   const a=accCur();if(!a||window.__SEED)return '';
   return '<section class="card glass"><h2 class="sec">Вход</h2>'+
-    '<div class="aprof"><span class="aava '+(a.sex==='f'?'f':'m')+'">'+esc(authInitial(a))+'</span><span><b>'+esc(a.name||coachCfg().name||'Профиль')+'</b><i>'+(a.sex==='f'?'Женский':'Мужской')+' · '+(ACC.list.length>1?ACC.list.length+' '+plural(ACC.list.length,['профиль','профиля','профилей'])+' на телефоне':'один профиль на телефоне')+'</i></span></div>'+
+    '<p class="cap">'+(ACC.list.length>1?'На телефоне '+ACC.list.length+' '+plural(ACC.list.length,['профиль','профиля','профилей'])+'. ':'')+'Пол профиля — '+(a.sex==='f'?'женский':'мужской')+', от него зависят иконки и расчёт калорий.</p>'+
     '<div class="sfield"><span class="flab">Код при входе</span>'+(UI.pinEdit?
       '<div class="pinrow"><input id="setPin" class="sin pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" placeholder="4 цифры"><button class="log tint press" data-acc="pinsave">Сохранить</button></div>':
       '<div class="seg2"><button data-acc="pinoff" aria-pressed="'+!a.pin+'">Без кода</button><button data-acc="pinon" aria-pressed="'+!!a.pin+'">'+(a.pin?'Код задан':'Задать код')+'</button></div>')+'</div>'+
