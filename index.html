@@ -2851,7 +2851,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='22.10 11:45';
+const BUILD='22.10 12:30';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -5522,10 +5522,13 @@ setInterval(()=>{const t=todayKey();if(t!==lastToday){if(UI.date===lastToday)UI.
     const sets=daySets(k),meals=dayMeals(k),out=[];
     let mins=0;
     if(sets.length){
-      const at=sets.map(x=>x.at||0).filter(Boolean);
-      const span=at.length?(Math.max.apply(null,at)-Math.min.apply(null,at))/60000+3:0;
+      // Считаем только активную часть: паузы между подходами до 10 минут — это отдых внутри
+      // тренировки, более длинные — перерыв между тренировками, за него берём 2 минуты (последний подход).
+      const at=sets.map(x=>x.at||0).filter(Boolean).sort((a,b)=>a-b);
+      let active=at.length?2:0;
+      for(let i=1;i<at.length;i++){const g=(at[i]-at[i-1])/60000;active+=g<=10?g:2;}
       const timed=sets.reduce((a,x)=>a+((x.k==='time'||x.k==='dist')?(x.t||0)/60:0),0);
-      mins=Math.round(Math.min(Math.max(span,timed),240));
+      mins=Math.round(Math.min(Math.max(active,timed),240));
     }
     const ton=sets.reduce((a,x)=>a+(x.k==='wr'?(x.w||0)*(x.r||0):0),0);
     const km=sets.reduce((a,x)=>a+(x.k==='dist'?(x.d||0):0),0);
