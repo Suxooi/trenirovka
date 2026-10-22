@@ -2849,7 +2849,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='22.10 10:06';
+const BUILD='22.10 10:22';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -4237,7 +4237,19 @@ function undoCoach(i){
 function chatHistory(){
   let h=COACH.msgs.slice(-16).map(m=>({role:m.role,content:m.role==='assistant'?m.text+(m.acts&&m.acts.length?'\n[Сделано: '+m.acts.map(a=>a.label).join('; ')+(m.undone?' — пользователь отменил их':'')+']':'')+(m.skipped?'\n[Не поставлено, нет инвентаря: '+m.skipped.join(', ')+']':''):m.text}));
   while(h.length&&h[0].role!=='user')h.shift();
-  return h;
+  const out=[];h.forEach(m=>{const l=out[out.length-1];if(l&&l.role===m.role)l.content+='\n\n'+m.content;else out.push({role:m.role,content:m.content});});
+  return out;
+}
+async function coachAsk(eng,sys,hist,signal){
+  const once=async strict=>{
+    if(eng==='ds')return dsCall(Object.assign({max_tokens:3000,messages:[{role:'system',content:sys}].concat(hist)},strict?{response_format:{type:'json_object'}}:{}),signal);
+    if(eng==='api')return anthCall({system:sys,messages:hist,max_tokens:3000},signal);
+    const r=await SAMPLE(sys+'\n\nПереписка (последнее сообщение — от пользователя, ответь на него):\n'+hist.map(m=>(m.role==='user'?'Пользователь: ':'Тренер: ')+m.content).join('\n\n'),{signal,cache:false});
+    return (r&&r.text)||'';
+  };
+  let t=await once(true);
+  if(!String(t||'').trim())t=await once(false);
+  return t;
 }
 async function coachSend(text){
   text=String(text||'').trim();if(!text||COACH.busy)return;
@@ -4247,10 +4259,8 @@ async function coachSend(text){
   saveCoach();renderMain();scrollCoach();
   const ctl=new AbortController();COACH.ctl=ctl;
   try{
-    const sys=coachSystem(),hist=chatHistory();let o;
-    if(eng==='ds')o=coachParse(await dsCall({max_tokens:3000,response_format:{type:'json_object'},messages:[{role:'system',content:sys}].concat(hist)},ctl.signal));
-    else if(eng==='api')o=coachParse(await anthCall({system:sys,messages:hist,max_tokens:3000},ctl.signal));
-    else o=coachParse(((await SAMPLE(sys+'\n\nПереписка (последнее сообщение — от пользователя, ответь на него):\n'+hist.map(m=>(m.role==='user'?'Пользователь: ':'Тренер: ')+m.content).join('\n\n'),{signal:ctl.signal,cache:false}))||{}).text);
+    const sys=coachSystem(),hist=chatHistory();
+    const o=coachParse(await coachAsk(eng,sys,hist,ctl.signal));
     if(COACH.ctl!==ctl)return;
     const reply=String((o&&(o.reply||o.text||o.answer))||'').trim();
     const res=applyCoachActions(o&&o.actions);
