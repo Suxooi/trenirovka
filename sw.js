@@ -1,5 +1,5 @@
 // Журнал тренировок — офлайн-кэш. Меняйте VERSION при каждом обновлении файлов.
-const VERSION = 'trenirovki-202610230925';
+const VERSION = 'trenirovki-202610231246';
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192-v2.png", "./icons/icon-512-v2.png", "./icons/apple-touch-icon-v2.png", "./icons/favicon-32-v2.png"];
 
 self.addEventListener('install', (e) => {
@@ -18,6 +18,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // база продуктов по штрихкоду — всегда напрямую в сеть, без кэша
+  if (new URL(req.url).hostname.endsWith('openfoodfacts.org')) return;
   // база знаний обновляется раз в месяц — сначала сеть
   if (new URL(req.url).pathname.endsWith('/kb.json')) {
     e.respondWith(fetch(req, { cache: 'no-cache' }).then((res) => { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); return res; }).catch(() => caches.match(req)));

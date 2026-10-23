@@ -586,7 +586,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .fthumb.mph{display:grid;place-items:center;background:var(--sunk);color:var(--acc);font-family:var(--f-num);font-weight:700;font-size:18px}
 .fthumb.mph small{font-size:11px;margin-left:1px;color:var(--muted)}
 .mf{display:grid;gap:4px;min-width:0}.mf span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding-left:4px}
-.mf.w2{grid-column:1/3}.mf.w3{grid-column:1/-1}
+.mf.w2{grid-column:1/3}.mf.w3{grid-column:1/-1}.mform .w4{grid-column:1/-1;margin:0}
 .wkbtns{display:flex;gap:6px}.wkcbtn{display:inline-flex;align-items:center;gap:6px}.wkcbtn svg{width:16px;height:16px}
 .mauto{grid-column:1/-1;margin:0}
 /* set feel, coach offers, backup banner, food quick add, water */
@@ -2902,7 +2902,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='23.10 09:25';
+const BUILD='23.10 12:46';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -3634,8 +3634,8 @@ function foodView(){
       '<div class="duo"><label class="log tint press filebtn">'+CAM+'Снять фото<input type="file" id="foodCam" class="vh" accept="image/*" capture="environment"></label><label class="ghost glass press filebtn">Из галереи<input type="file" id="foodPick" class="vh" accept="image/*"></label></div>'+
       '<input id="foodHint" class="fhint" placeholder="Уточнение: 300 г, без соуса" value="'+esc(FOOD.hint)+'" aria-label="Уточнение к фото">'+
       '<label class="ghost glass press filebtn wide bcbtn">'+BC_ICO+'Штрихкод с упаковки<input type="file" id="barcodePick" class="vh" accept="image/*" capture="environment"></label>'+
-      (FOOD.bcAsk?'<form class="ftext" id="bcForm"><input id="bcCode" class="fhint" inputmode="numeric" autocomplete="off" placeholder="Цифры под штрихкодом" aria-label="Цифры штрихкода"><button class="log tint press" type="submit">Найти</button></form>':'')+
-      (FOOD.stage==='error'?'<p class="ferr">'+esc(FOOD.err)+'</p>'+(FOOD.blob?'<button class="ghost glass press" data-food="retry">Попробовать снова</button>':''):'')+
+      (FOOD.bcAsk||FOOD.bcNew?'':'<button class="restore" data-food="bcask">Ввести цифры штрихкода вручную</button>')+(FOOD.bcAsk||FOOD.bcNew?'<form class="ftext" id="bcForm"><input id="bcCode" class="fhint" inputmode="numeric" enterkeyhint="search" autocomplete="off" maxlength="14" placeholder="Цифры под штрихкодом" aria-label="Цифры штрихкода" value="'+esc(FOOD.bcCode||'')+'"><button class="log tint press" type="submit">Найти</button></form>':'')+
+      (FOOD.stage==='error'?'<p class="ferr">'+esc(FOOD.err)+'</p>'+(FOOD.blob?'<button class="ghost glass press" data-food="retry">Попробовать снова</button>':'')+bcNewForm():'')+
       (!eng?'<p class="cap">'+(window.claude?'Распознавание через Claude недоступно в этом окне.':'Чтобы распознавать фото, выберите ниже Claude или DeepSeek и вставьте ключ.')+' Пока можно добавить блюдо вручную.</p>':
         '<p class="cap">'+(eng==='claude'?'Фото разбирает Claude. При первом разборе он спросит разрешение.':eng==='ds'?'Фото разбирает DeepSeek по вашему ключу.':'Фото разбирает Claude по вашему ключу API.')+'</p>')+
       (FOOD.manual?manualForm():'<button class="restore" data-food="manual">Добавить вручную</button>')+'</section>';
@@ -3679,7 +3679,8 @@ function foodClick(ds){
     if(FOOD.blob){FOOD.hint=(FOOD.hint?FOOD.hint+'; ':'')+clar;runAnalysis();}else foodFromText((FOOD.text||r.dish)+'. Уточнение: '+clar,true,true);return true;}
   if(ds.food==='yday'){const y=dayMeals(addDays(UI.date,-1));if(y.length)addMealsCopy(y,'Добавлено как вчера: '+y.length+' '+plural(y.length,['блюдо','блюда','блюд']));return true;}
   if(ds.food==='askplan'){UI.tab='coach';render();coachSend('Составь, что мне съесть сегодня до конца дня, чтобы добрать норму калорий и белка. Учитывай, что я уже съел.');return true;}
-  if(ds.food==='cancel'){FOOD.stage='idle';FOOD.res=null;FOOD.thumb='';FOOD.blob=null;FOOD.text='';FOOD.bcAsk=false;renderMain();return true;}
+  if(ds.food==='bcask'){FOOD.bcAsk=true;renderMain();setTimeout(()=>{const i=$('bcCode');if(i)i.focus();},50);return true;}
+  if(ds.food==='cancel'){FOOD.stage='idle';FOOD.res=null;FOOD.thumb='';FOOD.blob=null;FOOD.text='';FOOD.bcAsk=false;FOOD.bcNew=null;renderMain();return true;}
   if(ds.food==='manual'){FOOD.manual=true;renderMain();const i=$('mName');if(i)i.focus();return true;}
   if(ds.food==='nomanual'){FOOD.manual=false;renderMain();return true;}
   if(ds.food==='keyedit'){FOOD.keyEdit=true;renderMain();return true;}
@@ -5577,7 +5578,7 @@ async function foodTextAI(text,signal){
 async function foodFromText(text,forceAI,answered){
   text=String(text||'').trim();if(!text)return;
   if(FOOD.ctl)FOOD.ctl.abort();
-  FOOD.text=text;FOOD.blob=null;FOOD.thumb='';FOOD.manual=false;if(!answered)FOOD.asked=false;FOOD.busyTxt='';FOOD.bcAsk=false;
+  FOOD.text=text;FOOD.blob=null;FOOD.thumb='';FOOD.manual=false;if(!answered)FOOD.asked=false;FOOD.busyTxt='';FOOD.bcAsk=false;FOOD.bcNew=null;
   const loc=foodLocal(text),eng=aiEngine(false);
   if(!forceAI&&loc.items.length&&!loc.miss.length){
     FOOD.res={dish:fdDish(text),items:loc.items,conf:'',note:'Посчитано по таблице продуктов (значения на 100 г). Поправьте граммы, если знаете точный вес.',src:'local'};FOOD.stage='result';renderMain();return;}
@@ -5836,27 +5837,69 @@ async function onBarcodeFile(file){
   if(!code){FOOD.stage='error';FOOD.bcAsk=true;FOOD.err='Не разглядел штрихкод. Сфотографируйте ближе и ровнее или введите цифры под ним.';renderMain();return;}
   lookupBarcode(code);
 }
-async function lookupBarcode(code){
-  code=String(code||'').replace(/\D/g,'');if(code.length<8){toast('Введите 8–13 цифр под штрихкодом.');return;}
-  FOOD.stage='busy';FOOD.err='';FOOD.busyTxt='Ищу товар '+code+'…';FOOD.bcAsk=false;renderMain();
-  try{
-    const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+code+'.json?fields=product_name,product_name_ru,generic_name,brands,nutriments,serving_quantity,product_quantity');
-    if(!r.ok&&r.status!==404)throw {code:'net'};
-    const j=await r.json(),p=j&&j.product;
-    if(!p||j.status===0)throw {code:'nf'};
-    const n=p.nutriments||{},kc=+n['energy-kcal_100g']||(+n.energy_100g?n.energy_100g/4.184:0);
-    if(!kc)throw {code:'nonut'};
-    const name=(p.product_name_ru||p.product_name||p.generic_name||'Товар '+code).trim()+(p.brands?' · '+String(p.brands).split(',')[0].trim():'');
-    const pq=+p.product_quantity,g=Math.round(+p.serving_quantity||(pq&&pq<=400?pq:100));
-    FOOD.res={dish:name.slice(0,80),items:[{name:name.slice(0,60),g0:g,grams:g,k:kc/100,p:(+n.proteins_100g||0)/100,f:(+n.fat_100g||0)/100,c:(+n.carbohydrates_100g||0)/100}],conf:'',
-      note:'Из базы Open Food Facts: на 100 г — '+Math.round(kc)+' ккал, Б '+r0(+n.proteins_100g||0)+' · Ж '+r0(+n.fat_100g||0)+' · У '+r0(+n.carbohydrates_100g||0)+'. Укажите, сколько граммов съели.',src:'barcode'};
-    FOOD.stage='result';
-  }catch(e){
-    FOOD.stage='error';FOOD.bcAsk=true;
-    FOOD.err=e&&e.code==='nf'?'Товара '+code+' нет в базе Open Food Facts. Напишите блюдо текстом — посчитаю по таблице.':e&&e.code==='nonut'?'В базе есть товар, но без калорийности. Напишите его текстом.':'Не удалось связаться с базой продуктов. Проверьте интернет или напишите блюдо текстом.';
-  }
-  renderMain();
+// own barcode memory: products found once or typed from the label work instantly, offline too
+function bcMem(){if(!S.config.bcMem||typeof S.config.bcMem!=='object'||Array.isArray(S.config.bcMem))S.config.bcMem={};return S.config.bcMem;}
+function bcRemember(code,o){const m=bcMem();delete m[code];m[code]=o;const ks=Object.keys(m);while(ks.length>300)delete m[ks.shift()];persistConfig();}
+function bcVariants(code){const v=[code];if(code.length===12)v.push('0'+code);if(code.length===13&&code[0]==='0')v.push(code.slice(1));return v;}
+function bcNum(x){const v=parseFloat(String(x==null?'':x).replace(',','.'));return isFinite(v)&&v>=0?v:0;}
+function bcResult(code,o,note){
+  const name=String(o.n||('Товар '+code)).slice(0,80),g=Math.round(o.g||100);
+  FOOD.res={dish:name,items:[{name:name.slice(0,60),g0:g,grams:g,k:o.k/100,p:(o.p||0)/100,f:(o.f||0)/100,c:(o.c||0)/100}],conf:'',
+    note:note+': на 100 г — '+Math.round(o.k)+' ккал, Б '+r0(o.p)+' · Ж '+r0(o.f)+' · У '+r0(o.c)+'. Укажите, сколько граммов съели.',src:'barcode',code:code};
+  FOOD.stage='result';FOOD.bcNew=null;FOOD.bcAsk=false;
 }
+// Open Food Facts: two mirrors, a timeout, EAN/UPC variants; never hangs on a bad answer
+async function offGet(url){
+  const ac=window.AbortController?new AbortController():null,t=setTimeout(()=>{if(ac)ac.abort();},9000);
+  try{const r=await fetch(url,ac?{signal:ac.signal}:{});
+    if(r.status===404)return {nf:true};
+    if(!r.ok)return {net:true,why:'HTTP '+r.status};
+    let j=null;try{j=await r.json();}catch(e){return {net:true,why:'не JSON'};}
+    if(!j||j.status===0||!j.product)return {nf:true};
+    return {p:j.product};
+  }catch(e){return {net:true,why:e&&e.name==='AbortError'?'таймаут':'нет связи'};}finally{clearTimeout(t);}
+}
+async function offLookup(code){
+  const F='fields=product_name,product_name_ru,generic_name,brands,nutriments,serving_quantity,product_quantity';
+  const hosts=['https://world.openfoodfacts.org/api/v2/product/','https://ru.openfoodfacts.org/api/v0/product/'];
+  let nf=false,why='';
+  for(const h of hosts){let netHere=false;
+    for(const c of bcVariants(code)){const r=await offGet(h+c+'.json?'+F);
+      if(r.p)return r;if(r.nf)nf=true;else{netHere=true;why=r.why;break;}}
+    if(!netHere)break; // the base answered — the other mirror has the same data
+  }
+  return nf?{nf:true}:{net:true,why:why};
+}
+function offKcal(n){return bcNum(n['energy-kcal_100g'])||bcNum(n['energy-kcal'])||(bcNum(n['energy-kj_100g'])/4.184)||(bcNum(n.energy_100g)/4.184);}
+async function lookupBarcode(code){
+  code=String(code||'').replace(/\D/g,'');if(code.length<8||code.length>14){toast('Введите 8–13 цифр под штрихкодом.');return;}
+  FOOD.bcCode=code;FOOD.bcNew=null;FOOD.manual=false;
+  const mine=bcMem()[code];
+  if(mine&&mine.k){bcResult(code,mine,mine.own?'Ваш товар':'Из базы Open Food Facts (сохранено)');renderMain();return;}
+  FOOD.stage='busy';FOOD.err='';FOOD.busyTxt='Ищу товар '+code+'…';FOOD.bcAsk=false;renderMain();
+  const r=await offLookup(code);
+  if(r.p){const p=r.p,n=p.nutriments||{},kc=offKcal(n);
+    const name=((p.product_name_ru||p.product_name||p.generic_name||'').trim()+(p.brands?' · '+String(p.brands).split(',')[0].trim():'')).replace(/^ · /,'');
+    if(kc){const pq=bcNum(p.product_quantity),o={n:(name||'Товар '+code).slice(0,80),k:kc,p:bcNum(n.proteins_100g),f:bcNum(n.fat_100g),c:bcNum(n.carbohydrates_100g),g:Math.round(bcNum(p.serving_quantity)||(pq&&pq<=400?pq:100))};
+      bcRemember(code,o);bcResult(code,o,'Из базы Open Food Facts');renderMain();return;}
+    FOOD.bcNew={code:code,n:name};FOOD.err='Товар '+(name?'«'+name+'» ':'')+'есть в базе, но без калорийности. Перепишите КБЖУ с упаковки — я запомню этот штрихкод.';
+  }else if(r.nf){FOOD.bcNew={code:code,n:''};FOOD.err='Товара '+code+' нет в открытой базе Open Food Facts (российских товаров там не все). Перепишите название и КБЖУ с упаковки — в следующий раз найду сам.';}
+  else{FOOD.bcNew={code:code,n:''};FOOD.err=(window.claude?'В окне claude.ai внешние сайты закрыты, поэтому база продуктов недоступна — на телефоне в приложении поиск работает. ':'Не удалось связаться с базой продуктов ('+r.why+'). ')+'Можно переписать КБЖУ с упаковки — запомню штрихкод.';}
+  FOOD.stage='error';renderMain();
+}
+function bcNewForm(){
+  const b=FOOD.bcNew;if(!b)return '';
+  const f=(id,lab,ph,cls,val)=>'<label class="mf'+(cls?' '+cls:'')+'"><span>'+lab+'</span><input id="'+id+'" inputmode="'+(id==='bnName'?'text':'decimal')+'" placeholder="'+ph+'"'+(val?' value="'+esc(val)+'"':'')+(id==='bnName'?' maxlength="80"':'')+'></label>';
+  return '<form class="mform" id="bcNewForm"><p class="cap w4">Штрихкод '+esc(b.code)+' · значения на 100 г, как на упаковке</p>'+
+    f('bnName','Товар','например, творог 5%','w2',b.n)+f('bnG','Съели, г','100','')+f('bnK','Ккал','—','w3')+f('bnP','Белки','—','')+f('bnF','Жиры','—','')+f('bnC','Углев.','—','')+
+    '<button class="log tint press" type="submit">Запомнить и посчитать</button><button class="rm" type="button" data-food="cancel">Отмена</button></form>';
+}
+document.addEventListener('submit',e=>{if(e.target&&e.target.id==='bcNewForm'){e.preventDefault();
+  const b=FOOD.bcNew;if(!b)return;const v=id=>{const i=$(id);return i?i.value:'';};
+  const n=v('bnName').trim(),k=bcNum(v('bnK'));
+  if(!n||!(k>0)){toast('Впишите название и калории на 100 г.');return;}
+  const o={n:n.slice(0,80),k:k,p:bcNum(v('bnP')),f:bcNum(v('bnF')),c:bcNum(v('bnC')),g:Math.round(bcNum(v('bnG'))||100),own:1};
+  bcRemember(b.code,o);bcResult(b.code,o,'Ваш товар');renderMain();toast('Штрихкод запомнен.');}});
 document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='barcodePick'){const f=t.files&&t.files[0];t.value='';onBarcodeFile(f);}});
 document.addEventListener('submit',e=>{if(e.target&&e.target.id==='bcForm'){e.preventDefault();const i=$('bcCode');if(i)lookupBarcode(i.value);}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(proactive,300);});
