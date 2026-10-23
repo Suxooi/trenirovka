@@ -760,6 +760,18 @@ button.bigring{border:0;color:inherit;padding:0;font:inherit;cursor:pointer}
 .ctools{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.35}
 .bub.typing .tstep{margin-left:8px;font-size:13px;color:var(--muted);font-style:normal}
 .memlist{list-style:none;margin:0;padding:0;display:grid;gap:6px}.memlist li{display:flex;align-items:center;gap:8px;padding:8px 6px 8px 12px;border-radius:14px;background:var(--sunk);font-size:14px}.memlist li span{flex:1;min-width:0}.memlist i{font-style:normal;font-size:12px;color:var(--muted)}
+.bclinks{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}.bclinks .restore{position:relative;cursor:pointer}
+.bcscan{position:fixed;inset:0;z-index:300;background:#000;display:flex;flex-direction:column;overflow:hidden}
+.bcscan video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bcframe{position:absolute;left:8%;right:8%;top:40%;height:20%;border:2px solid rgba(255,255,255,.92);border-radius:18px;box-shadow:0 0 0 100vmax rgba(0,0,0,.5);pointer-events:none}
+.bcline{position:absolute;left:5%;right:5%;top:50%;height:2px;border-radius:2px;background:#7fe3b4;box-shadow:0 0 10px #7fe3b4;animation:bcl 1.4s ease-in-out infinite alternate}
+@keyframes bcl{from{top:12%}to{top:88%}}
+@media (prefers-reduced-motion:reduce){.bcline{animation:none}}
+.bctop{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;color:#fff;font-weight:600;font-size:17px}
+.bcx{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:28px;line-height:1;cursor:pointer}
+.bcbot{position:relative;z-index:1;margin-top:auto;display:grid;gap:12px;padding:16px 16px calc(env(safe-area-inset-bottom) + 20px)}
+.bcmsg{margin:0;color:#fff;text-align:center;font-size:15px;line-height:1.35;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.bcbot .ghost{color:#fff}
 .filebtn{display:inline-flex;align-items:center;cursor:pointer}
 .itform{display:grid;gap:8px}.itform input{width:100%;min-height:46px;border-radius:14px;border:1px solid var(--glass-edge);background:var(--glass-strong);color:var(--ink);font:inherit;font-size:16px;padding:0 14px;min-width:0}
 </style>
@@ -2902,7 +2914,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='23.10 12:46';
+const BUILD='23.10 12:55';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -3633,8 +3645,8 @@ function foodView(){
       '<p class="cap">Калории и БЖУ посчитаются сами по названию и весу. Вес можно не писать — возьму обычную порцию.</p><div class="ordiv"><span>или по фото</span></div>'+
       '<div class="duo"><label class="log tint press filebtn">'+CAM+'Снять фото<input type="file" id="foodCam" class="vh" accept="image/*" capture="environment"></label><label class="ghost glass press filebtn">Из галереи<input type="file" id="foodPick" class="vh" accept="image/*"></label></div>'+
       '<input id="foodHint" class="fhint" placeholder="Уточнение: 300 г, без соуса" value="'+esc(FOOD.hint)+'" aria-label="Уточнение к фото">'+
-      '<label class="ghost glass press filebtn wide bcbtn">'+BC_ICO+'Штрихкод с упаковки<input type="file" id="barcodePick" class="vh" accept="image/*" capture="environment"></label>'+
-      (FOOD.bcAsk||FOOD.bcNew?'':'<button class="restore" data-food="bcask">Ввести цифры штрихкода вручную</button>')+(FOOD.bcAsk||FOOD.bcNew?'<form class="ftext" id="bcForm"><input id="bcCode" class="fhint" inputmode="numeric" enterkeyhint="search" autocomplete="off" maxlength="14" placeholder="Цифры под штрихкодом" aria-label="Цифры штрихкода" value="'+esc(FOOD.bcCode||'')+'"><button class="log tint press" type="submit">Найти</button></form>':'')+
+      '<button class="ghost glass press wide bcbtn" data-food="bcscan">'+BC_ICO+'Сканировать штрихкод</button>'+
+      (FOOD.bcAsk||FOOD.bcNew?'':'<div class="bclinks"><label class="restore">Фото штрихкода<input type="file" id="barcodePick" class="vh" accept="image/*"></label><button class="restore" data-food="bcask">Ввести цифры</button></div>')+(FOOD.bcAsk||FOOD.bcNew?'<form class="ftext" id="bcForm"><input id="bcCode" class="fhint" inputmode="numeric" enterkeyhint="search" autocomplete="off" maxlength="14" placeholder="Цифры под штрихкодом" aria-label="Цифры штрихкода" value="'+esc(FOOD.bcCode||'')+'"><button class="log tint press" type="submit">Найти</button></form>':'')+
       (FOOD.stage==='error'?'<p class="ferr">'+esc(FOOD.err)+'</p>'+(FOOD.blob?'<button class="ghost glass press" data-food="retry">Попробовать снова</button>':'')+bcNewForm():'')+
       (!eng?'<p class="cap">'+(window.claude?'Распознавание через Claude недоступно в этом окне.':'Чтобы распознавать фото, выберите ниже Claude или DeepSeek и вставьте ключ.')+' Пока можно добавить блюдо вручную.</p>':
         '<p class="cap">'+(eng==='claude'?'Фото разбирает Claude. При первом разборе он спросит разрешение.':eng==='ds'?'Фото разбирает DeepSeek по вашему ключу.':'Фото разбирает Claude по вашему ключу API.')+'</p>')+
@@ -3679,8 +3691,9 @@ function foodClick(ds){
     if(FOOD.blob){FOOD.hint=(FOOD.hint?FOOD.hint+'; ':'')+clar;runAnalysis();}else foodFromText((FOOD.text||r.dish)+'. Уточнение: '+clar,true,true);return true;}
   if(ds.food==='yday'){const y=dayMeals(addDays(UI.date,-1));if(y.length)addMealsCopy(y,'Добавлено как вчера: '+y.length+' '+plural(y.length,['блюдо','блюда','блюд']));return true;}
   if(ds.food==='askplan'){UI.tab='coach';render();coachSend('Составь, что мне съесть сегодня до конца дня, чтобы добрать норму калорий и белка. Учитывай, что я уже съел.');return true;}
-  if(ds.food==='bcask'){FOOD.bcAsk=true;renderMain();setTimeout(()=>{const i=$('bcCode');if(i)i.focus();},50);return true;}
-  if(ds.food==='cancel'){FOOD.stage='idle';FOOD.res=null;FOOD.thumb='';FOOD.blob=null;FOOD.text='';FOOD.bcAsk=false;FOOD.bcNew=null;renderMain();return true;}
+  if(ds.food==='bcscan'){bcScanOpen();return true;}
+  if(ds.food==='bcask'){FOOD.bcAsk=true;FOOD.bcCode='';renderMain();setTimeout(()=>{const i=$('bcCode');if(i)i.focus();},50);return true;}
+  if(ds.food==='cancel'){FOOD.stage='idle';FOOD.res=null;FOOD.thumb='';FOOD.blob=null;FOOD.text='';FOOD.bcAsk=false;FOOD.bcNew=null;FOOD.bcCode='';renderMain();return true;}
   if(ds.food==='manual'){FOOD.manual=true;renderMain();const i=$('mName');if(i)i.focus();return true;}
   if(ds.food==='nomanual'){FOOD.manual=false;renderMain();return true;}
   if(ds.food==='keyedit'){FOOD.keyEdit=true;renderMain();return true;}
@@ -5821,22 +5834,113 @@ function askPlanBtn(){
 }
 // barcode → Open Food Facts (open product database with many Russian items)
 const BC_ICO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6v12M7 6v12M10 6v12M14 6v12M17 6v12M20 6v12"/></svg>';
-function loadScript(src){return new Promise((ok,bad)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=bad;document.head.appendChild(s);});}
+function loadScript(src){return new Promise((ok,bad)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>{s.remove();bad(new Error('script'));};document.head.appendChild(s);});}
+// barcode reader: zxing-cpp in WebAssembly — from the app's own folder (works offline), else from the CDN
+const BC_FMT=['EAN-13','EAN-8','UPC-A','UPC-E','Code128'],ZX_V='2.2.4';
+let ZX=null,ZXP=null;
+function zxLoad(){
+  if(ZX)return Promise.resolve(ZX);if(ZXP)return ZXP;
+  const cdn='https://cdn.jsdelivr.net/npm/zxing-wasm@'+ZX_V+'/dist/';
+  const tries=[['vendor/zxing/zxing-reader.js','vendor/zxing/zxing_reader.wasm'],[cdn+'iife/reader/index.js',cdn+'reader/zxing_reader.wasm']];
+  ZXP=(async()=>{
+    for(const t of tries){
+      try{
+        const js=new URL(t[0],location.href).href,wasm=new URL(t[1],location.href).href;
+        if(!window.ZXingWASM)await loadScript(js);
+        await window.ZXingWASM.prepareZXingModule({overrides:{locateFile:(f,pre)=>f.endsWith('.wasm')?wasm:pre+f},fireImmediately:true});
+        ZX=window.ZXingWASM;return ZX;
+      }catch(e){}
+    }
+    ZXP=null;return null;
+  })();
+  return ZXP;
+}
+function bcDigits(t){const d=String(t||'').replace(/\D/g,'');return d.length>=8&&d.length<=14?d:'';}
+async function bcDecodeData(img,fast){
+  if(window.BarcodeDetector){try{if(!bcDecodeData.bd)bcDecodeData.bd=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});const r=await bcDecodeData.bd.detect(img);const c=r&&r[0]&&bcDigits(r[0].rawValue);if(c)return c;}catch(e){}}
+  if(ZX){try{const r=await ZX.readBarcodes(img,{formats:BC_FMT,tryHarder:true,tryRotate:!fast,tryInvert:!fast,tryDownscale:true,maxNumberOfSymbols:1});const hit=(r||[]).find(x=>x.isValid!==false&&bcDigits(x.text));if(hit)return bcDigits(hit.text);}catch(e){}}
+  return '';
+}
+async function bcBitmap(file){
+  try{return await createImageBitmap(file,{imageOrientation:'from-image'});}catch(e){}
+  try{return await createImageBitmap(file);}catch(e){}
+  return await new Promise((ok,bad)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>ok(im);im.onerror=bad;im.src=u;});
+}
+// a phone photo is 12 Mpx: look at it whole and at the middle, at a couple of scales
 async function decodeBarcode(file){
-  if(window.BarcodeDetector){try{const bd=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});const bmp=await createImageBitmap(file);const r=await bd.detect(bmp);if(r&&r[0])return r[0].rawValue;}catch(e){}}
-  if(!window.Html5Qrcode)await loadScript('https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js');
-  let el=document.getElementById('bcReader');if(!el){el=document.createElement('div');el.id='bcReader';el.style.display='none';document.body.appendChild(el);}
-  const q=new window.Html5Qrcode('bcReader');
-  try{return await q.scanFile(file,false);}finally{try{q.clear();}catch(e){}}
+  await zxLoad();
+  const img=await bcBitmap(file),W=img.width||img.naturalWidth,H=img.height||img.naturalHeight;
+  if(!W||!H)return '';
+  const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+  const passes=[[0,0,1,1,1600],[.1,.25,.8,.5,1600],[0,0,1,1,1000],[.2,.3,.6,.4,1400],[0,0,1,1,2400]];
+  for(const [x,y,w,h,max] of passes){
+    const sw=W*w,sh=H*h,sc=Math.min(1,max/Math.max(sw,sh));
+    cv.width=Math.max(1,Math.round(sw*sc));cv.height=Math.max(1,Math.round(sh*sc));
+    cx.drawImage(img,W*x,H*y,sw,sh,0,0,cv.width,cv.height);
+    const c=await bcDecodeData(cx.getImageData(0,0,cv.width,cv.height),false);if(c)return c;
+  }
+  if(!ZX&&!window.BarcodeDetector){ // no reader at all — the old library is the last chance
+    try{if(!window.Html5Qrcode)await loadScript('https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js');
+      let el=document.getElementById('bcReader');if(!el){el=document.createElement('div');el.id='bcReader';el.style.display='none';document.body.appendChild(el);}
+      const q=new window.Html5Qrcode('bcReader');try{return bcDigits(await q.scanFile(file,false));}finally{try{q.clear();}catch(e){}}
+    }catch(e){}
+  }
+  return '';
 }
 async function onBarcodeFile(file){
   if(!file)return;
-  FOOD.stage='busy';FOOD.err='';FOOD.res=null;FOOD.blob=null;FOOD.thumb='';FOOD.busyTxt='Ищу штрихкод на фото…';renderMain();
+  FOOD.stage='busy';FOOD.err='';FOOD.res=null;FOOD.blob=null;FOOD.thumb='';FOOD.bcNew=null;FOOD.bcCode='';FOOD.busyTxt='Ищу штрихкод на фото…';renderMain();
   let code='';
-  try{code=String(await decodeBarcode(file)||'').replace(/\D/g,'');}catch(e){}
-  if(!code){FOOD.stage='error';FOOD.bcAsk=true;FOOD.err='Не разглядел штрихкод. Сфотографируйте ближе и ровнее или введите цифры под ним.';renderMain();return;}
+  try{code=await decodeBarcode(file);}catch(e){}
+  if(!code){FOOD.stage='error';FOOD.bcAsk=true;FOOD.err=ZX||window.BarcodeDetector?'Не разглядел штрихкод на фото. Попробуйте «Сканировать» камерой — так надёжнее, или введите цифры под штрихкодом.':'Не загрузился распознаватель штрихкодов — нужен интернет при первом запуске. Введите цифры под штрихкодом.';renderMain();return;}
   lookupBarcode(code);
 }
+// live scanner: camera preview, reads the middle band several times a second
+const BCS={on:false,stream:null,t:0,n:0};
+function bcScanClose(){
+  BCS.on=false;clearTimeout(BCS.t);
+  if(BCS.stream){BCS.stream.getTracks().forEach(t=>{try{t.stop();}catch(e){}});BCS.stream=null;}
+  const o=document.getElementById('bcScan');if(o)o.remove();
+}
+function bcScanMsg(t){const m=document.getElementById('bcMsg');if(m)m.textContent=t;}
+async function bcScanOpen(){
+  bcScanClose();zxLoad();
+  const o=document.createElement('div');o.id='bcScan';o.className='bcscan';o.setAttribute('role','dialog');o.setAttribute('aria-label','Сканер штрихкода');
+  o.innerHTML='<video id="bcVideo" playsinline muted autoplay></video><div class="bcframe" aria-hidden="true"><i class="bcline"></i></div>'+
+    '<div class="bctop"><span>Штрихкод</span><button class="bcx" data-bcs="close" aria-label="Закрыть сканер">×</button></div>'+
+    '<div class="bcbot"><p class="bcmsg" id="bcMsg" aria-live="polite">Запускаю камеру…</p>'+
+    '<div class="duo"><label class="ghost glass press filebtn">Сфотографировать<input type="file" id="barcodePick2" class="vh" accept="image/*"></label><button class="ghost glass press" data-bcs="digits">Ввести цифры</button></div></div>';
+  document.body.appendChild(o);BCS.on=true;BCS.n=0;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){bcScanMsg('Камера в этом окне недоступна. Сфотографируйте штрихкод или введите цифры.');return;}
+  let st=null;
+  try{st=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}});}
+  catch(e){bcScanMsg(e&&e.name==='NotAllowedError'?'Нет доступа к камере. Разрешите камеру для этого приложения в настройках iPhone или сфотографируйте штрихкод.':'Камера не запустилась. Сфотографируйте штрихкод или введите цифры.');return;}
+  if(!BCS.on){st.getTracks().forEach(t=>t.stop());return;}
+  BCS.stream=st;const v=document.getElementById('bcVideo');v.srcObject=st;try{await v.play();}catch(e){}
+  bcScanMsg('Наведите на штрихкод — он в рамке, без бликов');
+  await zxLoad();
+  if(!BCS.on)return;
+  if(!ZX&&!window.BarcodeDetector){bcScanMsg('Не загрузился распознаватель — нужен интернет при первом запуске. Введите цифры.');return;}
+  const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+  const tick=async()=>{
+    if(!BCS.on)return;
+    if(v.readyState>=2&&v.videoWidth){
+      BCS.n++;const W=v.videoWidth,H=v.videoHeight,full=BCS.n%4===0;
+      const sx=full?0:W*.06,sy=full?0:H*.28,sw=full?W:W*.88,sh=full?H:H*.44,sc=Math.min(1,1280/Math.max(sw,sh));
+      cv.width=Math.round(sw*sc);cv.height=Math.round(sh*sc);cx.drawImage(v,sx,sy,sw,sh,0,0,cv.width,cv.height);
+      const c=await bcDecodeData(cx.getImageData(0,0,cv.width,cv.height),true);
+      if(c&&BCS.on){bcScanClose();try{if(navigator.vibrate)navigator.vibrate(60);}catch(e){}lookupBarcode(c);return;}
+    }
+    BCS.t=setTimeout(tick,120);
+  };
+  tick();
+}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-bcs]');if(!b)return;
+  if(b.dataset.bcs==='close')bcScanClose();
+  if(b.dataset.bcs==='digits'){bcScanClose();FOOD.bcAsk=true;FOOD.bcCode='';if(FOOD.stage!=='error')FOOD.stage='idle';renderMain();setTimeout(()=>{const i=$('bcCode');if(i)i.focus();},50);}
+});
+document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='barcodePick2'){const f=t.files&&t.files[0];t.value='';bcScanClose();onBarcodeFile(f);}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&BCS.on)bcScanClose();});
 // own barcode memory: products found once or typed from the label work instantly, offline too
 function bcMem(){if(!S.config.bcMem||typeof S.config.bcMem!=='object'||Array.isArray(S.config.bcMem))S.config.bcMem={};return S.config.bcMem;}
 function bcRemember(code,o){const m=bcMem();delete m[code];m[code]=o;const ks=Object.keys(m);while(ks.length>300)delete m[ks.shift()];persistConfig();}
@@ -5846,7 +5950,7 @@ function bcResult(code,o,note){
   const name=String(o.n||('Товар '+code)).slice(0,80),g=Math.round(o.g||100);
   FOOD.res={dish:name,items:[{name:name.slice(0,60),g0:g,grams:g,k:o.k/100,p:(o.p||0)/100,f:(o.f||0)/100,c:(o.c||0)/100}],conf:'',
     note:note+': на 100 г — '+Math.round(o.k)+' ккал, Б '+r0(o.p)+' · Ж '+r0(o.f)+' · У '+r0(o.c)+'. Укажите, сколько граммов съели.',src:'barcode',code:code};
-  FOOD.stage='result';FOOD.bcNew=null;FOOD.bcAsk=false;
+  FOOD.stage='result';FOOD.bcNew=null;FOOD.bcAsk=false;FOOD.bcCode='';
 }
 // Open Food Facts: two mirrors, a timeout, EAN/UPC variants; never hangs on a bad answer
 async function offGet(url){
