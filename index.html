@@ -748,6 +748,15 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .gopt{grid-template-columns:60px minmax(0,1fr)}.gopt img{width:60px;height:60px;border-radius:16px;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
 #meBtn{background:var(--glass-strong);border-color:var(--glass-edge);color:var(--ink)}#meBtn svg{width:22px;height:22px}#meBtn.back{color:var(--muted)}
 .cmore{display:flex;justify-content:center;margin:2px 0 4px}.cmore button{min-height:36px;padding:0 16px;border-radius:999px;font-size:13px;font-weight:600;color:var(--muted)}
+.wktech{flex:none;margin-left:auto;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--glass-edge);background:var(--glass);color:var(--muted)}.wktech svg{width:22px;height:22px}.wktech[aria-expanded="true"]{color:var(--ink);border-color:color-mix(in srgb,var(--acc) 45%,transparent)}
+.wkhead{width:100%}
+.wkcoach{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border-radius:20px;padding:12px 12px 12px 12px;color:var(--ink)}
+.wkcoach>span:nth-child(2){flex:1;min-width:0;display:grid;gap:3px}.wkcoach b{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.02em}.wkcoach i{font-style:normal;font-size:14.5px;line-height:1.4}
+.wkcoach .cava{width:44px;height:44px;border-radius:14px;align-self:flex-start}
+.wkask{flex:none;display:inline-flex;align-items:center;gap:2px;font-size:13px;font-weight:600;color:var(--muted)}.wkask svg{width:16px;height:16px}
+.daycoach{margin:12px 0 4px}
+button.bigring{border:0;color:inherit;padding:0;font:inherit;cursor:pointer}
+.wkmenu{gap:10px}.wkmenu .wkrcfg{background:transparent;border:0;box-shadow:none;padding:4px 0 0}
 .filebtn{display:inline-flex;align-items:center;cursor:pointer}
 .itform{display:grid;gap:8px}.itform input{width:100%;min-height:46px;border-radius:14px;border:1px solid var(--glass-edge);background:var(--glass-strong);color:var(--ink);font:inherit;font-size:16px;padding:0 14px;min-width:0}
 </style>
@@ -2862,6 +2871,7 @@ function persistDay(k){
   const keep=d&&((d.sets&&d.sets.length)||(d.plan&&d.plan.length)||d.planEdited||(d.meals&&d.meals.length));
   if(!keep)delete S.days[k];
   if(S.mode==='db')queue('d-'+k,keep?d:null);else saveLocal();
+  HIST_REV++;if(keep&&d.planEdited&&d.planFrom)learnPlan(k);
 }
 function persistConfig(){if(S.mode==='db')queue('config',S.config);else saveLocal();}
 function queue(id,body){S.pending[id]=body===null?null:clone(body);if(!S.writing[id])flush(id);}
@@ -2889,7 +2899,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='22.10 20:49';
+const BUILD='23.10 08:16';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -2982,6 +2992,8 @@ function togglePick(id){
   const plan=ownPlan(UI.date),i=plan.findIndex(p=>p.ex===id);
   if(i>=0)plan.splice(i,1);
   else{
+    const was=(day(UI.date)||{}).planFrom;const orig=was&&was.find(p=>p.ex===id);
+    if(orig){plan.push(clone(orig));persistDay(UI.date);render();return;}
     const dr=draftFor(ex),item={ex:ex.id,n:ex.name,dir:ex.dir,k:ex.kind,tu:ex.tu,goal:defGoal(ex)};
     ['w','r','t','d'].forEach(f=>{if(dr[f]!=null)item[f]=dr[f];});
     plan.push(item);
@@ -3221,7 +3233,7 @@ function goalTop(){
 function dayView(){
   const t=todayKey(),start=UI.date===t&&!isBuilding()&&dayPlan(t).length&&!dayDone(t)?'<button class="log tint press wide wkstart" data-wk="start">▶ '+(daySets(t).length?'Продолжить тренировку':'Начать тренировку')+'</button>':'';
   const v=dayView0(),i=v.indexOf('<section class="group">');
-  return icalView()+(i>0&&start?v.slice(0,i)+start+v.slice(i):v);
+  return icalView()+dayCoachStrip()+(i>0&&start?v.slice(0,i)+start+v.slice(i):v);
 }
 function isBuilding(){return UI.tab==='day'&&(UI.building||(!dayItems(UI.date).length&&UI.date>=todayKey()));}
 // exercises of a planned day that its place cannot host (plan saved before places or goal changed, or copied from another place)
@@ -3769,23 +3781,10 @@ function schedInfo(k){
   const n=week*days.length+idx-first,L=g.L,li=((n%L)+L)%L;
   return {n:n,L:L,li:li,letter:LETTERS[g.off+li],place:place,places:places,week:week,wd:wd,pp:g.pp};
 }
-const schedCache={};
-function schedPlan(k){
-  const pr=prof(),si=schedInfo(k);if(!si)return [];
-  const eq=si.places&&si.places.length?unionEq(pr,si.places):(pr.equip||equipNow());
-  const ck=pr.start+pr.goal+(pr.area||'')+pr.sex+pr.days.join('')+'|'+(si.places||[]).join('+')+'|'+(si.groups||[]).join('+')+'|'+si.pp.days.join('')+'|'+si.li+eq.join('')+S.config.hidden.length+JSON.stringify(pr.placeEq||{})+k;
-  if(schedCache[ck])return schedCache[ck];
-  let rows;
-  if(si.groups)rows=groupRows(pr,si.groups,si.places||[],si.week,groupOcc(pr,si.wd));
-  else{rows=(sessionTemplates(si.pp,eq)[si.li]||[]).map(r=>r.slice());
-    // with two places in a day each exercise goes where it can be done, the first place first
-    rows=assignPlaces(pr,rows,si.places||[]);}
-  return schedCache[ck]=rows.map(r=>planItem(r,si.week)).filter(Boolean);
-}
 // a day's plan becomes its own (editable) copy the first time it is changed
 function ownPlan(k){
   const d=ensureDay(k);
-  if(!d.planEdited&&!d.plan.length)d.plan=clone(schedPlan(k));
+  if(!d.planEdited&&!d.plan.length){d.plan=clone(schedPlan(k));const si=schedInfo(k);if(si){d.planFrom=clone(d.plan);d.prefsAt=clone(planPrefs()[planKey(si)]||null);}}
   d.planEdited=true;return d.plan;
 }
 function acceptProfile(pr){
@@ -4138,6 +4137,7 @@ function coachContext(){
     L.push('Дни тренировок: '+pr.days.map(d=>weekdayName(d)+(dayPlacesOf(pr,d).length?' — '+dayPlacesOf(pr,d).map(p=>PLACE_NAME[p]).join(' + '):'')+(dayGroupsOf(pr,d)?' ('+groupsTxt(dayGroupsOf(pr,d))+')':'')).join(', ')+'.');
     const ws=(pr.weights||[]).slice(-6);if(ws.length>1)L.push('Взвешивания: '+ws.map(w=>w.d+' '+w.kg).join('; ')+'.');
   }else L.push('Цель и программа не заданы. Норма калорий '+foodGoal()+' ккал.');
+  try{const pn=planNotes(t);if(pn.length)L.push('Как собран план на сегодня: '+pn.join(' '));}catch(e){}
   L.push('План тренировок (id «название» подходы×повторы):');
   let any=false;
   for(let i=-1;i<10;i++){const k=addDays(t,i),pl=dayPlan(k);if(!pl.length)continue;any=true;const si=schedInfo(k);
@@ -4508,12 +4508,12 @@ function wkAfterSet(){
   if(setsOf(t,cur.ex)>=(cur.goal||1)){const j=pl.findIndex((p,ix)=>ix>WK.i&&setsOf(t,p.ex)<(p.goal||1)),k=j<0?pl.findIndex(p=>setsOf(t,p.ex)<(p.goal||1)):j;if(k>=0)WK.i=k;}
   WK.tm=null;WK.rest=null;
   const moved=pl[WK.i]&&pl[WK.i].ex!==cur.ex,tc=trainCfg();
-  if(all){speak('Тренировка завершена. Отличная работа!');renderMain();return;}
-  if(tc.restMode==='auto'){const sec=restSecFor(wkEx().ex);WK.rest={end:Date.now()+sec*1000,total:sec,warn:false};speak((moved?'Упражнение готово. ':'')+'Отдых '+(sec%60?sec+' секунд':sec/60+' '+plural(sec/60,['минута','минуты','минут'])));}
-  else speakNext(moved?'Следующее упражнение.':'');
+  if(all){WK_TIP.voice='';speak('Тренировка завершена. Отличная работа!');renderMain();return;}
+  if(tc.restMode==='auto'){const sec=restSecFor(wkEx().ex);WK.rest={end:Date.now()+sec*1000,total:sec,warn:false};speak(wkVoiceTip()+'Отдых '+(sec%60?sec+' секунд':sec/60+' '+plural(sec/60,['минута','минуты','минут'])));}
+  else speakNext(wkVoiceTip().trim()+(moved?' Следующее упражнение.':''));
   renderMain();startTick();
 }
-function wkDone(){const w=wkEx();if(!w)return;UI.date=todayKey();const before=setsOf(UI.date,w.ex.id);logSet(w.ex.id);if(setsOf(UI.date,w.ex.id)>before){const ss=daySets(UI.date);WK.lastSet=ss[ss.length-1].id;WK.feelAsk=true;wkAfterSet();}}
+function wkDone(){const w=wkEx();if(!w)return;UI.date=todayKey();const before=setsOf(UI.date,w.ex.id);logSet(w.ex.id);if(setsOf(UI.date,w.ex.id)>before){const ss=daySets(UI.date);WK.lastSet=ss[ss.length-1].id;WK.feelAsk=true;wkJudge(w.ex,w.p);wkAfterSet();}}
 function wkLogTime(sec){const w=wkEx();if(!w)return;const d=draftFor(w.ex);d.t=Math.max(1,Math.round(sec));wkDone();}
 let wkTickId=null;
 function startTick(){if(wkTickId)return;wkTickId=setInterval(wkTick,250);}
@@ -4546,8 +4546,8 @@ function wkView(){
   const w=wkEx(),p=w.p,ex=w.ex,n=setsOf(t,ex.id),g=p.goal||1;
   const tcf=trainCfg();
   let h='<div class="wkbar"><div class="wkprog"><i style="width:'+(goal?Math.round(done/goal*100):0)+'%"></i></div><span>'+done+' из '+goal+' подходов · <b id="wkElapsed">'+clock(WK.started?(Date.now()-WK.started)/1000:0)+'</b></span>'+
-    '<span class="wkbtns"><button class="wkrbtn press" data-wk="rcfg" aria-expanded="'+!!WK.rcfg+'" aria-label="Настройки отдыха и голоса">⏱ '+esc(restLabel(tcf))+'</button><button class="wkrbtn wkcbtn press" data-wk="chat" aria-expanded="'+!!WK.chat+'">'+COACH_ICO+'Тренер</button></span></div>'+(WK.rcfg?wkRestCfg():'');
-  const chatUI=WK.chat?wkChatSheet():'';
+    '</div>';
+  const chatUI=WK.chat?wkChatSheet():WK.menu?wkMenu():'';
   h+='<div class="chipscroll wkstrip" role="group" aria-label="Упражнения">'+pl.map((q,i)=>{const m=setsOf(t,q.ex),ok=m>=(q.goal||1);
     return '<button class="wkchip glass press'+(i===WK.i?' on':'')+(ok?' ok':'')+'" data-wki="'+i+'"><b>'+(ok?'✓ ':'')+esc(q.n)+'</b><i>'+m+'/'+(q.goal||0)+'</i></button>';}).join('')+'</div>';
   if(all&&!WK.rest){
@@ -4556,12 +4556,12 @@ function wkView(){
     return h+'<section class="card glass wkfin">'+coachAva('big')+'<b>Тренировка завершена!</b><span>'+done+' '+plural(done,PODH)+' · '+clock(secs)+(prs?' · '+prs+' '+plural(prs,['рекорд','рекорда','рекордов']):'')+'</span><p class="cap">Запишите самочувствие тренеру — он учтёт его в следующих тренировках.</p><div class="duo"><button class="log tint press" data-wk="finish">К тренеру</button><button class="ghost glass press" data-wk="more">Ещё подход</button></div></section>'+chatUI;
   }
   const sg=applySuggestion(ex,p);
-  h+='<section class="card glass wkcard"><div class="wkhead">'+eqImg(ex)+'<div><b>'+esc(ex.name)+'</b><span>Подход '+Math.min(n+1,g)+(n>=g?' (сверх плана)':'')+' из '+g+' · '+esc(goalTxt(p))+(p.pl&&(dayPlacesOf(prof()||{},parseKey(t).getDay())||[]).length>1?' · '+PLACE_NAME[p.pl]:'')+'</span></div></div>'+wkFeelRow()+(sg&&!WK.rest&&!n?'<p class="wksug '+sg.kind+'">'+esc(sg.txt)+'</p>':'');
+  h+=wkCoachStrip()+'<section class="card glass wkcard"><div class="wkhead">'+eqImg(ex)+'<div><b>'+esc(ex.name)+'</b><span>Подход '+Math.min(n+1,g)+(n>=g?' (сверх плана)':'')+' из '+g+' · '+esc(ex.kind==='wr'||ex.kind==='reps'?draftLine(ex):goalTxt(p))+(p.pl&&(dayPlacesOf(prof()||{},parseKey(t).getDay())||[]).length>1?' · '+PLACE_NAME[p.pl]:'')+'</span></div><button class="wktech press" data-wk="tech" aria-expanded="'+!!WK.tech+'" aria-label="'+(WK.tech?'Скрыть технику':'Показать технику')+'">'+TECH_ICO+'</button></div>'+wkFeelRow();
   if(WK.rest){
     const left=Math.max(0,(WK.rest.end-Date.now())/1000);
-    h+='<div class="wkrest"><div class="bigring rest" id="wkRestRing" style="--pct:'+Math.round((1-left/WK.rest.total)*100)+'"><div><b id="wkRestT">'+clock(Math.ceil(left))+'</b><span>отдых</span></div></div>'+
+    h+='<div class="wkrest"><button class="bigring rest" id="wkRestRing" data-wk="rcfg" aria-label="Настройки отдыха" aria-expanded="'+!!WK.rcfg+'" style="--pct:'+Math.round((1-left/WK.rest.total)*100)+'"><div><b id="wkRestT">'+clock(Math.ceil(left))+'</b><span>отдых · настроить</span></div></button>'+(WK.rcfg?wkRestCfg():'')+
       '<div class="wkadj"><button class="ghost glass press" data-wk="r-15">−15 с</button><button class="ghost glass press" data-wk="r+15">+15 с</button></div>'+
-      '<button class="log tint press wide" data-wk="rskip">Готов к подходу</button><p class="cap" style="text-align:center">Дальше: '+esc(ex.name)+', подход '+Math.min(n+1,g)+'</p></div>';
+      '<button class="log tint press wide" data-wk="rskip">Готов к подходу</button></div>';
   }else if(ex.kind==='time'&&ex.tu!=='m'){
     h+=wkTimerPanel(ex);
   }else{
@@ -4570,9 +4570,7 @@ function wkView(){
       '<button class="log tint press wide wkgo" data-wk="done">✓ Подход выполнен</button>'+
       (tcf.restMode==='manual'?'<button class="ghost glass press wide" data-wk="rstart">⏱ Начать отдых · '+clock(restSecFor(ex))+'</button>':'');
   }
-  h+='<button class="rm" data-wk="tech" aria-expanded="'+WK.tech+'" style="justify-self:start">'+(WK.tech?'Скрыть технику':'Показать технику')+'</button>'+(WK.tech?techBlock(ex):'')+'</section>';
-  h+='<div class="duo"><button class="ghost glass press" data-wk="prev"'+(WK.i>0?'':' disabled')+'>← Назад</button><button class="ghost glass press" data-wk="next"'+(WK.i<pl.length-1?'':' disabled')+'>Дальше →</button></div>'+
-    (daySets(t).length?'<div class="duo"><button class="ghost glass press" data-wk="finish">Завершить тренировку</button><button class="ghost glass press" data-wk="exit">Продолжу позже</button></div>':'<button class="restore" data-wk="exit">Выйти из тренировки</button>')+'<div class="wkpad" aria-hidden="true"></div>'+chatUI;
+  h+=(WK.tech?techBlock(ex):'')+'</section><div class="wkpad" aria-hidden="true"></div>'+chatUI;
   return h;
 }
 function wkClick(v){
@@ -4582,9 +4580,10 @@ function wkClick(v){
     if(v==='finish'){const t=todayKey(),n=daySets(t).length,secs=WK.started?(now-WK.started)/1000:0,c=coachCfg(),ty=c.tone==='ty';
       const dd=ensureDay(t);dd.finished=now;dd.wkSec=Math.round((dd.wkSec||0)+secs);persistDay(t);
       COACH.msgs.push({role:'assistant',text:workoutDebrief(t,secs),at:now});saveCoach();WK.started=0;}
-    WK.rest=null;WK.tm=null;UI.tab='coach';render();scrollCoach();return;}
+    WK.rest=null;WK.tm=null;WK.menu=false;UI.tab='coach';render();scrollCoach();return;}
   if(v==='rcfg'){WK.rcfg=!WK.rcfg;renderMain();return;}
-  if(v==='chat'){WK.chat=!WK.chat;if(WK.chat)WK.rcfg=false;renderMain();if(WK.chat)scrollCoach();return;}
+  if(v==='chat'){WK.chat=!WK.chat;if(WK.chat){WK.rcfg=false;WK.menu=false;}renderMain();if(WK.chat)scrollCoach();return;}
+  if(v==='menu'){WK.menu=!WK.menu;if(WK.menu)WK.chat=false;renderMain();return;}
   if(v.indexOf('rm:')===0){S.config.train=Object.assign(trainCfg(),{restMode:v.slice(3)});persistConfig();if(v.slice(3)!=='auto')WK.rest=null;renderMain();return;}
   if(v.indexOf('rd:')===0){S.config.train=Object.assign(trainCfg(),{rest:+v.slice(3)});persistConfig();renderMain();return;}
   if(v.indexOf('vo:')===0){S.config.train=Object.assign(trainCfg(),{voice:v.slice(3)==='1'});persistConfig();renderMain();if(v.slice(3)==='1')speak('Голосовые подсказки включены');return;}
@@ -4593,7 +4592,7 @@ function wkClick(v){
   if(v==='done'){wkDone();return;}
   if(v==='rskip'){WK.rest=null;renderMain();speakNext('');return;}
   if(v==='r-15'||v==='r+15'){if(WK.rest){WK.rest.end+=(v==='r+15'?15:-15)*1000;WK.rest.total=Math.max(15,WK.rest.total+(v==='r+15'?15:-15));if(WK.rest.end<=now){WK.rest=null;renderMain();}else wkTick();}return;}
-  if(v==='prev'||v==='next'){WK.i+=v==='next'?1:-1;WK.rest=null;WK.tm=null;WK.tech=false;renderMain();return;}
+  if(v==='prev'||v==='next'){WK.i+=v==='next'?1:-1;WK.rest=null;WK.tm=null;WK.tech=false;wkNav();renderMain();return;}
   if(v==='tech'){WK.tech=!WK.tech;renderMain();return;}
   if(!w)return;
   const tgt=draftFor(w.ex).t||30;
@@ -5651,7 +5650,7 @@ function wkFeelRow(){
 function setFeel(v){
   const t=todayKey(),s=daySets(t).find(x=>x.id===WK.lastSet);if(!s)return;
   s.feel=v;WK.feelAsk=false;persistDay(t);renderMain();
-  if(v===3)toast('Записал: тяжело. В следующий раз вес не прибавлю.');else if(v===1)toast('Записал: легко. В следующий раз прибавим.');
+  wkFeelTip(v);renderMain();
 }
 const feelMark=s=>s.feel===3?' (тяжело)':s.feel===1?' (легко)':'';
 
@@ -5679,6 +5678,7 @@ function weeklyReport(mon){
     if(inW.length){const last=inW[inW.length-1].kg,ref=before.length?before[before.length-1].kg:inW[0].kg,dl=Math.round((last-ref)*10)/10;
       L.push('- Вес: '+String(last).replace('.',',')+' кг'+(dl?' ('+(dl>0?'+':'')+String(dl).replace('.',',')+' за неделю)':'')+'.');}}
   if(w.planned&&w.done<w.planned){const nk=nextTraining()||(dayPlan(todayKey()).length?todayKey():null);rec.push((ty?'Постарайся':'Постарайтесь')+' не пропускать'+(nk?': ближайшая тренировка — '+dayLabel(nk).toLowerCase():'')+'.');}
+  try{const gp=weekGroupGaps(mon);if(gp.length)L.push('- Мало работы для цели: '+gp.slice(0,3).map(x=>GROUP_NAME[x.g].toLowerCase()+' '+x.done+' из '+x.min+' подходов').join(', ')+'. На этой неделе план добавит подходы.');}catch(e){}
   if(w.foodDays>=3&&pr&&pr.p&&w.prot<pr.p*0.85)rec.push('Добирать белок: +'+(pr.p-w.prot)+' г в день — творог, курица, яйца, рыба.');
   if(w.foodDays>=3&&pr&&pr.mode==='lose'&&w.kcal>norm*1.1)rec.push('Калорий больше нормы на '+num(w.kcal-norm)+' — '+(ty?'посмотри':'посмотрите')+', где перекусы и напитки.');
   if(w.foodDays>=3&&pr&&pr.mode==='gain'&&w.kcal<norm*0.9)rec.push('Для набора не хватает '+num(norm-w.kcal)+' ккал в день — добавьте перекус: орехи, кашу, творог.');
@@ -5725,7 +5725,7 @@ function offerClick(v){
   const o=m.offer;
   if(q[1]==='move'&&o.to&&!dayPlan(o.to).length){
     const pl=clone(dayPlan(o.from)),dt=ensureDay(o.to),df=ensureDay(o.from);
-    dt.plan=pl;dt.planEdited=true;df.plan=[];df.planEdited=true;df.movedTo=o.to;persistDay(o.to);persistDay(o.from);o.done='moved';
+    dt.plan=pl;dt.planEdited=true;dt.movedIn=1;df.plan=[];df.planEdited=true;df.movedTo=o.to;persistDay(o.to);persistDay(o.from);o.done='moved';
     toast('Тренировка перенесена на '+dayLabel(o.to).toLowerCase()+'.');
   }else o.done='skip';
   saveCoach();render();
@@ -6137,6 +6137,265 @@ async function accClick(v){
   return false;
 }
 
+/* ---------- тренировка: меньше кнопок, тренер рядом и подсказывает сам ---------- */
+const WD_IN=['в воскресенье','в понедельник','во вторник','в среду','в четверг','в пятницу','в субботу'];
+const WK_TIP={txt:'',at:0,nav:0,voice:''};
+const TECH_ICO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6h.01"/></svg>';
+const CHEV_ICO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+// a tip from an event (a set, a rating); it is also read aloud with the next voice line
+function wkSay(txt){WK_TIP.txt=txt||'';WK_TIP.at=Date.now();WK_TIP.voice=txt||'';}
+function wkVoiceTip(){const v=WK_TIP.voice;WK_TIP.voice='';return v?v+' ':'';}
+function wkNav(){WK_TIP.nav=Date.now();WK_TIP.txt='';}
+function techCue(ex){const tx=TECH[ex.id];return tx&&tx[0]?String(tx[0]).replace(/\.$/,''):'';}
+function draftLine(ex){
+  const d=draftFor(ex);
+  if(ex.kind==='wr')return (d.w?fmtW(d.w)+' кг × ':'')+(d.r||10);
+  if(ex.kind==='reps')return (d.r||10)+' '+plural(d.r||10,['повтор','повтора','повторов']);
+  if(ex.kind==='time')return ex.tu==='m'?Math.round((d.t||600)/60)+' мин':dur(d.t||30);
+  if(ex.kind==='dist')return (d.d||0)+' км';
+  return '';
+}
+function sgHuman(sg){
+  if(!sg||!sg.txt)return '';
+  if(sg.kind==='first')return sg.txt+'.';
+  const s=sg.txt.replace(/^[↑↓=]\s*/,'').replace(': ',' — ');
+  return 'Сегодня '+s+'.';
+}
+// what the coach says right now in the workout
+function wkTip(){
+  const t=todayKey(),w=wkEx();if(!w)return '';
+  const ex=w.ex,p=w.p,n=setsOf(t,ex.id),g=p.goal||1;
+  const next=ex.name+(n<g?', подход '+(n+1)+' из '+g:'')+' — '+draftLine(ex)+'.';
+  const ev=WK_TIP.txt&&WK_TIP.at>WK_TIP.nav?WK_TIP.txt:'';
+  if(WK.rest)return (ev||'Отдыхаем.')+' Дальше: '+next;
+  if(ev)return ev+(n<g?' Сейчас: '+draftLine(ex)+'.':'');
+  if(!n){const sg=suggestFor(ex,p),cue=techCue(ex);return (p.why?p.why+'. ':p.deload?'Лёгкая неделя — работаем без отказа. ':'')+(sgHuman(sg)||'Начинаем: '+next)+(cue?' Главное: '+cue.charAt(0).toLowerCase()+cue.slice(1)+'.':'');}
+  if(n>=g)return 'План по упражнению выполнен. Можно сделать ещё подход или перейти к следующему.';
+  return 'Подход '+(n+1)+' из '+g+': '+draftLine(ex)+'.';
+}
+// after a set: compare what was done with the target and set up the next set
+function wkJudge(ex,p){
+  const t=todayKey(),mine=daySets(t).filter(s=>s.ex===ex.id),s=mine[mine.length-1];if(!s)return;
+  const g=p.goal||3,left=g-mine.length,tr=p.r||(ex.def&&ex.def.r)||10,d=draftFor(ex);
+  let msg='';
+  if(s.k==='wr'&&s.w>0){
+    if(s.r>=tr+2&&left>0){const nw=Math.round((s.w+wStep(ex,s.w))*100)/100;d.w=nw;if('r' in d)d.r=tr;msg=s.r+' вместо '+tr+' — запас есть. Поставил '+fmtW(nw)+' кг на следующий подход.';}
+    else if(s.r<tr-1){msg='Не добрал '+(tr-s.r)+' '+plural(tr-s.r,['повтор','повтора','повторов'])+'. '+(left>0?'Вес оставь, отдохни чуть дольше.':'В следующий раз начнём с этого веса.');}
+    else msg=left>0?'Ровно по плану. Осталось '+left+' '+plural(left,PODH)+'.':'';
+  }else if(s.k==='reps'){
+    if(s.r<tr-1)msg='Не добрал '+(tr-s.r)+'. '+(left>0?'Отдохни подольше, техника важнее числа.':'В следующий раз цель та же.');
+    else if(s.r>=tr+3&&left>0)msg=s.r+' — сильно! Держи этот темп.';
+    else msg=left>0?'Хорошо. Осталось '+left+' '+plural(left,PODH)+'.':'';
+  }else if(s.k==='time'&&ex.tu!=='m'){
+    const tt=p.t||(ex.def&&ex.def.t)||30;
+    msg=(s.t||0)<tt-5?'Чуть не дотянул до '+dur(tt)+'. '+(left>0?'Отдохни и попробуй ещё раз.':''):(left>0?'Есть! Осталось '+left+' '+plural(left,PODH)+'.':'');
+  }
+  if(left<=0){const pl=wkPlan(),rest=pl.filter(q=>setsOf(t,q.ex)<(q.goal||1)).length;msg=(msg?msg+' ':'')+(rest?'Упражнение готово.':'Всё по плану сделано!');}
+  wkSay(msg.trim());
+}
+// a rating changes the next set right away
+function wkFeelTip(v){
+  const t=todayKey(),w=wkEx();const s=daySets(t).find(x=>x.id===WK.lastSet);if(!s)return;
+  const ex=getEx(s.ex);if(!ex)return;
+  const mine=daySets(t).filter(x=>x.ex===s.ex),prev=mine[mine.length-2],d=draftFor(ex),p=wkPlan().find(q=>q.ex===s.ex)||{},left=(p.goal||3)-mine.length;
+  if(v===3){
+    if(prev&&prev.feel===3&&s.k==='wr'&&s.w>0&&left>0){const dw=wDown(ex,s.w);d.w=dw;wkSay('Второй тяжёлый подход подряд — поставил '+fmtW(dw)+' кг. Сделай чисто.');}
+    else if(s.k==='wr'&&s.w>0&&d.w>s.w){d.w=s.w;wkSay('Тяжело — оставил '+fmtW(s.w)+' кг, прибавку отменил.');}
+    else wkSay('Тяжело — вес не прибавляю. В следующий раз закрепим.');
+  }else if(v===1){
+    if(s.k==='wr'&&s.w>0&&left>0&&s.r>=(p.r||10)&&d.w<=s.w){const nw=Math.round((s.w+wStep(ex,s.w))*100)/100;d.w=nw;wkSay('Легко — поставил '+fmtW(nw)+' кг на следующий подход.');}
+    else wkSay('Легко — в следующий раз прибавим.');
+  }else wkSay('Нормально — так и держим.');
+  if(trainCfg().voice)speak(wkVoiceTip());
+}
+function wkCoachStrip(){
+  return '<button class="wkcoach glass press" data-wk="chat" aria-label="Открыть чат с тренером">'+coachAva()+'<span><b>Тренер</b><i id="wkTip">'+esc(wkTip())+'</i></span><span class="wkask">Спросить'+CHEV_ICO+'</span></button>';
+}
+// «Расписание»: the coach's word for the chosen day
+function dayCoachLine(){
+  const t=todayKey(),k=UI.date,pl=dayPlan(k);
+  if(k<t){const n=daySets(k).length;return n?'В этот день сделано '+n+' '+plural(n,PODH)+'.':'В этот день тренировки не было.';}
+  if(!pl.length){
+    for(let i=1;i<=7;i++){const kk=addDays(k,i),pp=dayPlan(kk);if(pp.length)return (k===t?'Сегодня':'В этот день')+' отдых — мышцы растут, пока восстанавливаются. Следующая тренировка '+(i===1?'завтра':WD[parseKey(kk).getDay()].toLowerCase())+': '+pp.length+' '+plural(pp.length,UPR)+'.';}
+    return (k===t?'Сегодня':'В этот день')+' отдых.';
+  }
+  const goal=pl.reduce((a,p)=>a+(p.goal||0),0),done=pl.reduce((a,p)=>a+Math.min(p.goal||0,setsOf(k,p.ex)),0);
+  if(k===t&&goal&&done>=goal)return 'Тренировка сделана: '+daySets(t).length+' '+plural(daySets(t).length,PODH)+'. Теперь восстановление: белок и сон.';
+  if(k===t&&done)return 'Сделано '+done+' из '+goal+' подходов — продолжим, где остановились.';
+  const ex=getEx(pl[0].ex),sg=ex?suggestFor(ex,pl[0]):null,pn=planNotes(k);
+  return (pn.length?pn[0]+' ':'')+(k===t?'Сегодня':'В этот день')+' '+pl.length+' '+plural(pl.length,UPR)+'. Начнём с «'+pl[0].n+'»'+(sg&&sg.kind!=='first'?': '+sgHuman(sg).replace(/^Сегодня /,'').replace(/\.$/,'')+'.':'.');
+}
+function dayCoachStrip(){
+  if(!prof()||!prof().accepted)return '';
+  return '<button class="wkcoach glass press daycoach" data-tab="coach" aria-label="К тренеру">'+coachAva()+'<span><b>Тренер</b><i>'+esc(dayCoachLine())+'</i></span><span class="wkask">'+CHEV_ICO+'</span></button>';
+}
+// ✕ in the workout: finish, continue later, rest and voice settings
+function wkMenu(){
+  const has=daySets(todayKey()).length;
+  return '<div class="wksheet glass wkmenu" role="dialog" aria-label="Тренировка"><div class="wkshead"><div><b>Тренировка</b><span>'+(has?'Сделано '+has+' '+plural(has,PODH):'Подходов ещё нет')+'</span></div><button class="xdel" data-wk="menu" aria-label="Закрыть">×</button></div>'+
+    (has?'<button class="log tint press wide" data-wk="finish">Завершить тренировку</button>':'')+
+    '<button class="ghost glass press wide" data-wk="exit">'+(has?'Продолжу позже':'Выйти из тренировки')+'</button>'+wkRestCfg()+'</div>';
+}
+// swipe the exercise card to move between exercises
+let wkTouch=null;
+document.addEventListener('touchstart',e=>{const c=e.target&&e.target.closest&&e.target.closest('.wkcard');if(!c||!e.touches||!e.touches[0]||e.target.closest('input,.stepper'))return;wkTouch={x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
+document.addEventListener('touchend',e=>{if(!wkTouch||!e.changedTouches||!e.changedTouches[0])return;const dx=e.changedTouches[0].clientX-wkTouch.x,dy=e.changedTouches[0].clientY-wkTouch.y;wkTouch=null;
+  if(UI.tab!=='workout'||Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.7)return;
+  const pl=wkPlan(),ni=WK.i+(dx<0?1:-1);if(ni<0||ni>=pl.length)return;
+  WK.i=ni;WK.rest=null;WK.tm=null;WK.tech=false;wkNav();renderMain();speakNext('');},{passive:true});
+
+/* ---------- умный план: помнит ручные правки, ставит вес по истории, держит недельный объём под цель, меняет упражнение при застое, даёт лёгкую неделю ---------- */
+let HIST_REV=0;
+function planPrefs(){if(!S.config.planPrefs||typeof S.config.planPrefs!=='object')S.config.planPrefs={};return S.config.planPrefs;}
+// the kind of workout a day is: same letter at the same place, or the same muscle groups at the same places
+function planKey(si){if(!si)return '';return si.groups?'g:'+si.groups.join('+')+'@'+(si.places||[]).join('+'):'t:'+(si.place||'')+':'+si.letter;}
+function planLabel(si){return si.groups?groupsTxt(si.groups):'тренировках '+si.letter;}
+// the program's own plan for a day, before anything is learned or tuned
+const baseCache={};
+function schedBase(k){
+  const pr=prof(),si=schedInfo(k);if(!si)return [];
+  const eq=si.places&&si.places.length?unionEq(pr,si.places):(pr.equip||equipNow());
+  const ck=pr.start+pr.goal+(pr.area||'')+pr.sex+pr.days.join('')+'|'+(si.places||[]).join('+')+'|'+(si.groups||[]).join('+')+'|'+si.pp.days.join('')+'|'+si.li+eq.join('')+S.config.hidden.length+JSON.stringify(pr.placeEq||{})+k;
+  if(baseCache[ck])return baseCache[ck];
+  let rows;
+  if(si.groups)rows=groupRows(pr,si.groups,si.places||[],si.week,groupOcc(pr,si.wd));
+  else{rows=(sessionTemplates(si.pp,eq)[si.li]||[]).map(r=>r.slice());rows=assignPlaces(pr,rows,si.places||[]);}
+  return baseCache[ck]=rows.map(r=>planItem(r,si.week)).filter(Boolean);
+}
+// what the user changed in a day's plan compared with the program
+function planDiff(base,own){
+  const bIds=base.map(p=>p.ex),oIds=own.map(p=>p.ex);
+  const drop=bIds.filter(id=>oIds.indexOf(id)<0),add=own.filter(p=>bIds.indexOf(p.ex)<0).map(p=>{const c=clone(p);delete c.w;return c;});
+  const cfg={};own.forEach(p=>{const b=base.find(x=>x.ex===p.ex);if(!b)return;const c={};['goal','r','t','d'].forEach(f=>{if(p[f]!=null&&p[f]!==b[f])c[f]=p[f];});if(Object.keys(c).length)cfg[p.ex]=c;});
+  const out={};if(drop.length)out.drop=drop;if(add.length)out.add=add;if(Object.keys(cfg).length)out.cfg=cfg;
+  return out;
+}
+// after a hand edit of today or a future day: remember it for this kind of workout
+let learnTimer=null,learnUndo=null;
+function learnPlan(k){
+  if(window.__SEED&&!window.__LEARN)return;
+  const t=todayKey(),d=day(k),si=schedInfo(k);
+  if(!si||k<t||!d||!d.planEdited||d.movedTo||d.movedIn||!(d.plan&&d.plan.length))return;
+  if(!d.planFrom)return;
+  const key=planKey(si),P=planPrefs(),before=P[key]?clone(P[key]):null;
+  const next=mergePrefs(d.prefsAt||{},planDiff(d.planFrom,d.plan));
+  if(JSON.stringify(before||{})===JSON.stringify(next))return;
+  if(Object.keys(next).length)P[key]=next;else delete P[key];
+  persistConfig();HIST_REV++;
+  const days=[];for(let i=0;i<28;i++){const kk=addDays(t,i);if(kk===k)continue;const s=schedInfo(kk),dd=day(kk);if(s&&planKey(s)===key&&!(dd&&(dd.planEdited||(dd.plan&&dd.plan.length))))days.push(kk);}
+  clearTimeout(learnTimer);
+  learnTimer=setTimeout(()=>{toast('Запомнил: в '+planLabel(si)+' дальше будет так же'+(days.length?' ('+days.length+' '+plural(days.length,['тренировка','тренировки','тренировок'])+' впереди)':'')+'.',()=>{if(before)planPrefs()[key]=before;else delete planPrefs()[key];persistConfig();HIST_REV++;render();toast('Правку оставил только для этого дня.');});},350);
+}
+function mergePrefs(old,diff){
+  let drop=(old.drop||[]).slice(),add=clone(old.add||[]);const cfg=Object.assign({},old.cfg||{});
+  (diff.drop||[]).forEach(id=>{const i=add.findIndex(a=>a.ex===id);if(i>=0)add.splice(i,1);else if(drop.indexOf(id)<0)drop.push(id);delete cfg[id];});
+  (diff.add||[]).forEach(a=>{const i=drop.indexOf(a.ex);if(i>=0)drop.splice(i,1);else if(!add.some(x=>x.ex===a.ex))add.push(a);});
+  Object.keys(diff.cfg||{}).forEach(id=>{const a=add.find(x=>x.ex===id);if(a)Object.assign(a,diff.cfg[id]);else cfg[id]=Object.assign({},cfg[id]||{},diff.cfg[id]);});
+  const out={};if(drop.length)out.drop=drop;if(add.length)out.add=add;if(Object.keys(cfg).length)out.cfg=cfg;return out;
+}
+function applyPrefs(items,si,eq){
+  const P=planPrefs()[planKey(si)];if(!P)return items;
+  let out=items.slice();
+  const dropped=[];
+  if(P.drop)out=out.filter((p,i)=>{if(P.drop.indexOf(p.ex)>=0){dropped.push({i:i,dir:p.dir});return false;}return true;});
+  (P.add||[]).forEach(a=>{const ex=getEx(a.ex);if(!ex||out.some(p=>p.ex===a.ex)||!exOk(ex,eq))return;
+    const it=clone(a);it.n=ex.name;
+    const slot=dropped.findIndex(x=>x.dir===ex.dir);
+    if(slot>=0){const at=Math.min(out.length,dropped[slot].i);out.splice(at,0,it);dropped.splice(slot,1);}else out.push(it);});
+  if(P.cfg)out=out.map(p=>{const c=P.cfg[p.ex];if(!c)return p;const q=Object.assign({},p,c);q.mine=1;return q;});
+  return out;
+}
+// three sessions in a row without growth → another exercise for the same muscles for a while
+function stuckEx(ex,p){
+  const ss=sessionsOf(ex.id,todayKey());if(ss.length<3||ss[0].k<addDays(todayKey(),-28))return false;
+  const g=p.goal||3,tr=p.r||(ex.def&&ex.def.r)||10;
+  if(ex.kind==='wr'){const lw=Math.max.apply(null,ss[0].sets.map(s=>s.w||0));if(!lw)return false;
+    return ss.slice(0,3).every(x=>{const w=Math.max.apply(null,x.sets.map(s=>s.w||0)),tp=x.sets.filter(s=>s.w===w);return w===lw&&!(tp.length>=g&&tp.every(s=>s.r>=tr));});}
+  if(ex.kind==='reps'){const best=ss.slice(0,3).map(x=>Math.max.apply(null,x.sets.map(s=>s.r||0)));return best[0]<=best[2]&&best[0]<tr;}
+  return false;
+}
+function altFor(ex,eq,taken){
+  const pref=(GROUP_BEST[ex.dir]||[]).map(id=>getEx(id)).filter(Boolean);
+  const pool=pref.concat(allEx().filter(e=>e.dir===ex.dir&&pref.indexOf(e)<0));
+  return pool.find(e=>e.id!==ex.id&&e.kind===ex.kind&&taken.indexOf(e.id)<0&&S.config.hidden.indexOf(e.id)<0&&exOk(e,eq))||null;
+}
+function plateauSwap(items,k,si,eq){
+  if(k<=todayKey())return items;
+  const P=planPrefs()[planKey(si)]||{},mine=(P.add||[]).map(a=>a.ex);
+  const taken=items.map(p=>p.ex);
+  return items.map(p=>{const ex=getEx(p.ex);if(!ex||p.mine||mine.indexOf(p.ex)>=0||!stuckEx(ex,p))return p;
+    const alt=altFor(ex,eq,taken);if(!alt)return p;taken.push(alt.id);
+    const q={ex:alt.id,n:alt.name,dir:alt.dir,k:alt.kind,tu:alt.tu,goal:p.goal};['r','t','d'].forEach(f=>{if(p[f]!=null)q[f]=p[f];else if(alt.def&&alt.def[f]!=null)q[f]=alt.def[f];});if(alt.kind==='wr')q.w=(alt.def&&alt.def.w)||0;q.why='Вместо «'+ex.name+'»: три тренировки без роста — меняем упражнение, чтобы сдвинуть застой';if(p.pl)q.pl=p.pl;return q;});
+}
+// weekly sets per muscle group, by goal
+function volTarget(pr,g){
+  const major=['chest','back','legs','shoulders'].indexOf(g)>=0;
+  if(pr.goal==='area'&&pr.area){if(g===pr.area)return [14,22];return major?[6,14]:[4,10];}
+  if(pr.goal==='lose')return major?[8,16]:[4,10];
+  return major?[10,20]:g==='arms'?[6,14]:[4,12];
+}
+const preCache={};
+function planPre(k){
+  const ck=k+'|'+HIST_REV;if(preCache[ck])return preCache[ck];
+  const pr=prof(),si=schedInfo(k);if(!si)return [];
+  const eq=si.places&&si.places.length?unionEq(pr,si.places):(pr.equip||equipNow());
+  return preCache[ck]=plateauSwap(applyPrefs(schedBase(k),si,eq),k,si,eq);
+}
+function weekVolume(k){
+  const mon=mondayOf(k),v={},cnt={};
+  for(let i=0;i<7;i++){const kk=addDays(mon,i),d=day(kk);const pl=d&&(d.planEdited||(d.plan&&d.plan.length))?d.plan||[]:planPre(kk);
+    pl.forEach(p=>{const g=p.dir;if(!g||g==='cardio'||g==='stretch')return;v[g]=(v[g]||0)+(p.goal||0);cnt[g]=(cnt[g]||0)+1;});}
+  return {v:v,cnt:cnt};
+}
+function goalTune(items,k,pr){
+  const wv=weekVolume(k);
+  return items.map(p=>{
+    const g=p.dir;if(!g||p.mine||!wv.v[g]||p.k==='dist'||(p.k==='time'&&p.tu==='m'))return p;
+    const tg=volTarget(pr,g),have=wv.v[g],n=wv.cnt[g]||1;
+    let goal=p.goal||3;
+    if(have<tg[0])goal=Math.min(5,goal+Math.ceil((tg[0]-have)/n));
+    else if(have>tg[1])goal=Math.max(2,goal-Math.ceil((have-tg[1])/n));
+    if(goal===p.goal)return p;
+    const q=Object.assign({},p,{goal:goal});q.vol=have<tg[0]?'up':'down';return q;});
+}
+// every sixth week of the program is lighter
+function deloadWeek(si){return !!si&&si.week>0&&si.week%6===5;}
+function deload(items,si){if(!deloadWeek(si))return items;return items.map(p=>{const q=Object.assign({},p);if(!p.mine)q.goal=Math.max(2,(p.goal||3)-1);q.deload=1;return q;});}
+// weight (and reps) from the history: the same rule the workout uses
+function histLoad(items){
+  return items.map(p=>{const ex=getEx(p.ex);if(!ex)return p;const q=Object.assign({},p),sg=suggestFor(ex,p);
+    if(ex.kind==='wr'){const l=lastFor(ex.id);if(sg&&sg.w!=null)q.w=sg.w;else if(l&&l.w)q.w=l.w;}
+    if((ex.kind==='reps'||ex.kind==='wr')&&sg&&sg.r!=null&&!p.mine)q.r=sg.r;
+    if(ex.kind==='time'&&ex.tu!=='m'&&sg&&sg.t!=null&&!p.mine)q.t=sg.t;
+    if(p.deload&&q.w){q.w=Math.max(0,Math.round(q.w*0.9/wStep(ex,q.w))*wStep(ex,q.w));}
+    return q;});
+}
+const smartCache={};
+function schedPlan(k){
+  const pr=prof(),si=schedInfo(k);if(!si)return [];
+  const ck=k+'|'+HIST_REV+'|'+JSON.stringify(planPrefs()).length+'|'+pr.start+pr.goal+(pr.area||'')+pr.days.join('')+S.config.hidden.length;
+  if(smartCache[ck])return smartCache[ck];
+  return smartCache[ck]=histLoad(deload(goalTune(planPre(k),k,pr),si));
+}
+// a few words for the coach about how today's plan was made
+function planNotes(k){
+  const si=schedInfo(k),pl=dayPlan(k),out=[];if(!si)return out;
+  if(deloadWeek(si))out.push('Лёгкая неделя: на подход меньше и вес чуть ниже — восстанавливаемся перед новым ростом.');
+  pl.filter(p=>p.why).forEach(p=>out.push(p.why+'.'));
+  const up=pl.filter(p=>p.vol==='up').map(p=>p.n),dn=pl.filter(p=>p.vol==='down').map(p=>p.n);
+  if(up.length)out.push('Добавил подходы ('+up.slice(0,2).join(', ')+'): за неделю на эти мышцы мало объёма для цели.');
+  if(dn.length)out.push('Убрал лишние подходы ('+dn.slice(0,2).join(', ')+'): на эти мышцы за неделю и так много.');
+  if(planPrefs()[planKey(si)])out.push('Учёл ваши правки для '+(si.groups?'этих тренировок':'тренировок '+si.letter)+'.');
+  return out;
+}
+// last week's sets per group against the goal — for the weekly report
+function weekGroupGaps(mon){
+  const pr=prof();if(!pr||!pr.accepted)return [];
+  const done={};for(let i=0;i<7;i++)daySets(addDays(mon,i)).forEach(s=>{const ex=getEx(s.ex);const g=ex&&ex.dir;if(g&&g!=='cardio'&&g!=='stretch')done[g]=(done[g]||0)+1;});
+  const planned=weekVolume(mon).v;
+  return Object.keys(planned).filter(g=>GROUP_NAME[g]).map(g=>({g:g,done:done[g]||0,min:volTarget(pr,g)[0]})).filter(x=>x.done<x.min);
+}
+
 /* ---------- toast ---------- */
 let toastTimer=null,undoFn=null;
 function toast(msg,undo){
@@ -6178,7 +6437,7 @@ document.addEventListener('click',e=>{
   if(ds.xdel){if(UI.armed===ds.xdel)deleteEx(ds.xdel);else{UI.armed=ds.xdel;renderMain();}return;}
   if(ds.restore){restoreDir(ds.restore);return;}
   if(ds.wk){wkClick(ds.wk);return;}
-  if(ds.wki!==undefined){WK.i=+ds.wki;WK.rest=null;WK.tm=null;WK.tech=false;renderMain();return;}
+  if(ds.wki!==undefined){WK.i=+ds.wki;WK.rest=null;WK.tm=null;WK.tech=false;wkNav();renderMain();return;}
   if(ds.goto){UI.tab=ds.goto;if(ds.date)UI.date=ds.date;else if(ds.goto==='day')UI.date=todayKey();UI.building=ds.build==='1';UI.open=null;render();window.scrollTo({top:0});return;}
   if(ds.tset){const q=ds.tset.split('|');setTrain(q[0],q[1]);return;}
   if(ds.mic){micToggle();return;}
@@ -6219,7 +6478,7 @@ document.addEventListener('click',e=>{
   if(ds.day){UI.calOpen=false;setDate(ds.day);return;}
   if(ds.calopen){UI.calOpen=!UI.calOpen;UI.calM=UI.date.slice(0,7);renderMain();return;}
   if(ds.calnav){calNav(+ds.calnav);return;}
-  if(b.id==='meBtn'){if(UI.tab==='settings'){UI.goalEdit=false;UI.tab=UI.prevTab&&UI.prevTab!=='settings'?UI.prevTab:'coach';}else if(UI.tab==='workout'){UI.tab='coach';}else{UI.prevTab=UI.tab;UI.tab='settings';}render();window.scrollTo({top:0});if(UI.tab==='coach')scrollCoach();return;}
+  if(b.id==='meBtn'){if(UI.tab==='settings'){UI.goalEdit=false;UI.tab=UI.prevTab&&UI.prevTab!=='settings'?UI.prevTab:'coach';}else if(UI.tab==='workout'){if(daySets(todayKey()).length){WK.menu=!WK.menu;if(WK.menu)WK.chat=false;renderMain();return;}WK.menu=false;UI.tab='coach';}else{UI.prevTab=UI.tab;UI.tab='settings';}render();window.scrollTo({top:0});if(UI.tab==='coach')scrollCoach();return;}
   if(b.id==='prevDay'){setDate(addDays(UI.date,-1));return;}
   if(b.id==='nextDay'){if(UI.date<addDays(todayKey(),60))setDate(addDays(UI.date,1));return;}
   if(b.id==='todayBtn'){setDate(todayKey());return;}
