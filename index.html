@@ -2914,7 +2914,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='24.10 12:20';
+const BUILD='24.10 17:06';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -4137,6 +4137,7 @@ const AI_ERR={net_ds:'Не удалось связаться с DeepSeek. Есл
   not_granted:'Без разрешения тренер не может ответить.',
   no_engine:'Тренер не подключён: выберите Claude или DeepSeek и вставьте ключ.'};
 function wdOf(k){return weekdayName(parseKey(k).getDay());}
+function humanPlan(p){const v=p.k==='time'?(p.t||30)+' с':p.k==='timem'?(p.t||10)+' мин':p.k==='dist'?(p.d||0)+' км':(p.r||10);return (p.goal||3)+'×'+v+(p.w?' · '+num(p.w)+' кг':'');}
 function planLine(p){const ex=getEx(p.ex),v=p.k==='time'?(p.t||30)+' с':p.k==='timem'?(p.t||10)+' мин':p.k==='dist'?(p.d||0)+' км':(p.r||10);
   return p.ex+' «'+(ex?ex.name:p.n)+'» '+(p.goal||3)+'×'+v+(p.w?' · '+p.w+' кг':'');}
 function coachEquips(pr){
@@ -4155,11 +4156,12 @@ function coachContext(){
     const ws=(pr.weights||[]).slice(-6);if(ws.length>1)L.push('Взвешивания: '+ws.map(w=>w.d+' '+w.kg).join('; ')+'.');
   }else L.push('Цель и программа не заданы. Норма калорий '+foodGoal()+' ккал.');
   try{const pn=planNotes(t);if(pn.length)L.push('Как собран план на сегодня: '+pn.join(' '));}catch(e){}
-  L.push('План тренировок (id «название» подходы×повторы):');
-  let any=false;
-  for(let i=-1;i<10;i++){const k=addDays(t,i),pl=dayPlan(k);if(!pl.length)continue;any=true;const si=schedInfo(k);
-    L.push('- '+k+' '+wdOf(k)+(si&&si.place?' · '+placeTxt(si):'')+(si&&si.groups?' · '+groupsTxt(si.groups):'')+(si?' · тренировка '+si.letter:'')+': '+pl.map(planLine).join('; '));}
-  if(!any)L.push('- плана нет');
+  L.push('План тренировок на две недели (id «название» подходы×повторы · вес):');
+  for(let i=-7;i<15;i++){const k=addDays(t,i),pl=dayPlan(k),si=schedInfo(k),d=day(k),done=daySets(k).length;
+    if(i<0){if(pl.length&&!done&&!(d&&d.movedTo))L.push('- '+k+' '+wdOf(k)+': пропущена, подходов нет — '+pl.map(planLine).join('; '));continue;}
+    const mark=d&&d.movedIn?' (перенесена сюда)':'';
+    if(!pl.length){L.push('- '+k+' '+wdOf(k)+': отдых'+(d&&d.movedTo?' (тренировка перенесена на '+d.movedTo+')':si?' (тренировка отменена)':''));continue;}
+    L.push('- '+k+' '+wdOf(k)+(si&&si.place?' · '+placeTxt(si):'')+(si&&si.groups?' · '+groupsTxt(si.groups):'')+(si&&!mark?' · тренировка '+si.letter:'')+mark+(done?' · уже отмечено '+done+' подх.':'')+': '+pl.map(planLine).join('; '));}
   L.push('Сделано за 7 дней:');
   let did=false;
   for(let i=0;i>-7;i--){const k=addDays(t,i),s=daySets(k);if(!s.length)continue;did=true;const by={};
@@ -4211,12 +4213,19 @@ const COACH_TECH=`Всегда, независимо от инструкции �
 Формат ответа (обязательно)
 Отвечай только JSON-объектом без текста вокруг: {"reply":"текст для пользователя","actions":[]}
 "reply" — обычный текст по-русски: можно переносы строк, списки с "- " и **жирное**, без заголовков и таблиц.
-"actions" — изменения плана тренировок и записи в дневник питания, только если пользователь прямо попросил, согласился на твоё предложение или сообщил, что съел; иначе пустой список. Не пиши, что изменил план или записал еду, если не вернул действие.
-Действия с планом:
-{"type":"replace","date":"ГГГГ-ММ-ДД","from":"id_старого","to":"id_нового"}
-{"type":"add","date":"ГГГГ-ММ-ДД","ex":"id","sets":3,"reps":10}
-{"type":"remove","date":"ГГГГ-ММ-ДД","ex":"id"}
-id — только из каталога ниже и только с инвентарём места этого дня; даты — сегодня или позже; для упражнений на время "reps" — секунды.
+"actions" — изменения тренировок и записи в дневник питания, только если пользователь прямо попросил, согласился на твоё предложение или сообщил, что съел; иначе пустой список. Не пиши, что перенёс, изменил или записал, если не вернул действие.
+Действия с тренировками (ты управляешь планом сам — переносишь, меняешь, собираешь и отменяешь тренировки по просьбе пользователя):
+{"type":"move","from":"ГГГГ-ММ-ДД","to":"ГГГГ-ММ-ДД"} — перенести всю тренировку на другой день; если в тот день тоже тренировка, они поменяются местами. Пропущенную тренировку можно перенести с последних 7 дней на сегодня или позже.
+{"type":"edit","date":"ГГГГ-ММ-ДД","ex":"id","sets":4,"reps":8,"weight":62.5} — изменить подходы, повторы или вес упражнения в плане; ненужные поля не пиши. "reps" для упражнений на время — секунды, для кардио по времени — минуты, для дистанции — км.
+{"type":"replace","date":"ГГГГ-ММ-ДД","from":"id_старого","to":"id_нового"} — заменить упражнение.
+{"type":"add","date":"ГГГГ-ММ-ДД","ex":"id","sets":3,"reps":10,"weight":20} — добавить упражнение ("weight" — по желанию).
+{"type":"remove","date":"ГГГГ-ММ-ДД","ex":"id"} — убрать упражнение.
+{"type":"order","date":"ГГГГ-ММ-ДД","ex":["id1","id2"]} — поменять порядок упражнений (перечисли в нужном порядке).
+{"type":"set","date":"ГГГГ-ММ-ДД","items":[{"ex":"id","sets":3,"reps":10,"weight":40}]} — собрать тренировку дня заново, в том числе в день отдыха.
+{"type":"clear","date":"ГГГГ-ММ-ДД"} — отменить тренировку дня (день отдыха).
+{"type":"reset","date":"ГГГГ-ММ-ДД"} — вернуть день к автоматическому плану: убрать ручные правки и переносы.
+Если человек просит менять так и дальше («всегда», «в каждой такой тренировке»), добавь к edit/replace/add/remove/order/set "scope":"always" — приложение запомнит правку для этого вида тренировки. Без этого правка только для одного дня.
+Правила: id — только из каталога ниже и с инвентарём места этого дня; даты — сегодня или позже (кроме "from" у переноса пропущенной); тренировку с уже отмеченными подходами не переносить и не отменять. Несколько изменений — несколько действий в одном ответе. Перенос и правки по прямой просьбе делай сразу; если меняешь сразу несколько дней или всю неделю по своей инициативе — сначала кратко перечисли изменения и спроси. Даты считай от «Сегодня» в данных; если день недели неоднозначен («в субботу»), бери ближайший будущий. Изменить сами дни недели для тренировок навсегда нельзя действием — подскажи, что это в «Прогресс → Цель и план».
 Действия с питанием:
 {"type":"meal","date":"ГГГГ-ММ-ДД","name":"Гречка с курицей","kcal":520,"p":42,"f":14,"c":55,"items":[{"name":"гречка варёная","grams":200,"kcal":220},{"name":"куриная грудка","grams":150,"kcal":250}]}
 {"type":"meal_del","date":"ГГГГ-ММ-ДД","name":"точное название из «Съедено сегодня»"}
@@ -4267,17 +4276,34 @@ function coachSettings(){
   if(!SAMPLE)h+=aiBlock();
   return h;
 }
-function planItemFor(ex,sets,reps){
+function planItemFor(ex,sets,reps,w){
   const dr=draftFor(ex),it={ex:ex.id,n:ex.name,dir:ex.dir,k:ex.kind,tu:ex.tu,goal:Math.max(1,Math.min(10,Math.round(+sets)||defGoal(ex)))};
   ['w','r','t','d'].forEach(f=>{if(dr[f]!=null)it[f]=dr[f];});
-  const r=Math.round(+reps);
-  if(r>0&&r<=600){if(ex.kind==='time')it.t=r;else if(ex.kind==='reps'||ex.kind==='wr')it.r=Math.min(100,r);}
+  planItemSet(it,{reps:reps,weight:w});
   return it;
+}
+// change sets / reps (seconds, minutes, km) / weight of one plan item; returns false if nothing valid
+function planItemSet(it,a){
+  let ch=false;const n=v=>{const x=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(x)?x:NaN;};
+  const sets=Math.round(n(a.sets));if(sets>=1&&sets<=10){it.goal=sets;ch=true;}
+  const r=n(a.reps);
+  if(r>0){
+    if(it.k==='time'&&r<=600){it.t=Math.round(r);ch=true;}
+    else if(it.k==='timem'&&r<=300){it.t=Math.round(r);ch=true;}
+    else if(it.k==='dist'&&r<=100){it.d=Math.round(r*10)/10;ch=true;}
+    else if((it.k==='reps'||it.k==='wr')&&r<=100){it.r=Math.round(r);ch=true;}
+  }
+  const w=n(a.weight);
+  if(it.k==='wr'&&w>=0&&w<=500){it.w=Math.round(w*4)/4;ch=true;}
+  return ch;
 }
 function dayLabel(k){const t=todayKey();return k===t?'Сегодня':k===addDays(t,1)?'Завтра':wdOf(k)+', '+dateLong(k);}
 function applyCoachActions(list){
   const acts=[],undo={},t=todayKey(),skipped=[];
-  const snap=k=>{const u=undo[k]=undo[k]||{};if(!('plan' in u)){const d=day(k);u.plan=d&&d.plan?clone(d.plan):[];u.edited=!!(d&&d.planEdited);}};
+  const snap=k=>{const u=undo[k]=undo[k]||{};if(!('plan' in u)){const d=day(k);u.plan=d&&d.plan?clone(d.plan):[];u.edited=!!(d&&d.planEdited);u.mi=d&&d.movedIn||0;u.mt=d&&d.movedTo||'';u.nl=d&&d.noLearn||0;u.pf=d&&d.planFrom?clone(d.planFrom):null;u.pa=d&&d.prefsAt!==undefined?clone(d.prefsAt):undefined;}};
+  // a coach edit is for this one day unless the person asked to keep it ("scope":"always")
+  const scope=(k,a)=>{const d=ensureDay(k);if(a&&a.scope==='always')delete d.noLearn;else d.noLearn=1;};
+  const range=(k,lo)=>k>=addDays(t,lo)&&k<=addDays(t,120);
   const snapM=k=>{const u=undo[k]=undo[k]||{};if(!('meals' in u))u.meals=clone(dayMeals(k));};
   const numv=(v,max)=>{const x=Math.round(+v);return isFinite(x)&&x>0?Math.min(max,x):0;};
   (Array.isArray(list)?list:[]).slice(0,12).forEach(a=>{
@@ -4309,25 +4335,80 @@ function applyCoachActions(list){
       }
       return;
     }
+    if(type==='move'){
+      const from=String(a.from||''),to=String(a.to||'');
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(from)||!/^\d{4}-\d{2}-\d{2}$/.test(to)||from===to||!range(from,-7)||!range(to,0))return;
+      const pf=dayPlan(from),pt=dayPlan(to);
+      if(!pf.length){skipped.push(dayLabel(from)+': тренировки нет');return;}
+      if(daySets(from).length){skipped.push(dayLabel(from)+': уже есть подходы');return;}
+      if(pt.length&&(daySets(to).length||from<t)){skipped.push(dayLabel(to)+': день занят');return;}
+      snap(from);snap(to);const df=ensureDay(from),dt=ensureDay(to),a1=clone(pf),a2=clone(pt);
+      dt.plan=a1;dt.planEdited=true;dt.movedIn=1;delete dt.movedTo;
+      if(a2.length){df.plan=a2;df.planEdited=true;df.movedIn=1;delete df.movedTo;}
+      else{df.plan=[];df.planEdited=true;df.movedTo=to;delete df.movedIn;}
+      persistDay(from);persistDay(to);
+      acts.push({label:a2.length?'Поменял местами: '+dayLabel(from).toLowerCase()+' ↔ '+dayLabel(to).toLowerCase():'Тренировка перенесена: '+dayLabel(from).toLowerCase()+' → '+dayLabel(to).toLowerCase()});
+      return;
+    }
     const k=okDate?String(a.date):UI.date;
     if(k<t||k>addDays(t,120))return;
     const pl=dayPlan(k);
+    const doneHere=daySets(k);
+    if(type==='edit'){
+      const ex=getEx(a.ex);if(!ex||!pl.some(p=>p.ex===ex.id))return;
+      const test=clone(pl.find(p=>p.ex===ex.id));if(!planItemSet(test,a))return;
+      snap(k);const own=ownPlan(k),it=own.find(p=>p.ex===ex.id);planItemSet(it,a);
+      scope(k,a);persistDay(k);acts.push({label:dayLabel(k)+': «'+ex.name+'» '+humanPlan(it)});
+      return;
+    }
+    if(type==='order'){
+      const ids=(Array.isArray(a.ex)?a.ex:[]).map(x=>{const e=getEx(x);return e&&e.id;}).filter(Boolean);
+      if(ids.length<2||!pl.length)return;
+      const pos=id=>{const i=ids.indexOf(id);return i<0?999:i;},sorted=l=>l.map((p,i)=>[p,i]).sort((x,y)=>pos(x[0].ex)-pos(y[0].ex)||x[1]-y[1]).map(x=>x[0]);
+      if(sorted(pl).every((p,i)=>p===pl[i]))return;
+      snap(k);const next=sorted(ownPlan(k));
+      day(k).plan=next;scope(k,a);persistDay(k);acts.push({label:dayLabel(k)+': новый порядок — '+next.map(p=>p.n).slice(0,4).join(', ')+(next.length>4?'…':'')});
+      return;
+    }
+    if(type==='set'){
+      const eq=dayEquip(k),seen={},items=[];
+      (Array.isArray(a.items)?a.items:[]).slice(0,12).forEach(x=>{const ex=x&&getEx(x.ex);if(!ex||seen[ex.id])return;seen[ex.id]=1;
+        if(!exOk(ex,eq)){skipped.push(ex.name+' — нет инвентаря в этот день');return;}items.push(planItemFor(ex,x.sets,x.reps,x.weight));});
+      if(!items.length)return;
+      if(doneHere.length){skipped.push(dayLabel(k)+': уже есть подходы');return;}
+      snap(k);ownPlan(k);const d=day(k);d.plan=items;d.planEdited=true;scope(k,a);persistDay(k);
+      acts.push({label:dayLabel(k)+': новая тренировка — '+items.length+' '+plural(items.length,['упражнение','упражнения','упражнений'])});
+      return;
+    }
+    if(type==='clear'){
+      if(!pl.length)return;if(doneHere.length){skipped.push(dayLabel(k)+': уже есть подходы');return;}
+      snap(k);const d=ensureDay(k);d.plan=[];d.planEdited=true;persistDay(k);
+      acts.push({label:dayLabel(k)+': тренировка отменена, день отдыха'});
+      return;
+    }
+    if(type==='reset'){
+      const d=day(k);if(!d||!(d.planEdited||(d.plan&&d.plan.length)||d.movedIn||d.movedTo))return;
+      if(doneHere.length){skipped.push(dayLabel(k)+': уже есть подходы');return;}
+      snap(k);d.plan=[];d.planEdited=false;['movedIn','movedTo','noLearn','planFrom','prefsAt'].forEach(f=>delete d[f]);persistDay(k);
+      acts.push({label:dayLabel(k)+': план снова автоматический'});
+      return;
+    }
     if(type==='replace'){
       const from=getEx(a.from),to=getEx(a.to);if(!from||!to||from.id===to.id)return;
-      if(!exOk(to,dayEquip(k))){skipped.push(to.name);return;}
+      if(!exOk(to,dayEquip(k))){skipped.push(to.name+' — нет инвентаря в этот день');return;}
       if(!pl.some(p=>p.ex===from.id)||pl.some(p=>p.ex===to.id))return;
       snap(k);const own=ownPlan(k),j=own.findIndex(p=>p.ex===from.id),old=own[j];
       own[j]=planItemFor(to,old.goal,old.k===to.kind?(to.kind==='time'?old.t:old.r):null);
-      persistDay(k);acts.push({label:dayLabel(k)+': '+from.name+' → '+to.name});
+      scope(k,a);persistDay(k);acts.push({label:dayLabel(k)+': '+from.name+' → '+to.name});
     }else if(type==='add'){
       const ex=getEx(a.ex);if(!ex||pl.some(p=>p.ex===ex.id))return;
-      if(!exOk(ex,dayEquip(k))){skipped.push(ex.name);return;}
-      snap(k);ownPlan(k).push(planItemFor(ex,a.sets,a.reps));
-      persistDay(k);acts.push({label:dayLabel(k)+': добавлено «'+ex.name+'»'});
+      if(!exOk(ex,dayEquip(k))){skipped.push(ex.name+' — нет инвентаря в этот день');return;}
+      snap(k);ownPlan(k).push(planItemFor(ex,a.sets,a.reps,a.weight));
+      scope(k,a);persistDay(k);acts.push({label:dayLabel(k)+': добавлено «'+ex.name+'»'});
     }else if(type==='remove'){
       const ex=getEx(a.ex);if(!ex||!pl.some(p=>p.ex===ex.id))return;
       snap(k);const own=ownPlan(k);day(k).plan=own.filter(p=>p.ex!==ex.id);
-      persistDay(k);acts.push({label:dayLabel(k)+': убрано «'+ex.name+'»'});
+      scope(k,a);persistDay(k);acts.push({label:dayLabel(k)+': убрано «'+ex.name+'»'});
     }
   });
   return {acts:acts,undo:acts.length?undo:null,skipped:skipped};
@@ -4336,13 +4417,16 @@ function undoCoach(i){
   const m=COACH.msgs[i];if(!m||!m.undo||m.undone)return;
   let food=false,plan=false;
   Object.keys(m.undo).forEach(k=>{const u=m.undo[k],d=ensureDay(k);
-    if('plan' in u){d.plan=clone(u.plan);d.planEdited=u.edited;plan=true;}
+    if('plan' in u){d.plan=clone(u.plan);d.planEdited=u.edited;plan=true;
+      [['movedIn','mi'],['movedTo','mt'],['noLearn','nl']].forEach(([f,g])=>{if(u[g])d[f]=u[g];else delete d[f];});
+      if(u.pf)d.planFrom=clone(u.pf);else if('pf' in u)delete d.planFrom;
+      if(u.pa!==undefined)d.prefsAt=clone(u.pa);else if('pf' in u)delete d.prefsAt;}
     if('meals' in u){d.meals=clone(u.meals);food=true;}
     persistDay(k);});
   m.undone=true;saveCoach();render();toast(food&&!plan?'Записи в питании отменены.':food?'Изменения отменены.':'Изменения в плане отменены.');
 }
 function chatHistory(){
-  let h=COACH.msgs.slice(-16).map(m=>({role:m.role,content:m.role==='assistant'?m.text+(m.acts&&m.acts.length?'\n[Сделано: '+m.acts.map(a=>a.label).join('; ')+(m.undone?' — пользователь отменил их':'')+']':'')+(m.skipped?'\n[Не поставлено, нет инвентаря: '+m.skipped.join(', ')+']':''):m.text}));
+  let h=COACH.msgs.slice(-16).map(m=>({role:m.role,content:m.role==='assistant'?m.text+(m.acts&&m.acts.length?'\n[Сделано: '+m.acts.map(a=>a.label).join('; ')+(m.undone?' — пользователь отменил их':'')+']':'')+(m.skipped?'\n[Не сделано: '+m.skipped.join('; ')+']':''):m.text}));
   while(h.length&&h[0].role!=='user')h.shift();
   const out=[];h.forEach(m=>{const l=out[out.length-1];if(l&&l.role===m.role)l.content+='\n\n'+m.content;else out.push({role:m.role,content:m.content});});
   return out;
@@ -4415,7 +4499,7 @@ function chatItems(from){
     const nx=COACH.msgs[i+1];h+='<div class="msg bot">'+(nx&&nx.role!=='user'?'<span class="mava"></span>':'<span class="mava"><img src="'+gIco('coach')+'" alt=""></span>')+'<div class="bub">'+fmtReply(m.text)+offerButtons(m,i)+
       (m.acts&&m.acts.length?'<div class="cacts">'+m.acts.map(a=>'<span'+(m.undone?' class="off"':'')+'>'+(m.undone?'':'✓ ')+esc(a.label)+'</span>').join('')+
         (m.undo&&!m.undone?'<button class="rm" data-cundo="'+i+'">Отменить</button>':m.undone?'<i>Изменения отменены</i>':'')+'</div>':'')+
-      (m.skipped?'<div class="cacts"><i>Не поставлено, нет инвентаря в этот день: '+m.skipped.map(esc).join(', ')+'</i></div>':'')+
+      (m.skipped?'<div class="cacts"><i>Не сделано: '+m.skipped.map(esc).join('; ')+'</i></div>':'')+
       (m.tools&&m.tools.length?'<div class="ctools">Посмотрел: '+m.tools.map(esc).join(' · ')+'</div>':'')+
       '</div></div>';
   });
@@ -6434,7 +6518,7 @@ let learnTimer=null,learnUndo=null;
 function learnPlan(k){
   if(window.__SEED&&!window.__LEARN)return;
   const t=todayKey(),d=day(k),si=schedInfo(k);
-  if(!si||k<t||!d||!d.planEdited||d.movedTo||d.movedIn||!(d.plan&&d.plan.length))return;
+  if(!si||k<t||!d||!d.planEdited||d.movedTo||d.movedIn||d.noLearn||!(d.plan&&d.plan.length))return;
   if(!d.planFrom)return;
   const key=planKey(si),P=planPrefs(),before=P[key]?clone(P[key]):null;
   const next=mergePrefs(d.prefsAt||{},planDiff(d.planFrom,d.plan));
@@ -6633,9 +6717,10 @@ function toolWeek(){
 }
 function toolPlan(date){
   const k=/^\d{4}-\d{2}-\d{2}$/.test(String(date||''))?String(date):todayKey(),pl=dayPlan(k),si=schedInfo(k);
-  if(!pl.length)return k+': тренировки нет.';
+  const dd=day(k);
+  if(!pl.length)return k+': тренировки нет'+(dd&&dd.movedTo?' — перенесена на '+dd.movedTo:si?' — отменена':'')+'.';
   const notes=planNotes(k);
-  return k+(si?' (тренировка '+si.letter+(si.week!=null?', неделя '+(si.week+1):'')+')':'')+': '+pl.map(planLine).join('; ')+(notes.length?'\nПочему так: '+notes.join(' '):'');
+  return k+(dd&&dd.movedIn?' (перенесена сюда)':si?' (тренировка '+si.letter+(si.week!=null?', неделя '+(si.week+1):'')+')':'')+(daySets(k).length?' · отмечено '+daySets(k).length+' подх.':'')+': '+pl.map(planLine).join('; ')+(notes.length?'\nПочему так: '+notes.join(' '):'');
 }
 function runTool(tl,trace){
   const n=String(tl&&tl.name||'');
@@ -6817,9 +6902,6 @@ setInterval(()=>{const t=todayKey();if(t!==lastToday){if(UI.date===lastToday)UI.
       out.push({metric:'kcal_eaten',value:r0(f.kcal),unit:'ккал'},{metric:'protein_g',value:r0(f.p),unit:'г'});
       c.food[k]=meals.length>0;
     }
-    // Вес из «Прогресса»: отправляем только в дни, когда было взвешивание.
-    const pr=prof(),w=pr&&(pr.weights||[]).find(x=>x.d===k);
-    if(w)out.push({metric:'weight_kg',value:w.kg,unit:'кг'});
     return out.map(m=>Object.assign(m,{day:k,source:'trenirovka'}));
   }
   async function send(keys){
@@ -6832,12 +6914,6 @@ setInterval(()=>{const t=todayKey();if(t!==lastToday){if(UI.date===lastToday)UI.
       save(c);const t=new Date();say('Отправлено в '+pad(t.getHours())+':'+pad(t.getMinutes())+'.');return true;
     }catch(e){say('Нет связи с сервером. Отправлю при следующей записи.');return false;}
   }
-  const origWeight=logWeight;
-  logWeight=function(kg){
-    origWeight(kg);
-    if(!cfg().url)return;
-    const k=todayKey();clearTimeout(timers[k]);timers[k]=setTimeout(()=>send([k]),3000);
-  };
   const orig=persistDay;
   persistDay=function(k){
     orig(k);
