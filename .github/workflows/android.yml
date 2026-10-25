@@ -64,7 +64,7 @@ jobs:
           set -e
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           mkdir -p out
-          sign_apk(){ "$BT/zipalign" -f -p 4 "$1" "$RUNNER_TEMP/al.apk"; "$BT/apksigner" sign --ks "$RUNNER_TEMP/ks.p12" --ks-pass "pass:$KS_PASS" --ks-key-alias trenirovki --out "$2" "$RUNNER_TEMP/al.apk"; "$BT/apksigner" verify "$2"; }
+          sign_apk(){ "$BT/zipalign" -f -p 4 "$1" "$RUNNER_TEMP/al.apk"; "$BT/apksigner" sign --ks "$RUNNER_TEMP/ks.p12" --ks-pass "pass:$KS_PASS" --ks-key-alias trenirovki --v4-signing-enabled false --out "$2" "$RUNNER_TEMP/al.apk"; "$BT/apksigner" verify "$2"; }
           cd android-app/android
           ./gradlew assembleRelease --no-daemon -q
           sign_apk app/build/outputs/apk/release/app-release-unsigned.apk "../../out/Trenirovki-1.0.$BUILD.apk"
@@ -87,4 +87,6 @@ jobs:
             **Trenirovki-1.0.${{ github.run_number }}.apk** — для установки на телефон: скачайте на Android и откройте (разрешите установку из браузера или «Файлов»).
             **Trenirovki-rustore-…** — для загрузки в RuStore (без проверки обновлений через GitHub).
             ${{ env.SIGNED == '0' && 'Тестовая подпись: следующую версию с постоянным ключом нужно будет ставить после удаления этой (сначала сохраните резервную копию в настройках).' || 'Подписано постоянным ключом: обновления ставятся поверх, записи сохраняются.' }}
-          files: out/*
+          files: |
+            out/*.apk
+            out/*.aab
