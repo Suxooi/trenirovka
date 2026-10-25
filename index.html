@@ -772,6 +772,17 @@ button.bigring{border:0;color:inherit;padding:0;font:inherit;cursor:pointer}
 .bcbot{position:relative;z-index:1;margin-top:auto;display:grid;gap:12px;padding:16px 16px calc(env(safe-area-inset-bottom) + 20px)}
 .bcmsg{margin:0;color:#fff;text-align:center;font-size:15px;line-height:1.35;text-shadow:0 1px 4px rgba(0,0,0,.6)}
 .bcbot .ghost{color:#fff}
+.bub.typing{flex-wrap:wrap}
+.clive{flex-basis:100%;list-style:none;margin:8px 0 0;padding:0;display:grid;gap:3px;font-size:12px;color:var(--muted)}
+.clive li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.clive li span{opacity:.75}.clive li.err{color:#e8a0a0}
+.clog{margin-top:8px;font-size:12px;color:var(--muted)}
+.clog summary{cursor:pointer;list-style:none;text-decoration:underline;text-underline-offset:3px;padding:4px 0}
+.clog summary::-webkit-details-marker{display:none}
+.clog ol{margin:6px 0 0;padding-left:18px;display:grid;gap:6px}
+.clog li{line-height:1.35;word-break:break-word}.clog li b{color:var(--ink);font-weight:600}
+.clog li code{font-size:11px;opacity:.8}.clog li span{display:block;opacity:.85;white-space:pre-line}.clog li i{font-style:normal;opacity:.6;font-size:11px}
+.clog li.err b{color:#e8a0a0}
+.cauto{display:inline-block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--glass-edge);border-radius:8px;padding:1px 6px;margin-bottom:6px}
 .filebtn{display:inline-flex;align-items:center;cursor:pointer}
 .itform{display:grid;gap:8px}.itform input{width:100%;min-height:46px;border-radius:14px;border:1px solid var(--glass-edge);background:var(--glass-strong);color:var(--ink);font:inherit;font-size:16px;padding:0 14px;min-width:0}
 </style>
@@ -2914,7 +2925,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='24.10 17:06';
+const BUILD='25.10 09:38';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -3472,7 +3483,7 @@ function foodEngine(){return aiEngine(true);}
   if(!window.claude||typeof window.claude.use!=='function')return;
   try{
     SAMPLE=await window.claude.use('sample');
-    if(SAMPLE){const l=await SAMPLE.limits().catch(()=>null);SAMPLE_IMG=!!(l&&l.images);}
+    if(SAMPLE){const l=await SAMPLE.limits().catch(()=>null);SAMPLE_IMG=!!(l&&l.images);SAMPLE_TOOLS=l&&l.tools?(+l.tools.maxCount||0):0;}
   }catch(e){SAMPLE=null;}
   if(UI.tab==='food')renderMain();
 })();
@@ -4144,7 +4155,7 @@ function coachEquips(pr){
   if(pr&&pr.accepted&&pr.places&&pr.places.length)return usedPlaces(pr).concat(pr.places).filter((p,i,a)=>a.indexOf(p)===i).map(p=>({place:p,eq:placeEquip(pr,p)}));
   return [{place:null,eq:equipNow()}];
 }
-function coachContext(){
+function coachContext(withCatalog){
   const t=todayKey(),pr=prof(),L=[];
   L.push('Сегодня '+t+' ('+wdOf(t)+'). В приложении открыт день '+UI.date+'.');
   const wl=wkContextLine();if(wl)L.push(wl);
@@ -4172,6 +4183,7 @@ function coachContext(){
   L.push('Съедено сегодня: '+r0(st.kcal)+' ккал, Б '+r0(st.p)+' Ж '+r0(st.f)+' У '+r0(st.c)+(mt.length?' — '+mt.map(m=>{const tm=new Date(m.at);return pad(tm.getHours())+':'+pad(tm.getMinutes())+' «'+m.name+'» '+r0(m.kcal)+' ккал';}).join('; '):'')+'.');
   const wk=[];for(let i=-1;i>-7;i--){const k=addDays(t,i),m=dayMeals(k);if(m.length)wk.push(k+' '+r0(sumMeals(m).kcal));}
   if(wk.length)L.push('Калории за прошлые дни: '+wk.join('; ')+'.');
+  if(withCatalog===false){L.push('Места и инвентарь: '+coachEquips(pr).map(e=>PLACE_NAME[e.place]||e.place).join(', ')+'. Упражнения ищи через find_exercises.');return L.join('\n');}
   const eqs=coachEquips(pr),multi=eqs.length>1;
   L.push('Каталог упражнений, доступных пользователю (id название [направление'+(multi?'; где можно':'')+']):');
   allEx().forEach(ex=>{if(ex.fx||S.config.hidden.indexOf(ex.id)>=0)return;const ok=eqs.filter(e=>exOk(ex,e.eq));if(!ok.length)return;
@@ -4238,9 +4250,11 @@ const COACH_OPTS={
   len:[['short','Коротко','Отвечай очень коротко: 1–3 предложения, список — только если без него никак.'],
        ['mid','Средне','Обычно 2–6 предложений или короткий список.'],
        ['long','Подробно','Можно отвечать развёрнуто: объясняй, почему так, давай варианты.']],
-  emoji:[['no','Без эмодзи','Без эмодзи.'],['few','Немного','Можно одно эмодзи на ответ, если к месту.']]
+  emoji:[['no','Без эмодзи','Без эмодзи.'],['few','Немного','Можно одно эмодзи на ответ, если к месту.']],
+  think:[['deep','Тщательно',''],['fast','Быстро','']],
+  auto:[['on','Сам проверяет и правит',''],['off','Только когда спрошу','']]
 };
-function coachCfg(){const c=Object.assign({tone:'vy',style:'fun',len:'mid',emoji:'no',name:'',notes:'',prompt:'',voice:'off'},S.config.coach||{});if(c.style==='soft')c.style='fun';return c;}
+function coachCfg(){const c=Object.assign({tone:'vy',style:'fun',len:'mid',emoji:'no',name:'',notes:'',prompt:'',voice:'off',think:'deep',auto:'on'},S.config.coach||{});if(c.style==='soft')c.style='fun';return c;}
 let coachTimer=null;
 function setCoachCfg(patch,now){S.config.coach=Object.assign(coachCfg(),patch);if(patch&&patch.name!==undefined){const a=accCur();if(a&&a.name!==String(patch.name).trim()){a.name=String(patch.name).trim();accSave();}}clearTimeout(coachTimer);if(now)persistConfig();else coachTimer=setTimeout(persistConfig,700);}
 function optText(key,val){const o=COACH_OPTS[key].find(x=>x[0]===val)||COACH_OPTS[key][0];return o[2];}
@@ -4261,7 +4275,12 @@ function coachSettings(){
   const custom=!!c.prompt.trim(),pd=COACH.pdraft!=null?COACH.pdraft:(c.prompt.trim()||COACH_DEFAULT);
   let h='<section class="card glass cset"><h2 class="sec">Общение</h2>'+
     '<label class="sfield"><span class="flab">Как к вам обращаться</span><input id="cName" class="fhint" maxlength="40" placeholder="Имя, необязательно" value="'+esc(c.name)+'"></label>'+
-    seg('tone','Обращение')+seg('style','Характер')+seg('len','Длина ответов')+seg('emoji','Эмодзи')+
+    seg('tone','Обращение')+seg('style','Характер')+seg('len','Длина ответов')+seg('emoji','Эмодзи')+'</section>'+
+    '<section class="card glass cset"><h2 class="sec">Как тренер работает</h2>'+seg('think','Думать')+'<p class="cap">«Тщательно» — модель рассуждает перед ответом и действиями: умнее, но дольше (10–40 с). «Быстро» — сразу.</p>'+seg('auto','Самостоятельность')+
+    '<p class="cap">Тренер сам открывает разговор: утром коротко разбирает вчерашний день и поправляет план, а в нужный день выполняет задачи, которые себе поставил. Всё, что он меняет, можно отменить.</p>'+
+    (agTaskList()?'<p class="cap"><b>Задачи тренера:</b><br>'+esc(agTaskList()).replace(/\n/g,'<br>')+'</p>':'')+
+    '<button class="ghost glass press" data-coach="export">Скопировать переписку для разбора</button>'+
+    '</section><section class="card glass cset"><h2 class="sec">Голос</h2>'+
     '<div class="sfield"><span class="flab">Голос</span><div class="seg2"><button data-cset="voice|on" aria-pressed="'+(c.voice==='on')+'">Читать ответы вслух</button><button data-cset="voice|off" aria-pressed="'+(c.voice!=='on')+'">Только текст</button></div></div>'+
     '<p class="cap">Микрофон в поле сообщения: скажите вопрос — он отправится сам. Если браузер не даёт распознавание речи (бывает на iPhone в приложении с экрана «Домой»), подскажу, как диктовать через 🎤 на клавиатуре.</p>'+micDiagView()+'</section>'+
     '<section class="card glass cset"><h2 class="sec">О себе для тренера</h2>'+
@@ -4272,7 +4291,8 @@ function coachSettings(){
     '<textarea id="cPrompt" class="cta mono" rows="14" maxlength="8000">'+esc(pd)+'</textarea>'+
     '<div class="duo"><button class="log tint press" data-coach="psave">Сохранить</button><button class="ghost glass press" data-coach="preset"'+(custom||COACH.pdraft!=null?'':' disabled')+'>Вернуть стандартную</button></div>'+
     '<button class="rm" data-coach="pfull" aria-expanded="'+!!COACH.pfull+'" style="justify-self:start">'+(COACH.pfull?'Скрыть полный запрос':'Показать, что уходит модели')+'</button>'+
-    (COACH.pfull?'<pre class="cfull">'+esc(coachSystem())+'</pre>':'')+'</section>';
+    (COACH.pfull?'<pre class="cfull">'+esc(agEngine()?coachSystem2():coachSystem())+'</pre>':'')+'</section>'+
+    (COACH.exportTxt?'<section class="card glass cset"><h2 class="sec">Переписка</h2><p class="cap">Выделите и скопируйте текст ниже.</p><textarea class="cta mono" rows="10" readonly>'+esc(COACH.exportTxt)+'</textarea></section>':'');
   if(!SAMPLE)h+=aiBlock();
   return h;
 }
@@ -4443,12 +4463,28 @@ async function coachAsk(eng,sys,hist,signal){
   return t;
 }
 async function coachSend(text){
-  text=String(text||'').trim();if(!text||COACH.busy)return;
+  text=String(text||'').trim();if(!text)return;
+  if(COACH.busy&&COACH.auto&&COACH.ctl){try{COACH.ctl.abort();}catch(e){}COACH.busy=false;COACH.auto=false;COACH.ctl=null;COACH.live=null;}
+  if(COACH.busy)return;
   const eng=aiEngine(false);
   if(!eng){COACH.err='no_engine';COACH.keys=true;renderMain();return;}
   COACH.msgs.push({role:'user',text:text.slice(0,2000),at:Date.now()});COACH.draft='';COACH.err='';COACH.busy=true;COACH.armClear=false;
   saveCoach();renderMain();scrollCoach();
   const ctl=new AbortController();COACH.ctl=ctl;
+  const ag2=agEngine();
+  if(ag2){
+    try{
+      const r=await agentTurn(ag2,text,false,ctl);
+      if(COACH.ctl!==ctl)return;
+      COACH.msgs.push(agMsg(r.reply,r.ctx));
+      if(coachCfg().voice==='on')speak(plainSpeech(r.reply),true);
+    }catch(e){
+      if(COACH.ctl!==ctl)return;
+      if(!(e&&(e.name==='AbortError'||e.code==='cancelled')))COACH.err=(e&&e.code)||'x';
+    }
+    COACH.busy=false;COACH.ctl=null;COACH.step='';COACH.live=null;saveCoach();render();scrollCoach();
+    return;
+  }
   try{
     const mem=await itogiMemory(text),pre=kbSearch(text,2);
     const sys=coachSystem()+(mem?'\n\n'+mem:'')+(pre.length?'\n\nИз базы знаний по последнему сообщению (если не к месту — не используй):\n'+kbFmt(pre):''),hist=chatHistory();
@@ -4496,14 +4532,14 @@ function chatItems(from){
   let h='';
   COACH.msgs.forEach((m,i)=>{if(i<from)return;
     if(m.role==='user'){h+='<div class="msg me"><div class="bub">'+esc(m.text).replace(/\n/g,'<br>')+'</div></div>';return;}
-    const nx=COACH.msgs[i+1];h+='<div class="msg bot">'+(nx&&nx.role!=='user'?'<span class="mava"></span>':'<span class="mava"><img src="'+gIco('coach')+'" alt=""></span>')+'<div class="bub">'+fmtReply(m.text)+offerButtons(m,i)+
+    const nx=COACH.msgs[i+1];h+='<div class="msg bot">'+(nx&&nx.role!=='user'?'<span class="mava"></span>':'<span class="mava"><img src="'+gIco('coach')+'" alt=""></span>')+'<div class="bub">'+(m.kind==='auto'?'<span class="cauto">сам</span>':'')+fmtReply(m.text)+offerButtons(m,i)+
       (m.acts&&m.acts.length?'<div class="cacts">'+m.acts.map(a=>'<span'+(m.undone?' class="off"':'')+'>'+(m.undone?'':'✓ ')+esc(a.label)+'</span>').join('')+
         (m.undo&&!m.undone?'<button class="rm" data-cundo="'+i+'">Отменить</button>':m.undone?'<i>Изменения отменены</i>':'')+'</div>':'')+
       (m.skipped?'<div class="cacts"><i>Не сделано: '+m.skipped.map(esc).join('; ')+'</i></div>':'')+
-      (m.tools&&m.tools.length?'<div class="ctools">Посмотрел: '+m.tools.map(esc).join(' · ')+'</div>':'')+
+      logHTML(m)+
       '</div></div>';
   });
-  if(COACH.busy)h+='<div class="msg bot"><span class="mava"><img src="'+gIco('coach')+'" alt=""></span><div class="bub typing" aria-label="'+esc(COACH.step||'Тренер печатает')+'"><i></i><i></i><i></i>'+(COACH.step?'<span class="tstep">'+esc(COACH.step)+'</span>':'')+'</div></div>';
+  if(COACH.busy)h+='<div class="msg bot"><span class="mava"><img src="'+gIco('coach')+'" alt=""></span><div class="bub typing" aria-label="'+esc(COACH.step||'Тренер печатает')+'"><i></i><i></i><i></i>'+(COACH.step?'<span class="tstep">'+esc(COACH.step)+'</span>':'')+''+liveHTML()+'</div></div>';
   if(COACH.err)h+='<p class="ferr">'+esc(AI_ERR[COACH.err]||'Не получилось получить ответ. Попробуйте ещё раз.')+'</p>';
   return h;
 }
@@ -4522,6 +4558,9 @@ function coachClick(ds){
     setCoachCfg({prompt:!v||v===COACH_DEFAULT.trim()?'':v},true);COACH.pdraft=null;renderMain();toast(coachCfg().prompt?'Инструкция тренеру сохранена.':'Стоит стандартная инструкция.');return true;}
   if(ds.coach==='preset'){COACH.pdraft=null;setCoachCfg({prompt:''},true);renderMain();toast('Вернул стандартную инструкцию.');return true;}
   if(ds.coach==='pfull'){COACH.pfull=!COACH.pfull;renderMain();return true;}
+  if(ds.coach==='export'){const txt=chatExport();if(!txt){toast('Переписка пустая.');return true;}
+    const done=()=>toast('Переписка скопирована — вставьте её в чат с Claude.');
+    try{navigator.clipboard.writeText(txt).then(done,()=>{COACH.exportTxt=txt;renderMain();});}catch(e){COACH.exportTxt=txt;renderMain();}return true;}
   if(ds.coach==='clear'){if(!COACH.armClear){COACH.armClear=true;renderMain();return true;}
     COACH.msgs=[];COACH.err='';COACH.armClear=false;saveCoach();renderMain();return true;}
   return false;
@@ -5824,6 +5863,7 @@ function proactive(){
     st.missed=mk;added++;
   }
   if(added){saveCoachState(st);saveCoach();UI.unread=UI.tab!=='coach';renderTabs();if(UI.tab==='coach')renderMain();}
+  setTimeout(coachAuto,1500);
 }
 function offerButtons(m,i){
   const o=m.offer;if(!o)return '';
@@ -6748,6 +6788,265 @@ async function coachAgent(eng,sys,hist,signal,onStep){
   if(o&&!o.reply&&Array.isArray(o.tools))o={reply:'Собрал данные, но не успел ответить — спросите ещё раз, пожалуйста.',actions:[]};
   return {o:o,trace:trace};
 }
+/* ---------- тренер-агент v2: настоящие вызовы инструментов (DeepSeek / Claude), рассуждение, свои задачи, сам проверяет ---------- */
+const AG_MAX_ROUNDS=10;
+const COACH_TECH2=`Всегда, независимо от инструкции выше
+- Ты не врач: не ставишь диагнозов, не назначаешь лекарства. При острой боли, отёке, онемении, боли дольше недели, болезни, беременности — сначала к врачу.
+- Не предлагай голодание, дефицит больше 25% от расхода, «детоксы» и отказ от целых групп продуктов. Если человек пишет о вине за еду, желании «отработать» её или сильно урезать калории — без цифр и давления, поддержи и предложи обсудить это со специалистом.
+
+Как ты работаешь — ты агент, а не справочник
+- У тебя есть инструменты: читаешь журнал, дни, неделю, план, базу знаний и каталог упражнений и сам меняешь план тренировок, дневник питания, свою память о человеке и свой список задач. Всё, что ты меняешь, человек видит под ответом и может отменить одной кнопкой — поэтому по прямой просьбе делай сразу, без «а вы уверены?».
+- Порядок: пойми, что нужно → собери недостающее инструментами (не гадай: id упражнений бери из плана в данных или find_exercises; что было на тренировках — exercise_history, get_days; советы по программе, питанию, восстановлению — сверь с search_knowledge и назови источник) → сделай изменения → после переносов и правок нескольких дней проверь get_plan → ответь.
+- Инструмент вернул ошибку — поправь параметры и попробуй снова (до 2 раз); не вышло — честно скажи, что именно не получилось.
+- Не пиши, что сделал, если инструмент не вернул «Сделано».
+- Пока работаешь с инструментами, не пиши промежуточный текст. Ответ — в конце, обычным текстом по-русски: можно "- " списки и **жирное**, без заголовков, таблиц и JSON.
+- Неясно, о чём речь («перенеси тренировку»)? Если ответ очевиден из данных (ближайшая тренировка, ближайший свободный день) — делай и скажи, что выбрал. Иначе — один короткий вопрос.
+- Даты считай от «Сегодня» в данных; «в субботу» — ближайшая будущая суббота.
+
+Без напоминаний — помни и доводи до конца сам
+- Узнал устойчивый факт (травма, ограничение, что любит и не любит, режим, цель, важное решение) — сразу сохрани memory remember, не жди просьбы. Разовые цифры не запоминай — они в журнале.
+- Договорились о чём-то на будущее или сам решил проверить позже («через неделю спросить про колено», «если жим 3×8 пройдёт легко — +2,5 кг», «в пятницу взвешивание») — поставь себе coach_task с датой. Когда срок подойдёт, приложение само запустит тебя: проверишь данные, сделаешь задуманное и отметишь задачу выполненной.
+- Видишь в данных проблему — пропуски, застой в весах, недобор белка, перегруз, плохое самочувствие по оценкам подходов — скажи коротко, даже если не спрашивали, и поправь план или предложи поправку.
+- Сообщение с пометкой [Автозапуск] пишешь ты сам, пользователь ничего не спрашивал: будь краток (2–4 фразы), не здоровайся каждый раз, не повторяй то, что уже писал сегодня. Если ничего важного нет — одна фраза про сегодняшний день.
+
+План тренировок
+- Даты — сегодня или позже (пропущенную тренировку за последние 7 дней можно перенести на сегодня или позже). Тренировку с уже отмеченными подходами не переносить и не отменять.
+- Упражнения — с инвентарём места этого дня (find_exercises с датой это учитывает).
+- Правка по умолчанию только на один день. Если человек просит «всегда», «так и дальше», «в каждой такой тренировке» — scope "always", приложение запомнит её для этого вида тренировки.
+- Сами дни недели для тренировок навсегда ты не меняешь — подскажи, что это в «Прогресс → Цель и план».
+
+Питание
+- food add — когда человек пишет, что съел или выпил, или просит записать: одно действие на блюдо. Порцию оценивай по обычным размерам, если вес не указан. Дата — сегодня, если не сказано иное (не позже сегодня, не раньше 14 дней назад). Не записывай то, что только планируется, и не дублируй уже записанное. В ответе — что записал, сколько ккал и сколько осталось до нормы.`;
+
+// ---- tools: name, what it does, JSON schema, run(args, ctx) -> text ----
+const AG_DATE={type:'string',description:'Дата ГГГГ-ММ-ДД'};
+const AG_TOOLS=[
+  {name:'search_knowledge',description:'Поиск в базе знаний тренера: позиции ACSM, ISSN, ВОЗ, метаанализы, книги (Schoenfeld, Helms, Israetel и др.), российские нормы и школы (ФИЦ питания, Матвеев, Верхошанский, Шейко и др.). Возвращает до 4 выводов с источниками.',
+   params:{type:'object',properties:{query:{type:'string',description:'Что искать, по-русски: «белок на дефиците», «отдых между подходами»'}},required:['query']},
+   run:a=>{const q=String(a.query||a.q||'').slice(0,120);const r=kbSearch(q,4);return r.length?kbFmt(r):'Ничего не найдено по «'+q+'». Отвечай по общим принципам и скажи, что точных данных в базе нет.';}},
+  {name:'exercise_history',description:'Подходы упражнения за последние тренировки: вес, повторы, самочувствие, рекорды.',
+   params:{type:'object',properties:{exercise:{type:'string',description:'id или название упражнения'}},required:['exercise']},
+   run:a=>toolHistory(a.exercise||a.ex||'')},
+  {name:'get_days',description:'По дням за период (до 14 дней): план, сделанные подходы, калории и белок.',
+   params:{type:'object',properties:{from:AG_DATE,to:AG_DATE},required:['from','to']},
+   run:a=>toolDays(a.from,a.to)},
+  {name:'get_week',description:'Эта и прошлая неделя: тренировки, подходы по группам мышц против нормы для цели, питание, вес.',
+   params:{type:'object',properties:{}},run:()=>toolWeek()},
+  {name:'get_plan',description:'План тренировки на дату (id, подходы×повторы, вес) и почему он так собран; переносы и отмены.',
+   params:{type:'object',properties:{date:AG_DATE},required:['date']},run:a=>toolPlan(a.date)},
+  {name:'find_exercises',description:'Каталог упражнений: ищет по названию и/или группе мышц, с учётом инвентаря места на дату. Возвращает id для действий.',
+   params:{type:'object',properties:{query:{type:'string',description:'Часть названия: «жим», «тяга гантели»; можно пусто'},group:{type:'string',enum:['chest','back','legs','shoulders','arms','core','cardio','mobility']},date:AG_DATE},required:[]},
+   run:a=>agFindEx(a)},
+  {name:'move_workout',description:'Перенести всю тренировку с одного дня на другой. Если в другой день тоже тренировка — они поменяются местами.',
+   params:{type:'object',properties:{from:AG_DATE,to:AG_DATE},required:['from','to']},
+   run:(a,c)=>agAct(c,[{type:'move',from:a.from,to:a.to}])},
+  {name:'change_exercise',description:'Одно упражнение в плане дня: op add (добавить), remove (убрать), replace (заменить на to), edit (изменить подходы/повторы/вес). reps — повторы; для упражнений на время — секунды, для кардио по времени — минуты, для дистанции — км.',
+   params:{type:'object',properties:{op:{type:'string',enum:['add','remove','replace','edit']},date:AG_DATE,exercise:{type:'string',description:'id упражнения'},to:{type:'string',description:'id нового упражнения (для replace)'},sets:{type:'number'},reps:{type:'number'},weight:{type:'number',description:'кг'},scope:{type:'string',enum:['day','always'],description:'always — запомнить для этого вида тренировки'}},required:['op','date','exercise']},
+   run:(a,c)=>{const op=String(a.op||'');const x={date:a.date,ex:a.exercise,sets:a.sets,reps:a.reps,weight:a.weight,scope:a.scope};
+     if(op==='replace')return agAct(c,[{type:'replace',date:a.date,from:a.exercise,to:a.to,scope:a.scope}]);
+     if(op==='add'||op==='remove'||op==='edit')return agAct(c,[Object.assign({type:op},x)]);
+     throw new Error('op должен быть add, remove, replace или edit');}},
+  {name:'day_workout',description:'Тренировка дня целиком: mode set — собрать заново из items (в т.ч. в день отдыха); order — порядок упражнений (order: список id); clear — отменить тренировку (день отдыха); reset — вернуть автоматический план, убрав ручные правки и переносы.',
+   params:{type:'object',properties:{mode:{type:'string',enum:['set','order','clear','reset']},date:AG_DATE,items:{type:'array',items:{type:'object',properties:{exercise:{type:'string'},sets:{type:'number'},reps:{type:'number'},weight:{type:'number'}},required:['exercise']}},order:{type:'array',items:{type:'string'}},scope:{type:'string',enum:['day','always']}},required:['mode','date']},
+   run:(a,c)=>{const m=String(a.mode||'');
+     if(m==='set')return agAct(c,[{type:'set',date:a.date,scope:a.scope,items:(Array.isArray(a.items)?a.items:[]).map(i=>({ex:i&&(i.exercise||i.ex),sets:i&&i.sets,reps:i&&i.reps,weight:i&&i.weight}))}]);
+     if(m==='order')return agAct(c,[{type:'order',date:a.date,ex:a.order,scope:a.scope}]);
+     if(m==='clear'||m==='reset')return agAct(c,[{type:m,date:a.date}]);
+     throw new Error('mode должен быть set, order, clear или reset');}},
+  {name:'food',description:'Дневник питания: op add — записать блюдо (kcal и БЖУ в граммах), op delete — убрать запись по названию.',
+   params:{type:'object',properties:{op:{type:'string',enum:['add','delete']},date:AG_DATE,name:{type:'string'},kcal:{type:'number'},p:{type:'number'},f:{type:'number'},c:{type:'number'}},required:['op','name']},
+   run:(a,c)=>agAct(c,[{type:a.op==='delete'?'meal_del':'meal',date:a.date||todayKey(),name:a.name,kcal:a.kcal,p:a.p,f:a.f,c:a.c}])},
+  {name:'memory',description:'Твоя долгая память о человеке: op remember — сохранить устойчивый факт одной фразой (category: здоровье, питание, тренировки, режим, цели), op forget — убрать устаревший факт.',
+   params:{type:'object',properties:{op:{type:'string',enum:['remember','forget']},text:{type:'string'},category:{type:'string'}},required:['op','text']},
+   run:(a,c)=>agAct(c,[{type:a.op==='forget'?'forget':'remember',text:a.text,category:a.category}],true)},
+  {name:'coach_task',description:'Твой список задач на будущее: op add — поставить задачу с датой (в этот день приложение само запустит тебя), op done — отметить выполненной по id, op list — показать открытые.',
+   params:{type:'object',properties:{op:{type:'string',enum:['add','done','list']},date:AG_DATE,text:{type:'string'},id:{type:'string'}},required:['op']},
+   run:(a,c)=>agTask(a,c)}
+];
+const AG_STEP={search_knowledge:'Смотрю базу знаний…',exercise_history:'Смотрю журнал упражнения…',get_days:'Смотрю дни…',get_week:'Смотрю итоги недели…',get_plan:'Смотрю план…',find_exercises:'Подбираю упражнения…',
+  move_workout:'Переношу тренировку…',change_exercise:'Меняю план…',day_workout:'Меняю план…',food:'Записываю питание…',memory:'Запоминаю…',coach_task:'Ставлю себе задачу…'};
+const AG_HUMAN={search_knowledge:'база знаний',exercise_history:'журнал',get_days:'дни',get_week:'неделя',get_plan:'план',find_exercises:'каталог',move_workout:'перенос',change_exercise:'правка плана',day_workout:'план дня',food:'питание',memory:'память',coach_task:'задача'};
+
+// run plan / food / memory actions through the same checked code as before; collect labels and undo for the turn
+function agAct(ctx,list,quiet){
+  const r=applyCoachActions(list);
+  r.acts.forEach(a=>ctx.acts.push(a));r.skipped.forEach(x=>ctx.skipped.push(x));
+  if(r.undo)Object.keys(r.undo).forEach(k=>{const u=ctx.undo[k]=ctx.undo[k]||{};Object.keys(r.undo[k]).forEach(f=>{if(!(f in u))u[f]=r.undo[k][f];});});
+  if(r.acts.length)return 'Сделано: '+r.acts.map(a=>a.label).join('; ')+(r.skipped.length?'. Не сделано: '+r.skipped.join('; '):'');
+  if(r.skipped.length)throw new Error('Не сделано: '+r.skipped.join('; '));
+  if(quiet)return 'Уже есть, ничего не изменилось.';
+  throw new Error('Ничего не изменилось. Проверь: дата ГГГГ-ММ-ДД — сегодня или позже, не дальше 120 дней; id упражнения — из плана дня или find_exercises; для edit/remove/replace упражнение должно быть в плане дня, для add — не быть; значения в разумных пределах.');
+}
+function agFindEx(a){
+  const k=/^\d{4}-\d{2}-\d{2}$/.test(String(a.date||''))?String(a.date):todayKey(),eq=dayEquip(k);
+  const q=normQ(a.query||'').trim(),ws=q.split(/\s+/).filter(Boolean),g=String(a.group||'');
+  const res=allEx().filter(ex=>!ex.fx&&S.config.hidden.indexOf(ex.id)<0&&(!g||ex.dir===g)&&exOk(ex,eq)&&(!ws.length||ws.every(w=>normQ(ex.name+' '+ex.id).indexOf(w)>=0)));
+  if(!res.length)return 'Не нашлось'+(q?' «'+a.query+'»':'')+(g?' в группе '+g:'')+' с инвентарём на '+k+'. Попробуй короче запрос или другую группу.';
+  return 'Упражнения с инвентарём на '+k+' (id — название [группа]):\n'+res.slice(0,25).map(ex=>ex.id+' — '+ex.name+' ['+(DIR[ex.dir]?DIR[ex.dir].name:ex.dir)+']').join('\n')+(res.length>25?'\n…и ещё '+(res.length-25)+', уточни запрос.':'');
+}
+// the coach's own to-do list: follow-ups it sets for itself
+function coachTasks(){if(!Array.isArray(S.config.coachTasks))S.config.coachTasks=[];return S.config.coachTasks;}
+function agTask(a,ctx){
+  const L=coachTasks(),op=String(a.op||'list'),t=todayKey();
+  if(op==='add'){
+    const txt=String(a.text||'').trim().slice(0,200),d=/^\d{4}-\d{2}-\d{2}$/.test(String(a.date||''))?String(a.date):addDays(t,1);
+    if(!txt)throw new Error('Нужен text задачи.');if(d<t)throw new Error('Дата задачи — сегодня или позже.');
+    if(L.some(x=>!x.done&&x.text.toLowerCase()===txt.toLowerCase()))return 'Такая задача уже есть.';
+    const id='t'+Date.now().toString(36).slice(-5)+L.length;L.push({id:id,due:d,text:txt,at:Date.now()});
+    while(L.length>40){const i=L.findIndex(x=>x.done);L.splice(i>=0?i:0,1);}
+    persistConfig();ctx.acts.push({label:'задача себе на '+dayLabel(d).toLowerCase()+': «'+txt.slice(0,70)+'»'});return 'Сделано: задача '+id+' на '+d;
+  }
+  if(op==='done'){
+    const x=L.find(y=>y.id===String(a.id||''))||L.find(y=>!y.done&&a.text&&y.text.toLowerCase().indexOf(String(a.text).toLowerCase())>=0);
+    if(!x)throw new Error('Нет задачи с таким id. Открытые: '+agTaskList());
+    x.done=Date.now();persistConfig();return 'Сделано: задача «'+x.text+'» закрыта.';
+  }
+  return agTaskList()||'Открытых задач нет.';
+}
+function agTaskList(){return coachTasks().filter(x=>!x.done).map(x=>'['+x.id+'] '+x.due+': '+x.text).join('\n');}
+function agShort(a){try{const s=JSON.stringify(a||{});return s.length>160?s.slice(0,160)+'…':s;}catch(e){return '';}}
+async function agRunTool(name,args,ctx){
+  const t=AG_TOOLS.find(x=>x.name===name),t0=Date.now();let out,err=false;
+  if(ctx.onStep)ctx.onStep(AG_STEP[name]||'Работаю…');
+  try{if(!t)throw new Error('Нет инструмента «'+name+'».');out=String(await t.run(args&&typeof args==='object'?args:{},ctx));}
+  catch(e){out='Ошибка: '+String((e&&e.message)||e).replace(/^Error:\s*/,'');err=true;}
+  if(out.length>6000)out=out.slice(0,6000)+'…';
+  ctx.log.push({n:name,a:agShort(args),r:out.slice(0,400),ms:Date.now()-t0,err:err});
+  if(ctx.onStep)ctx.onStep(null);
+  return out;
+}
+function agSchemas(){return AG_TOOLS.map(t=>({name:t.name,description:t.description,parameters:t.params}));}
+
+// ---- engines ----
+async function agDeepSeek(sys,user,ctx,signal){
+  const tools=agSchemas().map(f=>({type:'function',function:f}));
+  const msgs=[{role:'system',content:sys},{role:'user',content:user}];
+  let think=coachCfg().think!=='fast';
+  for(let i=0;i<AG_MAX_ROUNDS;i++){
+    const body={model:DS_MODEL,messages:msgs,tools:tools,max_tokens:8000,stream:false};
+    if(think){body.thinking={type:'enabled'};body.reasoning_effort='high';}else body.thinking={type:'disabled'};
+    if(i===AG_MAX_ROUNDS-1)body.tool_choice='none';
+    let j;
+    try{j=await dsRaw(body,signal);}
+    catch(e){if(think&&e&&e.code==='api_400'){think=false;i--;ctx.note='рассуждение выключено: API отклонил запрос';continue;}throw e;}
+    const m=j&&j.choices&&j.choices[0]&&j.choices[0].message;if(!m)throw {code:'x'};
+    if(j.usage){ctx.tok=(ctx.tok||0)+(j.usage.total_tokens||0);}
+    if(m.tool_calls&&m.tool_calls.length){
+      const am={role:'assistant',content:m.content||'',tool_calls:m.tool_calls};if(m.reasoning_content!=null)am.reasoning_content=m.reasoning_content;msgs.push(am);
+      for(const tc of m.tool_calls){let a={};try{a=JSON.parse((tc.function&&tc.function.arguments)||'{}');}catch(e){}
+        msgs.push({role:'tool',tool_call_id:tc.id,content:await agRunTool(tc.function&&tc.function.name,a,ctx)});}
+      continue;
+    }
+    return String(m.content||'').trim();
+  }
+  return '';
+}
+async function dsRaw(body,signal){
+  let r;
+  try{r=await fetch('https://api.deepseek.com/chat/completions',{method:'POST',signal,headers:{'Content-Type':'application/json','Authorization':'Bearer '+dsKey()},body:JSON.stringify(body)});}
+  catch(e){if(e&&e.name==='AbortError')throw e;throw {code:'net_ds'};}
+  if(!r.ok)throw {code:'api_'+r.status};
+  return r.json();
+}
+async function agClaude(sys,user,ctx,signal){
+  const tools=agSchemas().map(f=>({name:f.name,description:f.description,input_schema:f.parameters}));
+  const msgs=[{role:'user',content:user}];
+  for(let i=0;i<AG_MAX_ROUNDS;i++){
+    let r;
+    try{r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':apiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify(Object.assign({model:'claude-sonnet-5-5',max_tokens:4000,system:sys,tools:tools,messages:msgs},i===AG_MAX_ROUNDS-1?{tool_choice:{type:'none'}}:{}))});}
+    catch(e){if(e&&e.name==='AbortError')throw e;throw {code:'net'};}
+    if(!r.ok)throw {code:'api_'+r.status};
+    const j=await r.json(),blocks=j.content||[],uses=blocks.filter(b=>b.type==='tool_use');
+    if(j.usage)ctx.tok=(ctx.tok||0)+(j.usage.input_tokens||0)+(j.usage.output_tokens||0);
+    if(uses.length&&j.stop_reason==='tool_use'){
+      msgs.push({role:'assistant',content:blocks});
+      const res=[];for(const u of uses)res.push({type:'tool_result',tool_use_id:u.id,content:await agRunTool(u.name,u.input,ctx)});
+      msgs.push({role:'user',content:res});continue;
+    }
+    return blocks.filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+  }
+  return '';
+}
+async function agSample(sys,user,ctx,signal){
+  const tools=AG_TOOLS.map(t=>({name:t.name,description:t.description.slice(0,1000),inputSchema:t.params,execute:a=>agRunTool(t.name,a,ctx)}));
+  const r=await SAMPLE(sys+'\n\n'+user,{signal,tools,modelTier:'default'});
+  return String((r&&r.text)||'').trim();
+}
+let SAMPLE_TOOLS=0;
+function agEngine(){const e=aiEngine(false);if(e==='claude')return SAMPLE&&SAMPLE_TOOLS>=AG_TOOLS.length?'sample':'';return e;}
+
+// ---- prompt ----
+function coachSystem2(){
+  const c=coachCfg(),mc=memContext(),tl=agTaskList();
+  return (c.prompt.trim()||COACH_DEFAULT)+'\n\n'+coachStyle(c)+'\n\n'+COACH_TECH2+'\n\n'+
+    (c.notes.trim()?'Пользователь о себе (учитывай всегда):\n'+c.notes.trim()+'\n\n':'')+(mc?mc+'\n\n':'')+
+    'Твои открытые задачи (coach_task):\n'+(tl||'- нет')+'\n\n'+
+    'Данные пользователя:\n'+coachContext(false);
+}
+function agTranscript(n,skipLast){
+  const ms=COACH.msgs.slice(0,skipLast?-1:undefined).slice(-n);
+  return ms.map(m=>m.role==='user'?'Пользователь: '+m.text:'Тренер'+(m.kind==='auto'?' [Автозапуск]':'')+': '+m.text+
+    (m.acts&&m.acts.length?'\n[Сделано: '+m.acts.map(a=>a.label).join('; ')+(m.undone?' — пользователь отменил':'')+']':'')+(m.skipped?'\n[Не сделано: '+m.skipped.join('; ')+']':'')).join('\n\n');
+}
+// one agent turn: user message or an automatic trigger
+async function agentTurn(eng,userText,auto,ctl){
+  const ctx={acts:[],undo:{},skipped:[],log:[],t0:Date.now(),onStep:st=>{if(COACH.ctl!==ctl)return;COACH.step=st||'Думаю…';COACH.live=ctx.log;renderMain();scrollCoach();}};
+  const mem=auto?'':await itogiMemory(userText);
+  const sys=coachSystem2()+(mem?'\n\n'+mem:'');
+  const prev=agTranscript(20,!auto);
+  const user=(prev?'Переписка до этого (старое сверху):\n'+prev+'\n\n':'')+(auto?'[Автозапуск — пользователь ничего не писал]\n'+userText:'Новое сообщение пользователя:\n'+userText);
+  COACH.step='Думаю…';COACH.live=ctx.log;
+  const reply=eng==='ds'?await agDeepSeek(sys,user,ctx,ctl.signal):eng==='api'?await agClaude(sys,user,ctx,ctl.signal):await agSample(sys,user,ctx,ctl.signal);
+  return {reply:reply,ctx:ctx};
+}
+function agMsg(reply,ctx,kind){
+  const tools=[];ctx.log.forEach(l=>{const h=AG_HUMAN[l.n]||l.n;if(tools.indexOf(h)<0)tools.push(h);});
+  return {role:'assistant',text:(reply||(ctx.acts.length?'Готово.':'Не получилось сформулировать ответ — спросите ещё раз.')).slice(0,4000),at:Date.now(),kind:kind||undefined,
+    acts:ctx.acts,undo:ctx.acts.length&&Object.keys(ctx.undo).length?ctx.undo:null,skipped:ctx.skipped.length?ctx.skipped:undefined,
+    tools:tools.length?tools:undefined,log:ctx.log.length?ctx.log.slice(-24):undefined,ms:Date.now()-ctx.t0,tok:ctx.tok||undefined,note:ctx.note};
+}
+
+// ---- autonomy: the coach checks in by itself — due tasks and a short morning review ----
+const AUTO_DAILY='Утренний разбор. Посмотри вчерашний день (тренировка: сделано или пропущено, оценки подходов, питание) и план на сегодня и ближайшие дни. Если есть повод — поправь план (только сегодня и позже) и коротко напиши, что и почему. Если всё по плану — одна-две фразы: что сегодня и на что обратить внимание.';
+function autoWhy(){
+  const c=coachCfg();if(c.auto==='off'||!agEngine()||COACH.busy||needOnboarding())return null;
+  const t=todayKey(),st=coachState(),h=new Date().getHours();
+  const due=coachTasks().filter(x=>!x.done&&x.due<=t);
+  const y=addDays(t,-1),daily=st.auto!==t&&h>=6&&(dayPlan(t).length||daySets(y).length||dayPlan(y).length||dayMeals(y).length);
+  if(!due.length&&!daily)return null;
+  return {due:due,daily:!!daily};
+}
+async function coachAuto(){
+  if(window.__COACH||window.__SEED)return;
+  const w=autoWhy();if(!w)return;
+  const st=coachState(),t=todayKey();st.auto=t;st.autoTasks=w.due.map(x=>x.id);saveCoachState(st);
+  const eng=agEngine(),ctl=new AbortController();COACH.ctl=ctl;COACH.busy=true;COACH.auto=true;renderMain();
+  const task=(w.daily?AUTO_DAILY:'')+(w.due.length?(w.daily?'\n\n':'')+'Подошёл срок твоих задач:\n'+w.due.map(x=>'['+x.id+'] '+x.due+': '+x.text).join('\n')+'\nПроверь данные, сделай задуманное, закрой выполненные (coach_task done) и коротко напиши пользователю.':'');
+  try{
+    const r=await agentTurn(eng,task,true,ctl);
+    if(COACH.ctl===ctl){COACH.msgs.push(agMsg(r.reply,r.ctx,'auto'));UI.unread=UI.tab!=='coach';}
+  }catch(e){/* a quiet failure: the next app start tries again tomorrow */}
+  if(COACH.ctl===ctl){COACH.busy=false;COACH.auto=false;COACH.ctl=null;COACH.step='';COACH.live=null;saveCoach();renderTabs();render();}
+}
+// chat as text — to copy and send to whoever tunes the coach
+function chatExport(){
+  return COACH.msgs.slice(-60).map(m=>{const tm=new Date(m.at||0),ts=tm.getDate()+'.'+pad(tm.getMonth()+1)+' '+pad(tm.getHours())+':'+pad(tm.getMinutes());
+    if(m.role==='user')return '['+ts+'] Я: '+m.text;
+    return '['+ts+'] Тренер'+(m.kind==='auto'?' (сам)':'')+': '+m.text+(m.acts&&m.acts.length?'\n  Сделано: '+m.acts.map(a=>a.label).join('; ')+(m.undone?' (отменено)':''):'')+(m.skipped?'\n  Не сделано: '+m.skipped.join('; '):'')+
+      (m.log&&m.log.length?'\n  Ход: '+m.log.map(l=>l.n+(l.err?' ✗':'')+' '+l.a).join(' → '):'')+(m.ms?'\n  '+Math.round(m.ms/1000)+' с'+(m.tok?', '+m.tok+' ток.':''):'');
+  }).join('\n\n');
+}
+function logHTML(m){
+  if(!m.log||!m.log.length)return m.tools&&m.tools.length?'<div class="ctools">Посмотрел: '+m.tools.map(esc).join(' · ')+'</div>':'';
+  return '<details class="clog"><summary>Ход работы · '+m.log.length+' '+plural(m.log.length,['шаг','шага','шагов'])+(m.ms?' · '+Math.max(1,Math.round(m.ms/1000))+' с':'')+'</summary><ol>'+
+    m.log.map(l=>'<li'+(l.err?' class="err"':'')+'><b>'+esc(AG_HUMAN[l.n]||l.n)+'</b> <code>'+esc(l.a)+'</code><span>'+esc(l.r.slice(0,220))+(l.r.length>220?'…':'')+'</span><i>'+(l.ms<1000?l.ms+' мс':(l.ms/1000).toFixed(1)+' с')+'</i></li>').join('')+'</ol>'+(m.note?'<p class="cap">'+esc(m.note)+'</p>':'')+'</details>';
+}
+function liveHTML(){
+  const L=COACH.live||[];if(!L.length)return '';
+  return '<ol class="clive">'+L.slice(-4).map(l=>'<li'+(l.err?' class="err"':'')+'>'+(l.err?'✗ ':'✓ ')+esc(AG_HUMAN[l.n]||l.n)+' <span>'+esc(l.r.split('\n')[0].slice(0,70))+'</span></li>').join('')+'</ol>';
+}
+
 // settings: what the coach remembers
 function memCard(){
   const m=coachMem();
