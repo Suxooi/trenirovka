@@ -1,0 +1,90 @@
+# Сборка Android-приложения «Тренировки» (Capacitor 8) — APK для установки и APK/AAB для RuStore.
+# Подпись: секреты репозитория ANDROID_KEYSTORE_B64 и ANDROID_KEYSTORE_PASSWORD.
+# Без них сборка всё равно идёт, но с временным ключом — такой выпуск помечен как тестовый.
+name: android
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['index.html', 'kb.json', 'vendor/**', 'icons/**', 'android-app/**', '.github/workflows/android.yml']
+permissions:
+  contents: write
+concurrency:
+  group: android
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      BUILD: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Зависимости
+        working-directory: android-app
+        run: npm install --no-audit --no-fund
+      - name: Веб-часть
+        working-directory: android-app
+        run: |
+          set -e
+          rm -rf www && mkdir www
+          cp ../index.html ../manifest.webmanifest ../kb.json www/
+          cp -r ../icons ../vendor www/
+          CJS=$(ls node_modules/@capacitor/core/dist/capacitor.js 2>/dev/null || true)
+          if [ -n "$CJS" ]; then cp "$CJS" www/capacitor.js; else echo "capacitor.js нет — плагины пойдут через мост напрямую"; fi
+          python3 inject.py www/index.html apk "$BUILD"
+      - name: Android-проект
+        working-directory: android-app
+        run: |
+          set -e
+          npx cap add android
+          npx capacitor-assets generate --android --assetPath assets
+          python3 patch_android.py "$BUILD"
+          npx cap sync android
+      - name: Ключ подписи
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KSP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -e
+          if [ -n "$KS" ] && [ -n "$KSP" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/ks.p12"; echo "KS_PASS=$KSP" >> $GITHUB_ENV; echo "SIGNED=1" >> $GITHUB_ENV
+          else
+            keytool -genkeypair -storetype PKCS12 -keystore "$RUNNER_TEMP/ks.p12" -alias trenirovki -keyalg RSA -keysize 2048 -validity 365 -storepass testtest -keypass testtest -dname "CN=Test"
+            echo "KS_PASS=testtest" >> $GITHUB_ENV; echo "SIGNED=0" >> $GITHUB_ENV
+          fi
+      - name: Сборка
+        run: |
+          set -e
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          mkdir -p out
+          sign_apk(){ "$BT/zipalign" -f -p 4 "$1" "$RUNNER_TEMP/al.apk"; "$BT/apksigner" sign --ks "$RUNNER_TEMP/ks.p12" --ks-pass "pass:$KS_PASS" --ks-key-alias trenirovki --out "$2" "$RUNNER_TEMP/al.apk"; "$BT/apksigner" verify "$2"; }
+          cd android-app/android
+          ./gradlew assembleRelease --no-daemon -q
+          sign_apk app/build/outputs/apk/release/app-release-unsigned.apk "../../out/Trenirovki-1.0.$BUILD.apk"
+          cd ..
+          python3 inject.py android/app/src/main/assets/public/index.html rustore "$BUILD"
+          cd android
+          ./gradlew assembleRelease bundleRelease --no-daemon -q
+          sign_apk app/build/outputs/apk/release/app-release-unsigned.apk "../../out/Trenirovki-rustore-1.0.$BUILD.apk"
+          cp app/build/outputs/bundle/release/app-release.aab "../../out/Trenirovki-rustore-1.0.$BUILD.aab"
+          jarsigner -keystore "$RUNNER_TEMP/ks.p12" -storetype PKCS12 -storepass "$KS_PASS" "../../out/Trenirovki-rustore-1.0.$BUILD.aab" trenirovki
+          ls -la ../../out
+      - name: Выпуск
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-${{ github.run_number }}
+          name: Android 1.0.${{ github.run_number }}${{ env.SIGNED == '0' && ' (тестовая подпись)' || '' }}
+          prerelease: ${{ env.SIGNED == '0' }}
+          make_latest: ${{ env.SIGNED == '1' && 'true' || 'false' }}
+          body: |
+            **Trenirovki-1.0.${{ github.run_number }}.apk** — для установки на телефон: скачайте на Android и откройте (разрешите установку из браузера или «Файлов»).
+            **Trenirovki-rustore-…** — для загрузки в RuStore (без проверки обновлений через GitHub).
+            ${{ env.SIGNED == '0' && 'Тестовая подпись: следующую версию с постоянным ключом нужно будет ставить после удаления этой (сначала сохраните резервную копию в настройках).' || 'Подписано постоянным ключом: обновления ставятся поверх, записи сохраняются.' }}
+          files: out/*

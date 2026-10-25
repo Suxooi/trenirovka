@@ -2898,8 +2898,9 @@ function persistDay(k){
   if(!keep)delete S.days[k];
   if(S.mode==='db')queue('d-'+k,keep?d:null);else saveLocal();
   HIST_REV++;if(keep&&d.planEdited&&d.planFrom)learnPlan(k);
+  if(window.natSchedule)window.natSchedule();
 }
-function persistConfig(){if(S.mode==='db')queue('config',S.config);else saveLocal();}
+function persistConfig(){if(S.mode==='db')queue('config',S.config);else saveLocal();if(window.natSchedule)window.natSchedule();}
 function queue(id,body){S.pending[id]=body===null?null:clone(body);if(!S.writing[id])flush(id);}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function flush(id){
@@ -2925,7 +2926,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='25.10 09:38';
+const BUILD='25.10 11:09';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -4766,7 +4767,7 @@ function settingsView(){
     '<div class="sfield"><span class="flab">Таймер отдыха</span><div class="seg2">'+REST_MODES.map(m=>'<button data-tset="restMode|'+m[0]+'" aria-pressed="'+(tc.restMode===m[0])+'">'+m[1]+'</button>').join('')+'</div></div>'+
     '<div class="sfield"><span class="flab">Голосовые подсказки на тренировке</span><div class="seg2"><button data-tset="voice|1" aria-pressed="'+!!tc.voice+'">Включены</button><button data-tset="voice|0" aria-pressed="'+!tc.voice+'">Выключены</button></div></div>'+
     '<div class="sfield"><span class="flab">Звук и вибрация таймера</span><div class="seg2"><button data-tset="sound|1" aria-pressed="'+tc.sound+'">Включены</button><button data-tset="sound|0" aria-pressed="'+!tc.sound+'">Выключены</button></div></div>'+
-    '<button class="ghost glass press" data-rem="1">Напоминание о тренировке'+(S.config.reminder&&S.config.reminder.on?' · включено':'')+'</button></section>';
+    (window.NATIVE_APP?'':'<button class="ghost glass press" data-rem="1">Напоминание о тренировке'+(S.config.reminder&&S.config.reminder.on?' · включено':'')+'</button>')+'</section>'+(window.natCard?window.natCard():'');
   return h+coachSettings()+dataCard();
 }
 function setTrain(key,val){S.config.train=Object.assign(trainCfg(),{[key]:key==='rest'?+val:key==='restMode'?val:val==='1'});persistConfig();renderMain();if(key==='voice'&&val==='1')speak('Голосовые подсказки включены');}
@@ -6028,6 +6029,7 @@ function bcScanClose(){
 }
 function bcScanMsg(t){const m=document.getElementById('bcMsg');if(m)m.textContent=t;}
 async function bcScanOpen(){
+  if(window.natScan&&await window.natScan())return;
   bcScanClose();zxLoad();
   const o=document.createElement('div');o.id='bcScan';o.className='bcscan';o.setAttribute('role','dialog');o.setAttribute('aria-label','Сканер штрихкода');
   o.innerHTML='<video id="bcVideo" playsinline muted autoplay></video><div class="bcframe" aria-hidden="true"><i class="bcline"></i></div>'+
@@ -7231,6 +7233,145 @@ setInterval(()=>{const t=todayKey();if(t!==lastToday){if(UI.date===lastToday)UI.
   });
 })();
 
+/* ---------- Android (Capacitor): уведомления, сканер Google, кнопка «Назад», копия через «Поделиться», обновления ---------- */
+const NATIVE=(()=>{const C=window.Capacitor;try{return !!(C&&(C.isNativePlatform?C.isNativePlatform():(C.getPlatform&&C.getPlatform()!=='web')));}catch(e){return false;}})();
+const APP_CHANNEL=window.APP_CHANNEL||'web',APP_BUILD=+window.APP_BUILD||0;
+window.NATIVE_APP=NATIVE;
+// a native plugin without a bundler: registerPlugin from capacitor.js, or straight through the native bridge
+function natPlugin(n){
+  if(!NATIVE)return null;const C=window.Capacitor;natPlugin.c=natPlugin.c||{};if(natPlugin.c[n])return natPlugin.c[n];
+  let p=null;
+  try{if(C.registerPlugin)p=C.registerPlugin(n);else if(C.Plugins&&C.Plugins[n])p=C.Plugins[n];}catch(e){p=null;}
+  if(!p&&C.nativePromise)p=new Proxy({},{get:(_,m)=>m==='then'?undefined:m==='addListener'?((ev,cb)=>Promise.resolve(C.nativeCallback(n,'addListener',{eventName:ev},cb))):(o=>C.nativePromise(n,m,o||{}))});
+  return natPlugin.c[n]=p;
+}
+function notifCfg(){return Object.assign({rest:'on',coach:'on'},S.config.notif||{});}
+let NOTIF_OK=null,NOTIF_EXACT=null;
+async function natNotifPerm(ask){
+  const LN=natPlugin('LocalNotifications');if(!LN)return false;
+  try{let p=await LN.checkPermissions();if(p.display!=='granted'&&ask)p=await LN.requestPermissions();NOTIF_OK=p.display==='granted';}catch(e){NOTIF_OK=false;}
+  try{const x=await LN.checkExactNotificationSetting();NOTIF_EXACT=x&&x.exact_alarm==='granted';}catch(e){NOTIF_EXACT=null;}
+  return NOTIF_OK;
+}
+async function natChannels(){
+  const LN=natPlugin('LocalNotifications');if(!LN||natChannels.done)return;natChannels.done=1;
+  for(const c of [{id:'workout',name:'Тренировки',description:'Напоминание о тренировке дня',importance:4,vibration:true},
+                  {id:'rest',name:'Таймер отдыха',description:'Конец отдыха, когда приложение свёрнуто',importance:5,vibration:true},
+                  {id:'coach',name:'Тренер',description:'Задачи, которые тренер поставил себе',importance:3}]){try{await LN.createChannel(c);}catch(e){}}
+}
+function natAt(k,hhmm,minusMin){const q=String(hhmm||'19:00').split(':'),d=parseKey(k);d.setHours(+q[0]||0,+q[1]||0,0,0);return new Date(d.getTime()-(minusMin||0)*60000);}
+let natTimer=null;
+function natSchedule(){if(!NATIVE)return;clearTimeout(natTimer);natTimer=setTimeout(()=>{natScheduleNow().catch(()=>{});},1500);}
+window.natSchedule=natSchedule;
+// workouts of the next two weeks and the coach's own tasks → local notifications (ids 1000+ / 3000+)
+async function natScheduleNow(){
+  const LN=natPlugin('LocalNotifications');if(!LN)return;
+  if(!(await natNotifPerm(false)))return;
+  await natChannels();
+  try{const p=await LN.getPending(),old=(p.notifications||[]).filter(n=>(n.id>=1000&&n.id<1100)||(n.id>=3000&&n.id<3100)).map(n=>({id:n.id}));if(old.length)await LN.cancel({notifications:old});}catch(e){}
+  const r=rem(),c=notifCfg(),t=todayKey(),now=Date.now(),list=[];
+  if(r.on)for(let i=0;i<14;i++){
+    const k=addDays(t,i),pl=dayPlan(k);if(!pl.length||daySets(k).length)continue;
+    const when=natAt(k,r.time,r.before);if(when.getTime()<now+60000)continue;const si=schedInfo(k);
+    list.push({id:1000+i,channelId:'workout',title:'Тренировка'+(si&&si.letter?' '+si.letter:'')+' в '+r.time,
+      body:pl.slice(0,3).map(p=>p.n).join(', ')+(pl.length>3?' и ещё '+(pl.length-3):''),schedule:{at:when,allowWhileIdle:true},extra:{tab:'day',date:k}});
+  }
+  if(c.coach==='on')coachTasks().filter(x=>!x.done).slice(0,40).forEach((x,j)=>{const when=natAt(x.due<t?t:x.due,'10:00');if(when.getTime()<now+60000)return;
+    list.push({id:3000+j,channelId:'coach',title:'Тренер',body:x.text,schedule:{at:when,allowWhileIdle:true},extra:{tab:'coach'}});});
+  if(list.length){try{await LN.schedule({notifications:list});}catch(e){}}
+}
+// rest timer: when the app goes to the background mid-rest, Android rings at the end of it
+document.addEventListener('visibilitychange',async()=>{
+  if(!NATIVE)return;const LN=natPlugin('LocalNotifications');if(!LN)return;
+  if(document.visibilityState==='hidden'){
+    if(notifCfg().rest==='on'&&NOTIF_OK&&WK.rest&&WK.rest.end>Date.now()+3000){
+      let nx='';try{const w=wkEx();nx=w&&w.ex?'Следующий подход: '+w.ex.name:'';}catch(e){}
+      try{await natChannels();await LN.schedule({notifications:[{id:2000,channelId:'rest',title:'Отдых окончен',body:nx||'Пора к следующему подходу',schedule:{at:new Date(WK.rest.end),allowWhileIdle:true},extra:{tab:'workout'}}]});}catch(e){}
+    }
+  }else{try{await LN.cancel({notifications:[{id:2000}]});}catch(e){}natSchedule();}
+});
+// settings card (only in the Android app)
+function natCard(){
+  if(!NATIVE)return '';
+  const r=rem(),c=notifCfg(),seg=(k,val,lab)=>'<button data-nset="'+k+'|'+val+'" aria-pressed="'+(k==='train'?String(r.on===(val==='on')):String(c[k]===val))+'">'+lab+'</button>';
+  let h='<section class="card glass"><h2 class="sec">Уведомления</h2>';
+  if(NOTIF_OK===false)h+='<p class="cap">Уведомления выключены для приложения.</p><button class="log tint press" data-nset="perm|1">Разрешить уведомления</button>';
+  h+='<div class="sfield"><span class="flab">Напоминать о тренировке</span><div class="seg2">'+seg('train','on','Да')+seg('train','off','Нет')+'</div></div>';
+  if(r.on)h+='<div class="duo"><label class="sfield"><span class="flab">Тренировка в</span><input type="time" id="natTime" class="fhint" value="'+esc(r.time)+'"></label>'+
+    '<label class="sfield"><span class="flab">Напомнить за</span><select id="natBefore" class="fhint">'+[0,15,30,60,120].map(m=>'<option value="'+m+'"'+(r.before===m?' selected':'')+'>'+(m?m<60?m+' мин':m/60+' ч':'в начале')+'</option>').join('')+'</select></label></div>'+
+    '<p class="cap">Только в дни, когда в плане есть тренировка и она ещё не начата. Перенос и отмена тренировки учитываются сами.</p>';
+  h+='<div class="sfield"><span class="flab">Конец отдыха, если приложение свёрнуто</span><div class="seg2">'+seg('rest','on','Да')+seg('rest','off','Нет')+'</div></div>'+
+    '<div class="sfield"><span class="flab">Задачи тренера</span><div class="seg2">'+seg('coach','on','Да')+seg('coach','off','Нет')+'</div></div>';
+  if(NOTIF_OK&&NOTIF_EXACT===false)h+='<p class="cap">Чтобы таймер отдыха звенел секунда в секунду, разрешите «Будильники и напоминания».</p><button class="ghost glass press" data-nset="exact|1">Открыть настройку</button>';
+  h+='</section>';
+  const U=window.NAT_UPD;if(U)h+='<section class="card glass"><h2 class="sec">Обновление</h2><p class="cap">Доступна версия '+esc(U.v)+'. Скачайте APK и установите поверх — записи сохранятся.</p><a class="log tint press wide" href="'+esc(U.url)+'">Скачать APK</a></section>';
+  return h;
+}
+window.natCard=natCard;
+document.addEventListener('click',async e=>{
+  const b=e.target.closest&&e.target.closest('[data-nset]');if(!b||!NATIVE)return;
+  const q=b.dataset.nset.split('|'),LN=natPlugin('LocalNotifications');
+  if(q[0]==='perm'){await natNotifPerm(true);if(!NOTIF_OK)toast('Android не дал разрешение — включите уведомления в настройках телефона: Приложения → Тренировки.');natSchedule();renderMain();return;}
+  if(q[0]==='exact'){try{await LN.changeExactNotificationSetting();}catch(e){}return;}
+  if(q[0]==='train'){const r=rem();r.on=q[1]==='on';if(r.on&&!(await natNotifPerm(true)))toast('Без разрешения на уведомления напоминание не придёт.');saveRem(r);}
+  else{S.config.notif=Object.assign(notifCfg(),{[q[0]]:q[1]});persistConfig();if(q[1]==='on')await natNotifPerm(true);}
+  natSchedule();renderMain();
+});
+document.addEventListener('change',e=>{
+  const t=e.target;if(!NATIVE||!t)return;
+  if(t.id==='natTime'||t.id==='natBefore'){const r=rem();if(t.id==='natTime'&&/^\d{2}:\d{2}$/.test(t.value))r.time=t.value;if(t.id==='natBefore')r.before=+t.value||0;saveRem(r);natSchedule();}
+});
+// Google code scanner (ML Kit): no camera permission, works on any phone with Google Play services
+window.natScan=async function(){
+  const BS=natPlugin('BarcodeScanner');if(!BS)return false;
+  try{
+    const a=await BS.isGoogleBarcodeScannerModuleAvailable();
+    if(!a||!a.available){toast('Скачиваю сканер Google (один раз). Пока сканирую камерой.');BS.installGoogleBarcodeScannerModule().catch(()=>{});return false;}
+    const r=await BS.scan({formats:['EAN_13','EAN_8','UPC_A','UPC_E','CODE_128']});
+    const b=r&&r.barcodes&&r.barcodes[0],code=b&&bcDigits(b.rawValue||b.displayValue);
+    if(code)lookupBarcode(code);else if(b)toast('Это не штрихкод товара. Попробуйте ещё раз.');
+    return true;
+  }catch(e){const m=String((e&&(e.message||e.code))||e||'');return /cancel/i.test(m);}
+};
+// Android «Назад»: закрыть сканер или окно, вернуться на главную, свернуть
+if(NATIVE){
+  const AP=natPlugin('App');
+  if(AP)AP.addListener('backButton',()=>{
+    if(document.getElementById('bcScan')){bcScanClose();return;}
+    if(UI.tab==='settings'){UI.goalEdit=false;UI.tab=UI.prevTab&&UI.prevTab!=='settings'?UI.prevTab:'coach';render();return;}
+    if(UI.tab!=='workout'&&UI.tab!==defaultTab(UI.date)){UI.tab=defaultTab(UI.date);render();return;}
+    try{AP.minimizeApp();}catch(e){}
+  });
+  const LN=natPlugin('LocalNotifications');
+  if(LN)LN.addListener('localNotificationActionPerformed',ev=>{const x=(ev&&ev.notification&&ev.notification.extra)||{};
+    if(x.tab==='coach')UI.tab='coach';else if(x.tab==='day'){UI.date=x.date||todayKey();UI.tab='day';}render();});
+  setTimeout(async()=>{
+    // first start: ask for notifications once and turn on the workout reminder
+    if(!S.config.notifAsked){S.config.notifAsked=1;persistConfig();if(await natNotifPerm(true)&&!(S.config.reminder&&S.config.reminder.on)){const r=rem();r.on=true;saveRem(r);}}
+    else await natNotifPerm(false);
+    natSchedule();natUpdate();
+  },1500);
+}
+// APK builds look for a newer release on GitHub once a day (RuStore builds update through the store)
+async function natUpdate(){
+  if(!NATIVE||APP_CHANNEL!=='apk'||!APP_BUILD)return;
+  if(S.config.updDay===todayKey())return;
+  try{
+    const r=await fetch('https://api.github.com/repos/Suxooi/trenirovka/releases/latest',{headers:{Accept:'application/vnd.github+json'}});if(!r.ok)return;
+    const j=await r.json(),n=+((String(j.tag_name||'').match(/(\d+)$/)||[])[1]||0);
+    S.config.updDay=todayKey();persistConfig();
+    if(n>APP_BUILD){const a=(j.assets||[]).find(x=>/\.apk$/i.test(x.name)&&!/rustore/i.test(x.name));
+      if(a){window.NAT_UPD={v:'1.0.'+n,url:a.browser_download_url};toast('Есть новая версия приложения — в настройках.');}}
+  }catch(e){}
+}
+// backup: Android WebView cannot download files — write to cache and open «Поделиться» (Google Диск, Telegram, «Файлы»)
+window.natShareBackup=async function(name,data){
+  const FS=natPlugin('Filesystem'),SH=natPlugin('Share');if(!FS||!SH)return false;
+  const w=await FS.writeFile({path:name,data:data,directory:'CACHE',encoding:'utf8'});
+  try{await SH.share({title:'Журнал тренировок',text:'Резервная копия журнала тренировок',files:[w.uri],dialogTitle:'Сохранить копию'});}
+  catch(e){if(/cancel/i.test(String((e&&e.message)||e)))return 'cancel';throw e;}
+  return true;
+};
 /* ---------- backup (installed app) ---------- */
 (function(){
   const ex=$('exportBtn'),im=$('importFile');if(!ex||!im)return;
@@ -7239,6 +7380,7 @@ setInterval(()=>{const t=todayKey();if(t!==lastToday){if(UI.date===lastToday)UI.
     const name='trenirovki-'+todayKey()+'.json';
     let file;try{file=new File([data],name,{type:'application/json'});}catch(e){file=new Blob([data],{type:'application/json'});}
     const done=()=>{S.config.lastBackup=todayKey();S.config.backupSnooze='';persistConfig();render();};
+    if(window.NATIVE_APP&&window.natShareBackup){try{const r=await window.natShareBackup(name,data);if(r==='cancel')return;if(r){done();toast('Копия сохранена.');return;}}catch(e){toast('Не получилось сохранить копию.');return;}}
     try{if(navigator.canShare&&file instanceof File&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'Журнал тренировок'});done();toast('Копия сохранена.');return;}}
     catch(e){if(e&&e.name==='AbortError')return;}
     const url=URL.createObjectURL(file),link=document.createElement('a');
@@ -7266,7 +7408,7 @@ setInterval(()=>{const t=todayKey();if(t!==lastToday){if(UI.date===lastToday)UI.
     r.readAsText(f);
   });
 })();
-if('serviceWorker' in navigator&&!window.__SEED){
+if('serviceWorker' in navigator&&!window.__SEED&&!window.NATIVE_APP){
   // when a newer version takes over, reload once so the new design shows right away
   const hadSW=!!navigator.serviceWorker.controller;let reloaded=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadSW&&!reloaded){reloaded=true;location.reload();}});
