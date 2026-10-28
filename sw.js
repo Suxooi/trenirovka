@@ -1,6 +1,6 @@
 // Журнал тренировок — офлайн-кэш. Меняйте VERSION при каждом обновлении файлов.
 const IMG = 'trenirovki-img-v1'; // фото упражнений: свой кэш, переживает обновления
-const VERSION = 'trenirovki-202610281851';
+const VERSION = 'trenirovki-202610281916';
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192-v2.png", "./icons/icon-512-v2.png", "./icons/apple-touch-icon-v2.png", "./icons/favicon-32-v2.png"];
 
 self.addEventListener('install', (e) => {

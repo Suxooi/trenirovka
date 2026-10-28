@@ -20,6 +20,12 @@ if os.path.isdir('native-assets'):
         if f!='README.md':shutil.copy(os.path.join('native-assets',f),os.path.join(dst,f))
 g='android/app/build.gradle'
 s=open(g,encoding='utf-8').read()
+# фоновый тренер: движок JS для @capacitor/background-runner лежит .aar-файлом в node_modules
+BR="dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'"
+if BR not in s:
+    s2=re.sub(r"(flatDir\s*\{[^}]*?dirs[^\n]*\n)",lambda m:m.group(1)+'        '+BR+'\n',s,count=1)
+    if s2==s: s2=s.replace('repositories {','repositories {\n    flatDir{\n        '+BR+'\n    }',1)
+    s=s2
 s=re.sub(r'versionCode\s+\d+','versionCode %d'%build,s,count=1)
 s=re.sub(r'versionName\s+"[^"]*"','versionName "1.0.%d"'%build,s,count=1)
 open(g,'w',encoding='utf-8').write(s)

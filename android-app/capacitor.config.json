@@ -6,8 +6,25 @@
     "backgroundColor": "#0B0E10"
   },
   "plugins": {
-    "SystemBars": { "insetsHandling": "css", "style": "DEFAULT" },
-    "LocalNotifications": { "smallIcon": "ic_stat_notify", "iconColor": "#B8F02E" },
-    "SplashScreen": { "launchShowDuration": 600, "backgroundColor": "#121315" }
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DEFAULT"
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_notify",
+      "iconColor": "#B8F02E"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "backgroundColor": "#121315"
+    },
+    "BackgroundRunner": {
+      "label": "ru.suxooi.trenirovki.coach",
+      "src": "runners/coach.js",
+      "event": "tick",
+      "repeat": true,
+      "interval": 15,
+      "autoStart": true
+    }
   }
 }

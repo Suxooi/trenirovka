@@ -4,13 +4,14 @@
   "version": "1.0.0",
   "description": "Android-версия «Журнала тренировок» (Capacitor). Собирается в GitHub Actions: .github/workflows/android.yml",
   "dependencies": {
+    "@capacitor-mlkit/barcode-scanning": "^8.0.0",
     "@capacitor/android": "^8.5.0",
     "@capacitor/app": "^8.0.0",
+    "@capacitor/background-runner": "^3.1.0",
     "@capacitor/core": "^8.5.0",
     "@capacitor/filesystem": "^8.0.0",
     "@capacitor/local-notifications": "^8.0.0",
-    "@capacitor/share": "^8.0.0",
-    "@capacitor-mlkit/barcode-scanning": "^8.0.0"
+    "@capacitor/share": "^8.0.0"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

@@ -802,6 +802,15 @@ button.bigring{border:0;color:inherit;padding:0;font:inherit;cursor:pointer}
 .bcell span{font-size:12px;color:var(--muted)}.bcell b{font-size:20px;font-variant-numeric:tabular-nums}.bcell b small{font-size:12px;font-weight:500;color:var(--muted)}
 .bcell i{font-style:normal;font-size:11.5px;color:var(--muted)}
 .bform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 10px}
+.seg2.rir button{font-size:15px;font-variant-numeric:tabular-nums}
+.rirq{font-size:13px;color:var(--muted);margin:2px 2px 6px}
+.mfav{flex:none;width:36px;height:36px;border:0;background:transparent;color:var(--muted);font-size:19px;border-radius:50%}
+.mfav.on{color:#F5B83D}
+.qchip.fav{border-color:color-mix(in srgb,#F5B83D 45%,var(--glass-edge))}
+.qchip .star{color:#F5B83D;margin-right:4px}
+.qtip{margin:-2px 6px 6px}
+.cyc{margin-top:8px}
+.cyc .seg2 button{font-size:13px;padding:0 6px}
 .filebtn{display:inline-flex;align-items:center;cursor:pointer}
 .itform{display:grid;gap:8px}.itform input{width:100%;min-height:46px;border-radius:14px;border:1px solid var(--glass-edge);background:var(--glass-strong);color:var(--ink);font:inherit;font-size:16px;padding:0 14px;min-width:0}
 </style>
@@ -2947,7 +2956,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='28.10 18:51';
+const BUILD='28.10 19:16';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -3203,7 +3212,7 @@ let planTimer=null;
 function savePlanSoon(){clearTimeout(planTimer);planTimer=setTimeout(()=>persistDay(UI.date),400);}
 function renderFoodStats(){
   const el=$('foodStats');if(!el)return;
-  const goal=foodGoal(),t=sumMeals(dayMeals(UI.date)),mon=mondayOf(UI.date);
+  const goal=foodGoalFor(UI.date),t=sumMeals(dayMeals(UI.date)),mon=mondayOf(UI.date);
   let bars='',sum=0,nd=0,max=goal*1.3;
   for(let i=0;i<7;i++){const k=addDays(mon,i),kc=sumMeals(dayMeals(k)).kcal;if(kc){sum+=kc;nd++;}max=Math.max(max,kc);}
   for(let i=0;i<7;i++){const k=addDays(mon,i),kc=sumMeals(dayMeals(k)).kcal,r=kc/goal;
@@ -3511,6 +3520,13 @@ function foodEngine(){return aiEngine(true);}
 })();
 function dayMeals(k){const d=day(k);return (d&&d.meals)||[];}
 function foodGoal(){const f=S.config.food;return f&&f.goal?f.goal:2200;}
+// calorie cycling: more on training days, less on rest days, the weekly average stays the same (shift goes to carbs)
+function foodCycle(){const f=S.config.food,pr=prof();return !!(f&&f.cycle&&pr&&pr.accepted&&pr.days&&pr.days.length&&pr.days.length<7);}
+function isTrainDay(k){return !!(schedInfo(k)||daySets(k).length||(day(k)&&day(k).planEdited&&dayPlan(k).length));}
+function cycleShift(){const g=foodGoal(),n=prof().days.length,x=Math.min(250,Math.round(g*0.08/10)*10);return {up:x,down:Math.round(x*n/(7-n)/10)*10};}
+function foodGoalFor(k){if(!foodCycle())return foodGoal();const sh=cycleShift();return isTrainDay(k)?foodGoal()+sh.up:foodGoal()-sh.down;}
+function carbsFor(k){const pr=prof();return Math.max(0,pr.c+Math.round((foodGoalFor(k)-foodGoal())/4));}
+function setCycle(on){S.config.food=Object.assign({},S.config.food,{cycle:!!on});persistConfig();renderMain();}
 function sumMeals(list){return list.reduce((s,m)=>({kcal:s.kcal+(m.kcal||0),p:s.p+(m.p||0),f:s.f+(m.f||0),c:s.c+(m.c||0)}),{kcal:0,p:0,f:0,c:0});}
 const r0=x=>Math.round(x||0);
 function loadImage(file){
@@ -3650,11 +3666,11 @@ function removeMeal(id){
 const CAM='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.6-2.4h6.8L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.6"/></svg>';
 function foodView(){
   const hasGoal=prof()&&prof().accepted;
-  const meals=dayMeals(UI.date),t=sumMeals(meals),goal=foodGoal(),pct=Math.min(100,Math.round(t.kcal/goal*100));
+  const meals=dayMeals(UI.date),t=sumMeals(meals),goal=foodGoalFor(UI.date),pct=Math.min(100,Math.round(t.kcal/goal*100));
   let h='<section class="hero glass"><div class="hero-top"><div><div class="hero-n">'+num(r0(t.kcal))+'</div><div class="hero-l">ккал '+(UI.date===todayKey()?'сегодня':dateLong(UI.date))+' из '+num(goal)+'</div></div>'+
     '<div class="ring" style="--pct:'+pct+'" role="img" aria-label="'+pct+'% дневной нормы"><span>'+pct+'%</span></div></div>'+
     '<div class="macros"><span><b>'+r0(t.p)+'</b> г белки</span><span><b>'+r0(t.f)+'</b> г жиры</span><span><b>'+r0(t.c)+'</b> г углеводы</span></div>'+accSummary(meals)+
-    (hasGoal?'<p class="cap">Норма по цели: '+num(prof().kcal)+' ккал · Б '+prof().p+' · Ж '+prof().f+' · У '+prof().c+'</p>':'<div class="goalrow"><span class="cap">Норма в день</span><div class="mstep"><button data-fgoal="-100" aria-label="Меньше">−</button><input id="foodGoal" class="fgoal" inputmode="numeric" value="'+goal+'" aria-label="Норма калорий в день"><button data-fgoal="100" aria-label="Больше">+</button></div></div><p class="cap">Поставьте цель во вкладке «Тренировка» — норма посчитается сама.</p>')+
+    (hasGoal?cycleLine():'<div class="goalrow"><span class="cap">Норма в день</span><div class="mstep"><button data-fgoal="-100" aria-label="Меньше">−</button><input id="foodGoal" class="fgoal" inputmode="numeric" value="'+goal+'" aria-label="Норма калорий в день"><button data-fgoal="100" aria-label="Больше">+</button></div></div><p class="cap">Поставьте цель во вкладке «Тренировка» — норма посчитается сама.</p>')+
     '</section>';
   h+=adaptCard()+waterBlock()+askPlanBtn()+quickBlock();
   // capture / analysis
@@ -3690,7 +3706,7 @@ function foodView(){
   h+=meals.length?'<div class="exlist glass">'+meals.map(m=>{const tm=new Date(m.at);
     return '<div class="meal">'+(m.thumb?'<img class="mthumb" src="'+m.thumb+'" alt="">':'<span class="mthumb mph" aria-hidden="true">'+mealIco(m)+'</span>')+
       '<div class="minfo"><b>'+esc(m.name)+'</b><span>'+pad(tm.getHours())+':'+pad(tm.getMinutes())+accTag(m)+' · Б '+r0(m.p)+' · Ж '+r0(m.f)+' · У '+r0(m.c)+'</span></div>'+
-      '<span class="mk">'+num(r0(m.kcal))+'<small> ккал</small></span><button class="xdel" data-meal="'+m.id+'" aria-label="Удалить: '+esc(m.name)+'">×</button></div>';}).join('')+'</div>'
+      '<span class="mk">'+num(r0(m.kcal))+'<small> ккал</small></span><button class="mfav'+(isFav(m)?' on':'')+'" data-mfav="'+m.id+'" aria-pressed="'+isFav(m)+'" aria-label="'+(isFav(m)?'Убрать из избранного':'В избранное')+': '+esc(m.name)+'">'+(isFav(m)?'★':'☆')+'</button><button class="xdel" data-meal="'+m.id+'" aria-label="Удалить: '+esc(m.name)+'">×</button></div>';}).join('')+'</div>'
     :'<p class="empty" style="margin:0 6px">Пока ничего. Напишите блюдо с весом или сфотографируйте тарелку — калории и БЖУ посчитаются сами.</p>';
   h+='</section>';
   if(!(SAMPLE&&SAMPLE_IMG))h+=keyBlock();
@@ -3736,6 +3752,8 @@ function foodClick(ds){
     it.edited=true;const inp=document.querySelector('.fgr[data-fi="'+q[0]+'"]');if(inp)inp.value=r0(it.grams);updateFoodTotals();return true;}
   if(ds.fgoal){const v=setGoal(foodGoal()+Number(ds.fgoal));const i=$('foodGoal');if(i)i.value=v;renderMain();return true;}
   if(ds.meal){removeMeal(ds.meal);return true;}
+  if(ds.mfav){favToggle(dayMeals(UI.date).find(m=>m.id===ds.mfav));return true;}
+  if(ds.fcyc){setCycle(ds.fcyc==='1');return true;}
   return false;
 }
 document.addEventListener('change',e=>{
@@ -3792,7 +3810,7 @@ function calcProfile(d){
   if(tb<18.5)warn='Целевой вес ниже нормы для вашего роста (ИМТ '+tb.toFixed(1)+'). Лучше обсудить цель с врачом.';
   const p=Math.round(w*(mode==='lose'?2.0:1.8)),f=Math.round(w*0.9),c=Math.max(0,Math.round((kcal-p*4-f*9)/4));
   const start=todayKey(),end=addDays(start,weeks*7);
-  return {equip:(d.equip||equipNow()).slice(),goal:d.goal,area:d.area||null,sex:d.sex,age:a,height:h,weight:w,target:t,ndays:days,days:wdays,places:(d.places&&d.places.length?d.places:['gym']).slice(),placeEq:clone(d.placeEq||{}),dayPlace:Object.assign({},d.dayPlace||{}),dayPlaces:clone(d.dayPlaces||{}),dayGroups:clone(d.dayGroups||{}),split:d.split==='groups'?'groups':'auto',
+  return {equip:(d.equip||equipNow()).slice(),goal:d.goal,area:d.area||null,sex:d.sex,age:a,height:h,weight:w,target:t,ndays:days,days:wdays,places:(d.places&&d.places.length?d.places:['gym']).slice(),placeEq:clone(d.placeEq||{}),dayPlace:Object.assign({},d.dayPlace||{}),dayPlaces:clone(d.dayPlaces||{}),dayGroups:clone(d.dayGroups||{}),split:d.split==='groups'?'groups':'auto',program:d.split!=='groups'&&PROGRAMS[d.program]?d.program:null,
     bmr:Math.round(bmr),tdee:Math.round(tdee),kcal:Math.round(kcal/10)*10,p:p,f:f,c:c,rate:Math.round(rate*100)/100,mode:mode,weeks:weeks,start:start,end:end,bmi:Math.round(bmi*10)/10,warn:warn};
 }
 function planItem(row,week){
@@ -3874,7 +3892,7 @@ function planPreview(pr){
     h+='<div class="wrow"><span class="wlab">'+(w?'Неделя 2':'Неделя 1')+'</span>'+cells.join('')+'</div>';
   }
   Object.keys(seen).sort().forEach(key=>{const o=seen[key];const items=schedPlan(o.k);
-    const two=o.si.places&&o.si.places.length>1;h+='<div class="pday"><b>Тренировка '+o.si.letter+(o.si.groups?' · '+groupsTxt(o.si.groups):'')+(multi?' · '+placeTxt(o.si):'')+'</b><ul>'+items.map(it=>'<li>'+esc(it.n)+(two&&it.pl?' <i>'+PLACE_NAME[it.pl]+' ·</i>':'')+' <i>'+it.goal+'×'+(it.k==='time'?it.t+' с':it.r)+'</i></li>').join('')+'</ul></div>';});
+    const two=o.si.places&&o.si.places.length>1;const pn=progSessName(o.si);h+='<div class="pday"><b>Тренировка '+o.si.letter+(pn?' · '+pn:'')+(o.si.groups?' · '+groupsTxt(o.si.groups):'')+(multi?' · '+placeTxt(o.si):'')+'</b><ul>'+items.map(it=>'<li>'+esc(it.n)+(two&&it.pl?' <i>'+PLACE_NAME[it.pl]+' ·</i>':'')+' <i>'+it.goal+'×'+(it.k==='time'?it.t+' с':it.r)+'</i></li>').join('')+'</ul></div>';});
   S.config.profile=old;
   return h+'</div>';
 }
@@ -3893,7 +3911,7 @@ function placeDaysUI(d){
   return h;
 }
 function setupView(){
-  const d=SETUP.d||(SETUP.d=Object.assign({goal:'',area:'',sex:(accCur()&&accCur().sex)||'m',age:'',height:'',weight:'',target:'',ndays:3,days:DAYSETS[3].slice(),places:['gym'],placeEq:{},dayPlace:{}},prof()?{days:prof().days.slice(),places:(prof().places||['gym']).slice(),placeEq:clone(prof().placeEq||{}),dayPlace:Object.assign({},prof().dayPlace||{}),dayPlaces:clone(prof().dayPlaces||{}),dayGroups:clone(prof().dayGroups||{}),split:prof().split||'auto',goal:prof().goal,area:prof().area||'',sex:prof().sex,age:prof().age,height:prof().height,weight:curWeight(prof()),target:prof().target,ndays:prof().ndays}:{}));
+  const d=SETUP.d||(SETUP.d=Object.assign({goal:'',area:'',sex:(accCur()&&accCur().sex)||'m',age:'',height:'',weight:'',target:'',ndays:3,days:DAYSETS[3].slice(),places:['gym'],placeEq:{},dayPlace:{}},prof()?{days:prof().days.slice(),places:(prof().places||['gym']).slice(),placeEq:clone(prof().placeEq||{}),dayPlace:Object.assign({},prof().dayPlace||{}),dayPlaces:clone(prof().dayPlaces||{}),dayGroups:clone(prof().dayGroups||{}),split:prof().split||'auto',program:prof().program||null,goal:prof().goal,area:prof().area||'',sex:prof().sex,age:prof().age,height:prof().height,weight:curWeight(prof()),target:prof().target,ndays:prof().ndays}:{}));
   const steps=['goal','data','result'],si=steps.indexOf(SETUP.step);
   let h='<section class="card glass setup"><div class="sstep">'+['Цель','Данные','План'].map((s,i)=>'<span class="'+(i<=si?'on':'')+'">'+(i+1)+'. '+s+'</span>').join('')+'</div>';
   if(SETUP.step==='goal'){
@@ -3914,7 +3932,7 @@ function setupView(){
       '<div class="macros"><span><b>'+pr.p+'</b> г белки</span><span><b>'+pr.f+'</b> г жиры</span><span><b>'+pr.c+'</b> г углеводы</span></div>'+
       '<p class="cap">'+pr.weight+' → '+pr.target+' кг'+(pr.rate?', темп '+sign+String(pr.rate).replace('.',',')+' кг в неделю':', вес держим, меняем форму')+'. Обмен '+num(pr.bmr)+' ккал, с '+pr.ndays+' тренировками — '+num(pr.tdee)+' ккал. Расчёт по формуле Миффлина — Сан Жеора.</p>'+
       (pr.warn?'<p class="ferr">'+esc(pr.warn)+'</p>':'')+
-      '<h3 class="sec" style="margin:4px 0 0">План тренировок · '+pr.days.map(weekdayName).join(', ')+'</h3>'+rotationNote(pr)+planPreview(pr)+
+      '<h3 class="sec" style="margin:4px 0 0">План тренировок · '+pr.days.map(weekdayName).join(', ')+'</h3>'+progPick(pr)+rotationNote(pr)+planPreview(pr)+
       '<p class="cap">Повторы растут на один каждые две недели. План встанет во вкладку «Тренировка» на все '+pr.weeks+' '+plural(pr.weeks,['неделю','недели','недель'])+'; любой день можно поменять там же.</p>'+
       '<div class="duo"><button class="log tint press" data-setup="accept">Принять план</button><button class="ghost glass press" data-setup="back">Изменить данные</button></div>';
   }
@@ -3937,7 +3955,7 @@ function calView(){
   let cells='',done=0,kc=0,kd=0;
   for(let i=0;i<off;i++)cells+='<span></span>';
   for(let d=1;d<=n;d++){
-    const k=keyOf(new Date(Y,M-1,d)),sets=daySets(k),pl=dayPlan(k).length,ml=dayMeals(k),kcal=sumMeals(ml).kcal;
+    const k=keyOf(new Date(Y,M-1,d)),sets=daySets(k),pl=dayPlan(k).length,ml=dayMeals(k),kcal=sumMeals(ml).kcal,goal=foodGoalFor(k);
     let mark='';
     if(sets.length){done++;const c={};sets.forEach(s=>{c[s.dir]=(c[s.dir]||0)+1;});const ds=DIRS.filter(x=>c[x.id]),tot=sets.length;let acc=0;
       mark='<i class="cm done" style="background:conic-gradient('+ds.map(x=>{const a=acc/tot*360;acc+=c[x.id];return 'var(--p-'+x.c+') '+a.toFixed(0)+'deg '+(acc/tot*360).toFixed(0)+'deg';}).join(',')+')"></i>';}
@@ -3951,7 +3969,17 @@ function calView(){
     '<div class="clegend"><span><i class="cm done" style="background:var(--dir)"></i>тренировка</span><span><i class="cm plan"></i>в плане</span><span><i class="cb ok"></i>калории в норме</span><span><i class="cb over"></i>больше</span><span><i class="cb under"></i>меньше</span></div>'+
     '<p class="cap">За месяц: '+done+' '+plural(done,['тренировка','тренировки','тренировок'])+(kd?' · в среднем '+num(Math.round(kc/kd))+' ккал в день':'')+'. Нажмите на день, чтобы открыть его.</p></section>';
 }
+// program picker on the plan step: «под цель» is the smart default, the rest are classic programs
+function progPick(pr){
+  const cur=pr.split==='groups'?'':pr.program||'',pg=PROGRAMS[cur],nd=pr.days.length;
+  const tip=!pg?'Подберу упражнения под цель, место и инвентарь.':pg.sub+'.'+(pg.days&&nd<Math.min(pg.days,pg.names.length)?' На '+nd+' '+plural(nd,['день','дня','дней'])+' тренировки пойдут по кругу.':'')+(pg.place&&(pr.places||[]).indexOf(pg.place)<0?' Упражнения подберутся под ваш инвентарь.':'');
+  return '<div class="sfield"><span class="flab">Программа</span><div class="dchips progs">'+
+    '<button class="dch press" data-sprog="" aria-pressed="'+!cur+'">Под цель</button>'+
+    Object.keys(PROGRAMS).map(id=>'<button class="dch press" data-sprog="'+id+'" aria-pressed="'+(cur===id)+'">'+PROGRAMS[id].name+'</button>').join('')+
+    '</div><p class="cap">'+esc(tip)+(pr.split==='groups'&&cur===''?' Сейчас план собран по группам мышц — программа заменит его.':'')+' Вес и повторы всё равно ведёт умный план.</p></div>';
+}
 function goalClick(ds){
+  if(ds.sprog!=null&&SETUP.pr){const v=PROGRAMS[ds.sprog]?ds.sprog:null;SETUP.pr.program=v;SETUP.d.program=v;if(v){SETUP.pr.split='auto';SETUP.d.split='auto';}HIST_REV++;renderMain();return true;}
   if((ds.ssplit||ds.sdp2||ds.sdg)&&splitClick(ds))return true;
   if(ds.sgoal){SETUP.d.goal=ds.sgoal;if(ds.sgoal!=='area')SETUP.d.area='';renderMain();return true;}
   if(ds.sarea){SETUP.d.area=ds.sarea;renderMain();return true;}
@@ -4036,15 +4064,36 @@ const SESS={
 };
 const AREA_FOCUS={chest:['hpush','ipush','chestiso','tri'],back:['vpull','hrow','rear','hinge'],legs:['squat','hinge','lunge','glute'],
   shoulders:['vpush','latr','rear','vpush'],arms:['bic','tri','vpull','hpush'],core:['core','stab','core','hinge']};
+// ready-made programs: sessions go in a circle over the chosen days; a slot can list its own exercises (first that fits the equipment)
+const PROGRAMS={
+  full:{name:'Фулбади',sub:'всё тело за тренировку, 2–3 дня',days:3,names:['Всё тело А','Всё тело Б'],sess:()=>[SESS.fullA,SESS.fullB]},
+  ul:{name:'Верх / низ',sub:'4 дня, каждая мышца дважды в неделю',days:4,names:['Верх А','Низ А','Верх Б','Низ Б'],sess:()=>[SESS.upA,SESS.loA,SESS.upB,SESS.loB]},
+  ppl:{name:'Тяни-толкай-ноги',sub:'3 или 6 дней, классика бодибилдинга',days:3,names:['Толкающая','Тянущая','Ноги'],sess:()=>[
+    [['hpush',4,8],['vpush',3,10],['ipush',3,10],['latr',3,15],['tri',3,12]],
+    [['vpull',4,8],['hrow',4,10],['rear',3,15],['bic',3,12],[['hammer','dbcurl','kbcurl','bandcurl'],3,12]],
+    [['squat',4,8],['hinge',3,10],['lunge',3,10],['ham',3,12],['calves',4,15],['core',3,12]]]},
+  s5:{name:'Сила 5×5',sub:'3 базовых по 5 повторов, штанга',days:3,rest:180,names:['5×5 А','5×5 Б'],sess:()=>[
+    [[['bbsquat','frontsquat','legpress','goblet'],5,5],[['bbbench','dbbench','dips','pushups'],5,5],[['bbrow','dbrow','cablerow','invrow'],5,5]],
+    [[['bbsquat','frontsquat','legpress','goblet'],5,5],[['ohp','dbpress','kbpress','pike'],5,5],[['deadlift','rdl','dbrdl','kbdl'],1,5]]]},
+  db:{name:'Дома с гантелями',sub:'гантели и скамья или пол',days:3,place:'home',names:['Гантели А','Гантели Б'],sess:()=>[
+    [[['goblet','dblunge','squat'],4,10],[['dbbench','kbfloor','pushups'],4,10],[['dbrow','kbrow','bandrow'],4,10],[['dbpress','kbpress','pike'],3,10],[['dbcurl','hammer','bandcurl'],3,12],[['hollow','crunch','plank'],3,12]],
+    [[['dbrdl','kbdl','glute'],4,10],[['dblunge','bulgarian','lunges'],3,10],[['pushups','declinepu','dbbench'],3,12],[['dbrow','kbrow','bandrow'],3,12],[['latraise','bandlat','halo'],3,15],[['dbext','diamond','bandext'],3,12]]]},
+  bar:{name:'Турник и брусья',sub:'улица или вес тела',days:3,place:'street',names:['Турник А','Турник Б'],sess:()=>[
+    [[['pullups','widepull','invrow'],4,8],[['dips','pushups'],4,10],[['squat','bulgarian'],4,20],[['invrow','pushups'],3,12],[['hlr','hollow'],3,10]],
+    [[['chinups','pullups','invrow'],4,8],[['archerpu','declinepu','pushups'],4,10],[['bulgarian','lunges','pistol'],3,10],[['pike','pushups'],3,10],[['tricepdips','diamond'],3,12],[['hollow','plank'],3,30]]]}
+};
+function progOf(pr){return pr&&pr.program&&PROGRAMS[pr.program]&&pr.split!=='groups'?PROGRAMS[pr.program]:null;}
+function progSessName(si){const pg=si&&!si.groups&&progOf(si.pp||prof());return pg&&!multiPlace(prof()||{})?pg.names[si.li%pg.names.length]:'';}
 function sessionPlanFor(pr){
-  const n=pr.ndays||3,f=pr.sex==='f';
+  const n=pr.ndays||3,f=pr.sex==='f',pg=progOf(pr);
+  if(pg)return pg.sess();
   if(pr.goal==='lose')return [SESS.cA,SESS.cB];
   if(pr.goal==='area')return [[],[]];   // area plans are built by areaSessions()
   if(n>=4)return f?[SESS.fUp,SESS.fLo,SESS.fB,SESS.loB].concat(n>=5?[SESS.fA]:[]):[SESS.upA,SESS.loA,SESS.upB,SESS.loB].concat(n>=5?[SESS.fullB]:[]);
   return f?[SESS.fA,SESS.fB]:[SESS.fullA,SESS.fullB];
 }
 function pickSlot(slot,used,eq){
-  const list=SLOTS[slot]||[slot];
+  const list=Array.isArray(slot)?slot:SLOTS[slot]||[slot];
   for(const id of list){if(used[id])continue;const ex=allEx().find(e=>e.id===id);if(ex&&exOk(ex,eq)&&S.config.hidden.indexOf(id)<0){used[id]=1;return ex;}}
   return null;
 }
@@ -4071,7 +4120,7 @@ function areaSessions(pr,eq){
 }
 function sessionTemplates(pr,eqArg){
   const eq=eqArg||(pr.equip&&pr.equip.length?pr.equip:equipNow());
-  if(pr.goal==='area')return areaSessions(pr,eq);
+  if(pr.goal==='area'&&!progOf(pr))return areaSessions(pr,eq);
   return sessionPlanFor(pr).map(sess=>{const used={};const rows=[];
     sess.forEach(s=>{const ex=pickSlot(s[0],used,eq);if(!ex)return;
       let rep=s[2];if(ex.kind==='time'&&rep<20)rep=pr.goal==='lose'?45:30;if(ex.kind!=='time'&&rep>=30)rep=15;
@@ -4183,8 +4232,11 @@ function coachContext(withCatalog){
   const wl=wkContextLine();if(wl)L.push(wl);
   try{const ad=adaptInfo();if(ad&&ad.ok)L.push('По фактическим данным за 4 недели: среднее потребление '+ad.intake+' ккал, вес '+ad.week+' кг/нед, расход ≈ '+ad.tdee+' ккал; подходящая норма ≈ '+ad.target+' ккал.');}catch(e){}
   if(pr&&pr.accepted){
+    if(progOf(pr))L.push('Программа: '+progOf(pr).name+' ('+progOf(pr).sub+'), тренировки по кругу: '+progOf(pr).names.join(' → ')+'. Сменить программу человек может в «Изменить цель».');
     L.push('Цель: '+GOALS[pr.goal].name+(pr.area&&DIR[pr.area]?' — '+DIR[pr.area].name:'')+'. Пол '+(pr.sex==='f'?'женский':'мужской')+', '+pr.age+' лет, рост '+pr.height+' см. Вес на старте '+pr.weight+' кг, сейчас '+curWeight(pr)+' кг, цель '+pr.target+' кг к '+pr.end+'.');
     L.push('Норма: '+pr.kcal+' ккал, белки '+pr.p+' г, жиры '+pr.f+' г, углеводы '+pr.c+' г.');
+    if(favMeals().length)L.push('Избранные блюда (можно предложить «добавить как обычно»): '+favMeals().slice(0,10).map(m=>m.name+' '+r0(m.kcal)+' ккал').join('; ')+'.');
+    if(foodCycle()){const sh=cycleShift(),tk=todayKey();L.push('Калории по дням: в дни тренировок '+(foodGoal()+sh.up)+' ккал, в дни отдыха '+(foodGoal()-sh.down)+' (разница за счёт углеводов, в среднем за неделю та же норма). Сегодня '+(isTrainDay(tk)?'день тренировки':'день отдыха')+': '+foodGoalFor(tk)+' ккал, углеводы '+carbsFor(tk)+' г.');}
     L.push('Дни тренировок: '+pr.days.map(d=>weekdayName(d)+(dayPlacesOf(pr,d).length?' — '+dayPlacesOf(pr,d).map(p=>PLACE_NAME[p]).join(' + '):'')+(dayGroupsOf(pr,d)?' ('+groupsTxt(dayGroupsOf(pr,d))+')':'')).join(', ')+'.');
     const ws=(pr.weights||[]).slice(-6);if(ws.length>1)L.push('Взвешивания: '+ws.map(w=>w.d+' '+w.kg).join('; ')+'.');
     const bl=bodyLine();if(bl)L.push(bl);
@@ -4555,7 +4607,7 @@ function chatItems(from){
   let h='';
   COACH.msgs.forEach((m,i)=>{if(i<from)return;
     if(m.role==='user'){h+='<div class="msg me"><div class="bub">'+esc(m.text).replace(/\n/g,'<br>')+'</div></div>';return;}
-    const nx=COACH.msgs[i+1];h+='<div class="msg bot">'+(nx&&nx.role!=='user'?'<span class="mava"></span>':'<span class="mava"><img src="'+gIco('coach')+'" alt=""></span>')+'<div class="bub">'+(m.kind==='auto'?'<span class="cauto">сам</span>':'')+fmtReply(m.text)+offerButtons(m,i)+
+    const nx=COACH.msgs[i+1];h+='<div class="msg bot">'+(nx&&nx.role!=='user'?'<span class="mava"></span>':'<span class="mava"><img src="'+gIco('coach')+'" alt=""></span>')+'<div class="bub">'+(m.kind==='auto'?'<span class="cauto">сам</span>':m.kind==='bg'?'<span class="cauto">в фоне</span>':'')+fmtReply(m.text)+offerButtons(m,i)+
       (m.acts&&m.acts.length?'<div class="cacts">'+m.acts.map(a=>'<span'+(m.undone?' class="off"':'')+'>'+(m.undone?'':'✓ ')+esc(a.label)+'</span>').join('')+
         (m.undo&&!m.undone?'<button class="rm" data-cundo="'+i+'">Отменить</button>':m.undone?'<i>Изменения отменены</i>':'')+'</div>':'')+
       (m.skipped?'<div class="cacts"><i>Не сделано: '+m.skipped.map(esc).join('; ')+'</i></div>':'')+
@@ -4820,12 +4872,13 @@ function settingsView(){
     '<div class="sfield"><span class="flab">Отдых между подходами</span><div class="seg2">'+[60,90,120,180].map(s=>'<button data-tset="rest|'+s+'" aria-pressed="'+(tc.rest===s)+'">'+(s<120?s+' с':s/60+' мин')+'</button>').join('')+'</div></div>'+
     '<div class="sfield"><span class="flab">Таймер отдыха</span><div class="seg2">'+REST_MODES.map(m=>'<button data-tset="restMode|'+m[0]+'" aria-pressed="'+(tc.restMode===m[0])+'">'+m[1]+'</button>').join('')+'</div></div>'+
     '<div class="sfield"><span class="flab">Голосовые подсказки на тренировке</span><div class="seg2"><button data-tset="voice|1" aria-pressed="'+!!tc.voice+'">Включены</button><button data-tset="voice|0" aria-pressed="'+!tc.voice+'">Выключены</button></div></div>'+
+    '<div class="sfield"><span class="flab">Оценка подхода</span><div class="seg2"><button data-tset="rate|rir" aria-pressed="'+(tc.rate!=='feel')+'">Запас повторов</button><button data-tset="rate|feel" aria-pressed="'+(tc.rate==='feel')+'">Легко / тяжело</button></div></div>'+
     '<div class="sfield"><span class="flab">Звук и вибрация таймера</span><div class="seg2"><button data-tset="sound|1" aria-pressed="'+tc.sound+'">Включены</button><button data-tset="sound|0" aria-pressed="'+!tc.sound+'">Выключены</button></div></div>'+
     (window.NATIVE_APP?'':'<button class="ghost glass press" data-rem="1">Напоминание о тренировке'+(S.config.reminder&&S.config.reminder.on?' · включено':'')+'</button>')+'</section>'+(window.natCard?window.natCard():'');
   h+='<section class="card glass"><h2 class="sec">О приложении</h2><div class="duo"><a class="ghost glass press" href="https://suxooi.github.io/trenirovka/help.html" target="_blank" rel="noopener">Помощь</a><a class="ghost glass press" href="https://suxooi.github.io/trenirovka/privacy.html" target="_blank" rel="noopener">Конфиденциальность</a></div>'+(window.APP_BUILD?'<p class="cap">Версия 1.0.'+window.APP_BUILD+'</p>':'')+'</section>';
   return h+coachSettings()+dataCard()+aboutCard();
 }
-function setTrain(key,val){S.config.train=Object.assign(trainCfg(),{[key]:key==='rest'?+val:key==='restMode'?val:val==='1'});persistConfig();renderMain();if(key==='voice'&&val==='1')speak('Голосовые подсказки включены');}
+function setTrain(key,val){S.config.train=Object.assign(trainCfg(),{[key]:key==='rest'?+val:(key==='restMode'||key==='rate')?val:val==='1'});persistConfig();renderMain();if(key==='voice'&&val==='1')speak('Голосовые подсказки включены');}
 
 /* first run */
 function needOnboarding(){return !!UI.auth||!!UI.forceOb||(!S.config.onboarded&&!(prof()&&prof().accepted)&&!S.config.setupSkipped);}
@@ -5864,7 +5917,7 @@ document.addEventListener('submit',e=>{if(e.target&&e.target.id==='foodTextForm'
 const REST_MODES=[['auto','Сам после подхода'],['manual','По кнопке'],['off','Без таймера']];
 function restLabel(tc){return tc.restMode==='off'?'без отдыха':tc.restMode==='manual'?'по кнопке · '+clock(tc.rest):'авто · '+clock(tc.rest);}
 function startRest(sec){WK.rest={end:Date.now()+sec*1000,total:sec,warn:false};speak('Отдых '+(sec%60?sec+' секунд':sec/60+' '+plural(sec/60,['минута','минуты','минут'])));renderMain();startTick();}
-function restSecFor(ex){const tc=trainCfg();return ex&&(ex.kind==='time'||ex.dir==='mobility')?Math.min(tc.rest,45):tc.rest;}
+function restSecFor(ex){const tc=trainCfg(),pg=progOf(prof());if(ex&&(ex.kind==='time'||ex.dir==='mobility'))return Math.min(tc.rest,45);return pg&&pg.rest&&ex&&ex.kind==='wr'?Math.max(tc.rest,pg.rest):tc.rest;}
 function wkRestCfg(){
   const tc=trainCfg();
   return '<div class="wkrcfg glass"><div class="sfield"><span class="flab">Таймер отдыха</span><div class="seg2">'+REST_MODES.map(m=>'<button data-wk="rm:'+m[0]+'" aria-pressed="'+(tc.restMode===m[0])+'">'+m[1]+'</button>').join('')+'</div></div>'+
@@ -5892,14 +5945,19 @@ const FEEL=[[1,'Легко'],[2,'Нормально'],[3,'Тяжело']];
 function wkFeelRow(){
   const ls=WK.lastSet;if(!ls||!WK.feelAsk)return '';
   const s=daySets(todayKey()).find(x=>x.id===ls);if(!s||s.feel)return '';
+  if(trainCfg().rate!=='feel')return '<div class="wkfeel"><span>Сколько повторов осталось в запасе?</span><div class="seg2 rir">'+RIR.map(f=>'<button data-feel="r'+f[0]+'" aria-label="'+f[2]+'">'+f[1]+'</button>').join('')+'</div></div>';
   return '<div class="wkfeel"><span>Как прошёл подход?</span><div class="seg2">'+FEEL.map(f=>'<button data-feel="'+f[0]+'">'+f[1]+'</button>').join('')+'</div></div>';
 }
+// reps in reserve: 3+ = easy, 1–2 = working range, 0 = to failure
+const RIR=[[3,'3+','Три и больше в запасе'],[2,'2','Два в запасе'],[1,'1','Один в запасе'],[0,'0','Отказ, больше ни одного']];
+const rirFeel=r=>r>=3?1:r>=1?2:3;
 function setFeel(v){
   const t=todayKey(),s=daySets(t).find(x=>x.id===WK.lastSet);if(!s)return;
+  if(String(v).charAt(0)==='r'){const r=+String(v).slice(1);s.rir=r;v=rirFeel(r);}
   s.feel=v;WK.feelAsk=false;persistDay(t);renderMain();
   wkFeelTip(v);renderMain();
 }
-const feelMark=s=>s.feel===3?' (тяжело)':s.feel===1?' (легко)':'';
+const feelMark=s=>s.rir!=null?' (запас '+(s.rir>=3?'3+':s.rir)+')':s.feel===3?' (тяжело)':s.feel===1?' (легко)':'';
 
 /* ---------- the coach writes first: week summary, missed workout, debrief ---------- */
 function coachState(){return Object.assign({},S.config.coachState||{});}
@@ -6021,6 +6079,22 @@ function dataCard(){
 }
 
 /* ---------- food: quick add, yesterday again, water, ask the coach, barcode ---------- */
+// favorite dishes and own recipes: a star on a meal keeps a copy (with its ingredients) for one-tap adding
+function favMeals(){if(!Array.isArray(S.config.favMeals))S.config.favMeals=[];return S.config.favMeals;}
+function favKey(m){return normQ(m&&m.name||'').trim();}
+function isFav(m){const k=favKey(m);return !!k&&favMeals().some(f=>favKey(f)===k);}
+function favToggle(m){
+  if(!m)return;const L=favMeals(),k=favKey(m),i=L.findIndex(f=>favKey(f)===k);
+  if(i>=0){const gone=L.splice(i,1)[0];persistConfig();renderMain();toast('Убрано из избранного: '+gone.name,()=>{favMeals().splice(i,0,gone);persistConfig();renderMain();});return;}
+  const c={name:m.name,kcal:m.kcal,p:m.p,f:m.f,c:m.c};if(m.g)c.g=m.g;if(m.items)c.items=clone(m.items);if(m.acc)c.acc=m.acc;
+  L.unshift(c);while(L.length>24)L.pop();persistConfig();renderMain();toast('В избранном: '+m.name+'. Теперь оно сверху в «Быстро добавить».');
+}
+function cycleLine(){
+  const pr=prof(),on=foodCycle(),g=foodGoalFor(UI.date),tr=isTrainDay(UI.date),sh=on?cycleShift():null;
+  return '<p class="cap">Норма '+(on?(tr?'в день тренировки':'в день отдыха')+': '+num(g)+' ккал · Б '+pr.p+' · Ж '+pr.f+' · У '+carbsFor(UI.date):'по цели: '+num(pr.kcal)+' ккал · Б '+pr.p+' · Ж '+pr.f+' · У '+pr.c)+'</p>'+
+    (pr.days&&pr.days.length<7?'<div class="sfield cyc"><span class="flab">Калории по дням</span><div class="seg2"><button data-fcyc="0" aria-pressed="'+!on+'">Ровно каждый день</button><button data-fcyc="1" aria-pressed="'+on+'">Больше в дни тренировок</button></div>'+
+    (on?'<p class="cap">Тренировка +'+sh.up+' ккал, отдых −'+sh.down+' ккал за счёт углеводов. За неделю выходит та же норма '+num(pr.kcal)+'.</p>':'')+'</div>':'');
+}
 function recentMeals(){
   const t=todayKey(),by={};
   for(let i=0;i<30;i++){const k=addDays(t,-i);dayMeals(k).forEach(m=>{const key=normQ(m.name).trim();if(!key)return;const o=by[key]=by[key]||{n:0,last:'',m:m};o.n++;if(k>o.last){o.last=k;o.m=m;}});}
@@ -6029,11 +6103,12 @@ function recentMeals(){
 let QUICK=[];
 function quickBlock(){
   if(FOOD.stage!=='idle'&&FOOD.stage!=='error')return '';
-  QUICK=recentMeals();const y=dayMeals(addDays(UI.date,-1)),yk=sumMeals(y).kcal;
+  const fav=favMeals(),fk=fav.map(favKey);
+  QUICK=fav.concat(recentMeals().filter(m=>fk.indexOf(favKey(m))<0)).slice(0,Math.max(8,fav.length+4));const y=dayMeals(addDays(UI.date,-1)),yk=sumMeals(y).kcal;
   if(!QUICK.length&&!y.length)return '';
-  return '<section class="fquick"><h3 class="glabel">Быстро добавить</h3><div class="qchips">'+
+  return '<section class="fquick"><h3 class="glabel">Быстро добавить</h3>'+(fav.length?'':'<p class="cap qtip">Звёздочка у блюда в дневнике добавит его в избранное — оно будет здесь первым.</p>')+'<div class="qchips">'+
     (y.length&&!dayMeals(UI.date).length?'<button class="qchip yday press" data-food="yday"><b>Как вчера</b><i>'+y.length+' '+plural(y.length,['блюдо','блюда','блюд'])+' · '+num(r0(yk))+' ккал</i></button>':'')+
-    QUICK.map((m,i)=>'<button class="qchip press" data-quick="'+i+'"><b>'+esc(m.name)+'</b><i>'+num(r0(m.kcal))+' ккал</i></button>').join('')+'</div></section>';
+    QUICK.map((m,i)=>'<button class="qchip press'+(i<fav.length?' fav':'')+'" data-quick="'+i+'"><b>'+(i<fav.length?'<span class="star" aria-hidden="true">★</span>':'')+esc(m.name)+'</b><i>'+num(r0(m.kcal))+' ккал'+(m.items&&m.items.length>1?' · '+m.items.length+' '+plural(m.items.length,['продукт','продукта','продуктов']):'')+'</i></button>').join('')+'</div></section>';
 }
 function addMealsCopy(list,label){
   const k=UI.date,d=ensureDay(k);if(!d.meals)d.meals=[];const ids=[];
@@ -6051,7 +6126,7 @@ function waterBlock(){
 function addWater(v){const k=UI.date,d=ensureDay(k);d.water=Math.max(0,Math.min(8000,(d.water||0)+v));persistDay(k);renderMain();}
 function askPlanBtn(){
   if(UI.date!==todayKey()||!aiEngine(false))return '';
-  const left=foodGoal()-sumMeals(dayMeals(UI.date)).kcal;if(left<250)return '';
+  const left=foodGoalFor(UI.date)-sumMeals(dayMeals(UI.date)).kcal;if(left<250)return '';
   return '<button class="ghost glass press wide askplan" data-food="askplan">'+COACH_ICO+'Что съесть, чтобы добрать норму? · осталось '+num(r0(left))+' ккал</button>';
 }
 // barcode → Open Food Facts (open product database with many Russian items)
@@ -6637,7 +6712,7 @@ const baseCache={};
 function schedBase(k){
   const pr=prof(),si=schedInfo(k);if(!si)return [];
   const eq=si.places&&si.places.length?unionEq(pr,si.places):(pr.equip||equipNow());
-  const ck=pr.start+pr.goal+(pr.area||'')+pr.sex+pr.days.join('')+'|'+(si.places||[]).join('+')+'|'+(si.groups||[]).join('+')+'|'+si.pp.days.join('')+'|'+si.li+eq.join('')+S.config.hidden.length+JSON.stringify(pr.placeEq||{})+k;
+  const ck=pr.start+pr.goal+(pr.area||'')+(pr.program||'')+pr.sex+pr.days.join('')+'|'+(si.places||[]).join('+')+'|'+(si.groups||[]).join('+')+'|'+si.pp.days.join('')+'|'+si.li+eq.join('')+S.config.hidden.length+JSON.stringify(pr.placeEq||{})+k;
   if(baseCache[ck])return baseCache[ck];
   let rows;
   if(si.groups)rows=groupRows(pr,si.groups,si.places||[],si.week,groupOcc(pr,si.wd));
@@ -6717,9 +6792,12 @@ function volTarget(pr,g){
   return major?[10,20]:g==='arms'?[6,14]:[4,12];
 }
 const preCache={};
+// what in the profile shapes the plan: a new goal, program or days must not reuse cached plans
+function profSig(pr){return [pr.start,pr.goal,pr.area||'',pr.program||'',pr.split||'',pr.sex,pr.days.join(''),(pr.places||[]).join(''),JSON.stringify(pr.dayGroups||{}),JSON.stringify(pr.dayPlaces||{}),JSON.stringify(pr.placeEq||{})].join('|');}
 function planPre(k){
-  const ck=k+'|'+HIST_REV;if(preCache[ck])return preCache[ck];
-  const pr=prof(),si=schedInfo(k);if(!si)return [];
+  const pr=prof();if(!pr)return [];
+  const ck=k+'|'+HIST_REV+'|'+profSig(pr);if(preCache[ck])return preCache[ck];
+  const si=schedInfo(k);if(!si)return [];
   const eq=si.places&&si.places.length?unionEq(pr,si.places):(pr.equip||equipNow());
   return preCache[ck]=plateauSwap(applyPrefs(schedBase(k),si,eq),k,si,eq);
 }
@@ -6755,7 +6833,7 @@ function histLoad(items){
 const smartCache={};
 function schedPlan(k){
   const pr=prof(),si=schedInfo(k);if(!si)return [];
-  const ck=k+'|'+HIST_REV+'|'+JSON.stringify(planPrefs()).length+'|'+pr.start+pr.goal+(pr.area||'')+pr.days.join('')+S.config.hidden.length;
+  const ck=k+'|'+HIST_REV+'|'+JSON.stringify(planPrefs()).length+'|'+profSig(pr)+S.config.hidden.length;
   if(smartCache[ck])return smartCache[ck];
   return smartCache[ck]=histLoad(deload(goalTune(planPre(k),k,pr),si));
 }
@@ -6835,7 +6913,7 @@ function toolHistory(q){
   const ss=sessionsOf(ex.id,addDays(todayKey(),1));
   if(!ss.length)return ex.name+' ['+ex.id+']: подходов ещё не было.';
   const feel={1:'легко',2:'нормально',3:'тяжело'};
-  return ex.name+' ['+ex.id+'], последние тренировки:\n'+ss.map(x=>'- '+x.k+': '+x.sets.map(t=>fmtSet(t)+(t.feel?' ('+feel[t.feel]+')':'')+(t.pr?' рекорд':'')).join(', ')).join('\n');
+  return ex.name+' ['+ex.id+'], последние тренировки:\n'+ss.map(x=>'- '+x.k+': '+x.sets.map(t=>fmtSet(t)+(t.rir!=null?' (запас '+(t.rir>=3?'3+':t.rir)+' повт.)':t.feel?' ('+feel[t.feel]+')':'')+(t.pr?' рекорд':'')).join(', ')).join('\n');
 }
 function toolDays(from,to){
   const t=todayKey();let a=/^\d{4}-\d{2}-\d{2}$/.test(String(from||''))?String(from):addDays(t,-6),b=/^\d{4}-\d{2}-\d{2}$/.test(String(to||''))?String(to):t;
@@ -7128,11 +7206,56 @@ async function coachAuto(){
   }catch(e){/* a quiet failure: the next app start tries again tomorrow */}
   if(COACH.ctl===ctl){COACH.busy=false;COACH.auto=false;COACH.ctl=null;COACH.step='';COACH.live=null;saveCoach();renderTabs();render();}
 }
+// ---- coach in the background (Android): a morning note and an evening nudge, prepared here, delivered while the app is closed ----
+function bgCfg(){return Object.assign({morning:'08:00',evening:'21:00',ai:'off'},S.config.bg||{});}
+function setBg(k,v){S.config.bg=Object.assign(bgCfg(),{[k]:v});persistConfig();}
+function fmtPlanItem(p){return p.n+' '+humanPlan(p).replace(/ · /,' по ');}
+// one short morning message for a day: workout or rest, food norm, the coach's own tasks
+function coachBrief(k){
+  const pl=dayPlan(k),si=schedInfo(k),pr=prof(),L=[],ty=coachCfg().tone==='ty';
+  const h=new Date().getHours();L.push(k===todayKey()&&h>=12?(h>=18?'Добрый вечер!':'Добрый день!'):'Доброе утро!');
+  if(pl.length){const pn=progSessName(si);
+    L.push('Сегодня тренировка'+(si&&si.letter?' '+si.letter:'')+(pn?' · '+pn:'')+': '+pl.slice(0,4).map(fmtPlanItem).join(', ')+(pl.length>4?' и ещё '+(pl.length-4):'')+'.');
+    const r=rem();if(r&&r.on&&r.time)L.push('Напомню '+(r.before?'за '+r.before+' мин до ':'в ')+r.time+'.');}
+  else if(pr&&pr.accepted)L.push(ty?'Сегодня отдыхаешь — мышцы растут как раз сейчас.':'Сегодня день отдыха — мышцы восстанавливаются и растут.');
+  if(pr&&pr.accepted)L.push('Норма '+num(foodGoalFor(k))+' ккал, белок '+pr.p+' г.');
+  const due=coachTasks().filter(x=>!x.done&&x.due===k);if(due.length)L.push('Я запланировал: '+due.slice(0,2).map(x=>x.text).join('; ')+'.');
+  return L.join(' ');
+}
+function eveningNudge(k){
+  const pl=dayPlan(k);if(!pl.length)return '';const ty=coachCfg().tone==='ty';
+  return (ty?'Тренировка сегодня ещё не отмечена. Если не успеваешь — напиши мне, перенесу на другой день, план не сдвинется.':'Тренировка сегодня ещё не отмечена. Если не успеваете — напишите мне, перенесу на другой день, план не сдвинется.');
+}
+// what the background runner needs: briefs for a week ahead, today's state, and the AI key only if the person allowed it
+function bgSnapshot(){
+  const c=bgCfg(),t=todayKey(),days={};
+  for(let i=0;i<8;i++){const k=addDays(t,i);days[k]={brief:coachBrief(k),train:dayPlan(k).length>0,done:daySets(k).length>0,eve:eveningNudge(k)};}
+  const snap={v:1,at:Date.now(),morning:c.morning==='off'?'':c.morning,evening:c.evening==='off'?'':c.evening,name:coachCfg().name||'Тренер',days:days,ai:null};
+  if(c.ai==='on'){const eng=aiEngine(false);
+    if(eng==='ds'||eng==='api')snap.ai={prov:eng,key:eng==='ds'?dsKey():apiKey(),model:eng==='ds'?DS_MODEL:'claude-haiku-5-5',
+      sys:'Ты — личный тренер «'+(coachCfg().name||'Тренер')+'» в приложении «Тренировки». Обращайся на '+(coachCfg().tone==='ty'?'ты':'вы')+'. Пишешь утреннее сообщение в уведомление: 2–3 коротких предложения, без markdown и списков, живо и по делу, только по данным ниже, ничего не выдумывай.',
+      ctx:(memContext()+'\n'+coachContext()).slice(0,6000)};}
+  return snap;
+}
+// messages that arrived while the app was closed go into the chat once
+function bgInbox(list){
+  const st=coachState();st.bgSeen=st.bgSeen||{};let n=0;
+  (list||[]).forEach(m=>{if(!m||!m.text||st.bgSeen[m.date+'|'+m.kind])return;st.bgSeen[m.date+'|'+m.kind]=1;COACH.msgs.push({role:'assistant',text:String(m.text).slice(0,2000),at:m.at||Date.now(),kind:'bg'});n++;});
+  // a morning note shown as a plain notification (no runner run): add it as well
+  const c=bgCfg(),t=todayKey(),now=new Date();
+  if(c.morning!=='off'&&NATIVE_BG()&&!bgAiMode()&&st.bgSince&&st.bgSince<t&&!st.bgSeen[t+'|morning']){const q=c.morning.split(':');if(now.getHours()*60+now.getMinutes()>=(+q[0])*60+(+q[1])){st.bgSeen[t+'|morning']=1;COACH.msgs.push({role:'assistant',text:coachBrief(t),at:Date.now(),kind:'bg'});n++;}}
+  Object.keys(st.bgSeen).forEach(k=>{if(k.slice(0,10)<addDays(t,-14))delete st.bgSeen[k];});
+  saveCoachState(st);if(n){saveCoach();UI.unread=UI.tab!=='coach';renderTabs();render();}
+  return n;
+}
+function NATIVE_BG(){return !!window.NATIVE_APP;}
+// the AI writes the morning note in the background only when the runner answered and a key is set
+function bgAiMode(){return bgCfg().ai==='on'&&!!window.BG_RUNNER&&!!aiEngine(false)&&aiEngine(false)!=='claude';}
 // chat as text — to copy and send to whoever tunes the coach
 function chatExport(){
   return COACH.msgs.slice(-60).map(m=>{const tm=new Date(m.at||0),ts=tm.getDate()+'.'+pad(tm.getMonth()+1)+' '+pad(tm.getHours())+':'+pad(tm.getMinutes());
     if(m.role==='user')return '['+ts+'] Я: '+m.text;
-    return '['+ts+'] Тренер'+(m.kind==='auto'?' (сам)':'')+': '+m.text+(m.acts&&m.acts.length?'\n  Сделано: '+m.acts.map(a=>a.label).join('; ')+(m.undone?' (отменено)':''):'')+(m.skipped?'\n  Не сделано: '+m.skipped.join('; '):'')+
+    return '['+ts+'] Тренер'+(m.kind==='auto'?' (сам)':m.kind==='bg'?' (в фоне)':'')+': '+m.text+(m.acts&&m.acts.length?'\n  Сделано: '+m.acts.map(a=>a.label).join('; ')+(m.undone?' (отменено)':''):'')+(m.skipped?'\n  Не сделано: '+m.skipped.join('; '):'')+
       (m.log&&m.log.length?'\n  Ход: '+m.log.map(l=>l.n+(l.err?' ✗':'')+' '+l.a).join(' → '):'')+(m.ms?'\n  '+Math.round(m.ms/1000)+' с'+(m.tok?', '+m.tok+' ток.':''):'')+(m.rate?'\n  Оценка: '+(m.rate==='up'?'👍':'👎'+(m.why?' — '+m.why:'')):'');
   }).join('\n\n');
 }
@@ -7210,11 +7333,11 @@ document.addEventListener('click',e=>{
   if(ds.eqopen){UI.eqOpen=!UI.eqOpen;renderMain();return;}
   if(ds.beq||ds.beqpre){S.config.equip=ds.beqpre?EQUIP_PRESET[ds.beqpre].slice():eqToggle(equipNow().slice(),ds.beq);persistConfig();renderMain();return;}
   if(ds.seq||ds.seqpre){readSetup();SETUP.d.equip=ds.seqpre?EQUIP_PRESET[ds.seqpre].slice():eqToggle((SETUP.d.equip||equipNow()).slice(),ds.seq);renderMain();return;}
-  if((ds.sgoal||ds.sarea||ds.ssex||ds.sday||ds.splace||ds.sdp||ds.sdp2||ds.sdg||ds.ssplit||ds.speq||ds.seqt||ds.setup||ds.calm||ds.wstep)&&goalClick(ds))return;
+  if((ds.sprog!=null||ds.sgoal||ds.sarea||ds.ssex||ds.sday||ds.splace||ds.sdp||ds.sdp2||ds.sdg||ds.ssplit||ds.speq||ds.seqt||ds.setup||ds.calm||ds.wstep)&&goalClick(ds))return;
   if(ds.auth||ds.authsex||ds.authgo||ds.authdel){authClick(ds);return;}
   if(ds.acc){accClick(ds.acc);return;}
   if((ds.csug||ds.coach||ds.cset||ds.cundo!==undefined||ds.memdel!==undefined||ds.crate!==undefined||ds.cwhy!==undefined)&&coachClick(ds))return;
-  if((ds.food||ds.aiprov||ds.fstep||ds.fgoal||ds.meal||ds.fans!==undefined)&&foodClick(ds))return;
+  if((ds.food||ds.aiprov||ds.fstep||ds.fgoal||ds.meal||ds.mfav||ds.fcyc||ds.fans!==undefined)&&foodClick(ds))return;
   if(!ds.xdel&&UI.armed){UI.armed=null;if(isBuilding()&&!ds.pick&&!ds.goal&&!ds.pstep)renderMain();}
   if(ds.build){UI.building=ds.build==='1';UI.open=null;UI.addOpen=false;UI.tab='day';render();window.scrollTo({top:0,behavior:'smooth'});return;}
   if(ds.tab){UI.tab=ds.tab;UI.building=false;UI.open=null;UI.addOpen=false;render();if(UI.tab==='coach')scrollCoach();else window.scrollTo({top:0,behavior:'smooth'});return;}
@@ -7240,7 +7363,7 @@ document.addEventListener('click',e=>{
   if(ds.tset){const q=ds.tset.split('|');setTrain(q[0],q[1]);return;}
   if(ds.mic){micToggle();return;}
   if(ds.micdiag){const v=ds.micdiag;if(v==='sr')diagSR();else if(v==='mic')diagMic();else{UI.micDiag=v==='open';renderMain();}return;}
-  if(ds.feel){setFeel(+ds.feel);return;}
+  if(ds.feel){setFeel(ds.feel.charAt(0)==='r'?ds.feel:+ds.feel);return;}
   if(ds.offer){offerClick(ds.offer);return;}
   if(ds.backup){if(ds.backup==='save'&&window.wtBackup)window.wtBackup();else{S.config.backupSnooze=addDays(todayKey(),3);persistConfig();renderMain();}return;}
   if(ds.quick!==undefined){const m=QUICK[+ds.quick];if(m)addMealsCopy([m],'Добавлено: '+m.name+' — '+num(r0(m.kcal))+' ккал');return;}
@@ -7404,7 +7527,7 @@ async function natScheduleNow(){
   const LN=natPlugin('LocalNotifications');if(!LN)return;
   if(!(await natNotifPerm(false)))return;
   await natChannels();
-  try{const p=await LN.getPending(),old=(p.notifications||[]).filter(n=>(n.id>=1000&&n.id<1100)||(n.id>=3000&&n.id<3100)).map(n=>({id:n.id}));if(old.length)await LN.cancel({notifications:old});}catch(e){}
+  try{const p=await LN.getPending(),old=(p.notifications||[]).filter(n=>(n.id>=1000&&n.id<1100)||(n.id>=3000&&n.id<3100)||(n.id>=4000&&n.id<4200)).map(n=>({id:n.id}));if(old.length)await LN.cancel({notifications:old});}catch(e){}
   const r=rem(),c=notifCfg(),t=todayKey(),now=Date.now(),list=[];
   if(r.on)for(let i=0;i<14;i++){
     const k=addDays(t,i),pl=dayPlan(k);if(!pl.length||daySets(k).length)continue;
@@ -7414,17 +7537,31 @@ async function natScheduleNow(){
   }
   if(c.coach==='on')coachTasks().filter(x=>!x.done).slice(0,40).forEach((x,j)=>{const when=natAt(x.due<t?t:x.due,'10:00');if(when.getTime()<now+60000)return;
     list.push({id:3000+j,channelId:'coach',title:'Тренер',body:x.text,schedule:{at:when,allowWhileIdle:true},extra:{tab:'coach'}});});
+  // coach in the background: a morning note (unless the AI writes it in the runner) and an evening nudge if the workout is not logged
+  const b=bgCfg(),nm=coachCfg().name||'Тренер',st=coachState();if(!st.bgSince){st.bgSince=t;saveCoachState(st);}
+  for(let i=0;i<8;i++){const k=addDays(t,i);
+    if(b.morning!=='off'&&!bgAiMode()){const when=natAt(k,b.morning);const tx=coachBrief(k);if(tx&&when.getTime()>now+60000)list.push({id:4000+i,channelId:'coach',title:nm,body:tx.length>110?tx.slice(0,107)+'…':tx,largeBody:tx,schedule:{at:when,allowWhileIdle:true},extra:{tab:'coach'}});}
+    if(b.evening!=='off'&&dayPlan(k).length&&!daySets(k).length){const when=natAt(k,b.evening);const tx=eveningNudge(k);if(tx&&when.getTime()>now+60000)list.push({id:4100+i,channelId:'coach',title:nm,body:tx,largeBody:tx,schedule:{at:when,allowWhileIdle:true},extra:{tab:'coach'}});}}
   if(list.length){try{await LN.schedule({notifications:list});}catch(e){}}
 }
+// background runner (Android WorkManager): gets a fresh snapshot when the app hides, hands back what it wrote
+const BG_LABEL='ru.suxooi.trenirovki.coach';
+function natBgCall(ev,details){
+  const BR=natPlugin('BackgroundRunner');if(!BR)return Promise.reject(new Error('no runner'));
+  return Promise.race([BR.dispatchEvent({label:BG_LABEL,event:ev,details:details||{}}),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4000))]);
+}
+async function natBgSync(){if(!NATIVE)return;try{await natBgCall('sync',{snap:bgSnapshot()});window.BG_RUNNER=true;}catch(e){}}
+async function natBgPull(){if(!NATIVE)return;let l=[];try{const r=await natBgCall('pull');window.BG_RUNNER=true;l=(r&&r.inbox)||[];}catch(e){}try{bgInbox(l);}catch(e){}}
 // rest timer: when the app goes to the background mid-rest, Android rings at the end of it
 document.addEventListener('visibilitychange',async()=>{
   if(!NATIVE)return;const LN=natPlugin('LocalNotifications');if(!LN)return;
   if(document.visibilityState==='hidden'){
+    natScheduleNow().catch(()=>{});natBgSync();
     if(notifCfg().rest==='on'&&NOTIF_OK&&WK.rest&&WK.rest.end>Date.now()+3000){
       let nx='';try{const w=wkEx();nx=w&&w.ex?'Следующий подход: '+w.ex.name:'';}catch(e){}
       try{await natChannels();await LN.schedule({notifications:[{id:2000,channelId:'rest',title:'Отдых окончен',body:nx||'Пора к следующему подходу',schedule:{at:new Date(WK.rest.end),allowWhileIdle:true},extra:{tab:'workout'}}]});}catch(e){}
     }
-  }else{try{await LN.cancel({notifications:[{id:2000}]});}catch(e){}natSchedule();}
+  }else{try{await LN.cancel({notifications:[{id:2000}]});}catch(e){}natSchedule();natBgPull();}
 });
 // settings card (only in the Android app)
 function natCard(){
@@ -7436,6 +7573,13 @@ function natCard(){
   if(r.on)h+='<div class="duo"><label class="sfield"><span class="flab">Тренировка в</span><input type="time" id="natTime" class="fhint" value="'+esc(r.time)+'"></label>'+
     '<label class="sfield"><span class="flab">Напомнить за</span><select id="natBefore" class="fhint">'+[0,15,30,60,120].map(m=>'<option value="'+m+'"'+(r.before===m?' selected':'')+'>'+(m?m<60?m+' мин':m/60+' ч':'в начале')+'</option>').join('')+'</select></label></div>'+
     '<p class="cap">Только в дни, когда в плане есть тренировка и она ещё не начата. Перенос и отмена тренировки учитываются сами.</p>';
+  const b=bgCfg(),tsel=(id,v,opts)=>'<select id="'+id+'" class="fhint">'+opts.map(o=>'<option value="'+o+'"'+(v===o?' selected':'')+'>'+(o==='off'?'не надо':o)+'</option>').join('')+'</select>';
+  h+='<h3 class="sec" style="margin:6px 0 0">Тренер в фоне</h3><div class="duo"><label class="sfield"><span class="flab">Утром пишет план дня</span>'+tsel('natMorning',b.morning,['off','06:30','07:00','07:30','08:00','08:30','09:00','10:00'])+'</label>'+
+    '<label class="sfield"><span class="flab">Вечером, если не было тренировки</span>'+tsel('natEvening',b.evening,['off','19:00','20:00','21:00','22:00'])+'</label></div>';
+  const eng=aiEngine(false);
+  if(eng==='ds'||eng==='api')h+='<div class="sfield"><span class="flab">Утреннее сообщение пишет ИИ</span><div class="seg2"><button data-nset="bgai|on" aria-pressed="'+(b.ai==='on')+'">Да</button><button data-nset="bgai|off" aria-pressed="'+(b.ai!=='on')+'">Нет, по плану</button></div></div>'+
+    (b.ai==='on'?'<p class="cap">'+(window.BG_RUNNER?'Раз в 15 минут Android даёт тренеру проснуться: утром он посмотрит ваши данные и напишет пару фраз. Ключ ИИ для этого лежит в хранилище приложения на телефоне.':'Фоновый режим появится после обновления приложения — пока утреннее сообщение собирается по плану.')+'</p>':'');
+  h+='<p class="cap">Сообщения приходят, даже если приложение закрыто, и появляются в чате. Если что-то не приходит — уберите «Тренировки» из экономии заряда в настройках телефона.</p>';
   h+='<div class="sfield"><span class="flab">Конец отдыха, если приложение свёрнуто</span><div class="seg2">'+seg('rest','on','Да')+seg('rest','off','Нет')+'</div></div>'+
     '<div class="sfield"><span class="flab">Задачи тренера</span><div class="seg2">'+seg('coach','on','Да')+seg('coach','off','Нет')+'</div></div>';
   if(NOTIF_OK&&NOTIF_EXACT===false)h+='<p class="cap">Чтобы таймер отдыха звенел секунда в секунду, разрешите «Будильники и напоминания».</p><button class="ghost glass press" data-nset="exact|1">Открыть настройку</button>';
@@ -7449,12 +7593,14 @@ document.addEventListener('click',async e=>{
   const q=b.dataset.nset.split('|'),LN=natPlugin('LocalNotifications');
   if(q[0]==='perm'){await natNotifPerm(true);if(!NOTIF_OK)toast('Android не дал разрешение — включите уведомления в настройках телефона: Приложения → Тренировки.');natSchedule();renderMain();return;}
   if(q[0]==='exact'){try{await LN.changeExactNotificationSetting();}catch(e){}return;}
+  if(q[0]==='bgai'){setBg('ai',q[1]);await natNotifPerm(true);natBgSync();natSchedule();renderMain();return;}
   if(q[0]==='train'){const r=rem();r.on=q[1]==='on';if(r.on&&!(await natNotifPerm(true)))toast('Без разрешения на уведомления напоминание не придёт.');saveRem(r);}
   else{S.config.notif=Object.assign(notifCfg(),{[q[0]]:q[1]});persistConfig();if(q[1]==='on')await natNotifPerm(true);}
   natSchedule();renderMain();
 });
 document.addEventListener('change',e=>{
   const t=e.target;if(!NATIVE||!t)return;
+  if(t.id==='natMorning'||t.id==='natEvening'){setBg(t.id==='natMorning'?'morning':'evening',t.value);if(t.value!=='off')natNotifPerm(true);natSchedule();natBgSync();return;}
   if(t.id==='natTime'||t.id==='natBefore'){const r=rem();if(t.id==='natTime'&&/^\d{2}:\d{2}$/.test(t.value))r.time=t.value;if(t.id==='natBefore')r.before=+t.value||0;saveRem(r);natSchedule();}
 });
 // Google code scanner (ML Kit): no camera permission, works on any phone with Google Play services
@@ -7485,7 +7631,7 @@ if(NATIVE){
     // first start: ask for notifications once and turn on the workout reminder
     if(!S.config.notifAsked){S.config.notifAsked=1;persistConfig();if(await natNotifPerm(true)&&!(S.config.reminder&&S.config.reminder.on)){const r=rem();r.on=true;saveRem(r);}}
     else await natNotifPerm(false);
-    natSchedule();natUpdate();
+    natSchedule();natUpdate();await natBgSync();natBgPull();
   },1500);
 }
 // APK builds look for a newer release on GitHub once a day (RuStore builds update through the store)

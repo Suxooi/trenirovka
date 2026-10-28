@@ -36,6 +36,7 @@ jobs:
           rm -rf www && mkdir www
           cp ../index.html ../manifest.webmanifest ../kb.json www/
           cp -r ../icons ../vendor ../img www/
+          mkdir -p www/runners && cp runners/coach.js www/runners/
           CJS=$(ls node_modules/@capacitor/core/dist/capacitor.js 2>/dev/null || true)
           if [ -n "$CJS" ]; then cp "$CJS" www/capacitor.js; else echo "capacitor.js нет — плагины пойдут через мост напрямую"; fi
           python3 inject.py www/index.html apk "$BUILD"
