@@ -1,5 +1,6 @@
 // Журнал тренировок — офлайн-кэш. Меняйте VERSION при каждом обновлении файлов.
-const VERSION = 'trenirovki-202610261917';
+const IMG = 'trenirovki-img-v1'; // фото упражнений: свой кэш, переживает обновления
+const VERSION = 'trenirovki-202610281851';
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192-v2.png", "./icons/icon-512-v2.png", "./icons/apple-touch-icon-v2.png", "./icons/favicon-32-v2.png"];
 
 self.addEventListener('install', (e) => {
@@ -10,7 +11,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys() // только свои кэши: на домене живёт и тестовая версия
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('trenirovki-') && k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('trenirovki-') && k !== VERSION && k !== IMG).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -23,6 +24,10 @@ self.addEventListener('fetch', (e) => {
   // база знаний обновляется раз в месяц — сначала сеть
   if (new URL(req.url).pathname.endsWith('/kb.json')) {
     e.respondWith(fetch(req, { cache: 'no-cache' }).then((res) => { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); return res; }).catch(() => caches.match(req)));
+    return;
+  }
+  if (new URL(req.url).pathname.includes('/img/')) {
+    e.respondWith(caches.open(IMG).then((c) => c.match(req).then((hit) => hit || fetch(req).then((res) => { if (res.ok) c.put(req, res.clone()); return res; }))));
     return;
   }
   if (req.mode === 'navigate') {
