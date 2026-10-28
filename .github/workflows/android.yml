@@ -28,7 +28,11 @@ jobs:
           java-version: 21
       - name: Зависимости
         working-directory: android-app
-        run: npm install --no-audit --no-fund
+        run: |
+          if ! npm install --no-audit --no-fund > "$RUNNER_TEMP/npm.log" 2>&1; then
+            grep -i "npm error\|ERESOLVE\|notarget\|404" "$RUNNER_TEMP/npm.log" | head -15 | while read -r l; do echo "::error::$l"; done
+            exit 1
+          fi
       - name: Веб-часть
         working-directory: android-app
         run: |
