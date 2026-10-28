@@ -811,6 +811,10 @@ button.bigring{border:0;color:inherit;padding:0;font:inherit;cursor:pointer}
 .qtip{margin:-2px 6px 6px}
 .cyc{margin-top:8px}
 .cyc .seg2 button{font-size:13px;padding:0 6px}
+.dlrow{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:6px;align-items:center}
+.dlrow button{min-height:44px;min-width:44px;padding:0 8px;font-weight:600;font-variant-numeric:tabular-nums}
+.dlrow input{min-height:44px;text-align:center;min-width:0;font-size:15px;padding:0 6px}
+.sdl .cap .restore{display:inline;padding:0;margin-left:4px}
 .filebtn{display:inline-flex;align-items:center;cursor:pointer}
 .itform{display:grid;gap:8px}.itform input{width:100%;min-height:46px;border-radius:14px;border:1px solid var(--glass-edge);background:var(--glass-strong);color:var(--ink);font:inherit;font-size:16px;padding:0 14px;min-width:0}
 </style>
@@ -2955,7 +2959,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='28.10 19:33';
+const BUILD='28.10 20:45';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -3759,6 +3763,7 @@ document.addEventListener('change',e=>{
   const t=e.target;if(!t)return;
   if(t.id==='foodCam'||t.id==='foodPick'){const f=t.files&&t.files[0];t.value='';onFoodFile(f);}
   if(t.id==='foodGoal'){setGoal(parseFloat(t.value));renderMain();}
+  if(t.id==='sDeadline'&&SETUP.pr){const v=t.value;if(/^\d{4}-\d{2}-\d{2}$/.test(v))setDeadline(Math.round((parseKey(v)-parseKey(SETUP.pr.start))/864e5/7));return;}
 });
 let qTimer=null;
 document.addEventListener('input',e=>{
@@ -3805,11 +3810,24 @@ function calcProfile(d){
     if(diff>=0)warn='Для похудения целевой вес обычно меньше текущего.';
   }else{kcal=tdee;weeks=10;}
   if(weeks>52){weeks=52;warn='Цель далёкая: план рассчитан на год, потом его можно продлить.';}
+  // the person's own deadline: pace and calories follow it, within safe limits
+  const autoWeeks=weeks,uw=Math.round(+d.weeks||0);let timeNote='';
+  if(uw>=2&&uw<=104&&uw!==autoWeeks){
+    weeks=uw;
+    if(mode==='gain'&&diff>0){
+      const want=diff/weeks,maxR=Math.max(0.25,w*0.005);rate=Math.min(want,maxR);rate=Math.max(rate,0.05);kcal=tdee+rate*7700/7;
+      if(want>maxR)timeNote='За '+weeks+' '+plural(weeks,['неделю','недели','недель'])+' набрать '+fmtKg(diff)+' кг без лишнего жира не выйдет: больше '+fmtKg(maxR)+' кг в неделю — это в основном жир. Ставлю максимальный разумный темп; к сроку будет около '+fmtKg(w+rate*weeks)+' кг.';
+    }else if(mode==='lose'&&diff<0){
+      const want=-diff/weeks,floor=Math.max(bmr*1.05,d.sex==='f'?1300:1500),maxR=Math.min(1,w*0.01);
+      kcal=Math.max(tdee-Math.min(want,maxR)*7700/7,floor);rate=(tdee-kcal)*7/7700;
+      if(want>rate+0.01)timeNote='За '+weeks+' '+plural(weeks,['неделю','недели','недель'])+' сбросить '+fmtKg(-diff)+' кг безопасно не получится: быстрее '+fmtKg(rate)+' кг в неделю теряются мышцы. Ставлю самый быстрый безопасный темп; к сроку будет около '+fmtKg(w-rate*weeks)+' кг, до цели — ещё примерно '+Math.ceil((-diff-rate*weeks)/Math.max(rate,0.1))+' нед.';
+    }
+  }
   const bmi=w/((h/100)*(h/100)),tb=t/((h/100)*(h/100));
   if(tb<18.5)warn='Целевой вес ниже нормы для вашего роста (ИМТ '+tb.toFixed(1)+'). Лучше обсудить цель с врачом.';
   const p=Math.round(w*(mode==='lose'?2.0:1.8)),f=Math.round(w*0.9),c=Math.max(0,Math.round((kcal-p*4-f*9)/4));
   const start=todayKey(),end=addDays(start,weeks*7);
-  return {equip:(d.equip||equipNow()).slice(),goal:d.goal,area:d.area||null,sex:d.sex,age:a,height:h,weight:w,target:t,ndays:days,days:wdays,places:(d.places&&d.places.length?d.places:['gym']).slice(),placeEq:clone(d.placeEq||{}),dayPlace:Object.assign({},d.dayPlace||{}),dayPlaces:clone(d.dayPlaces||{}),dayGroups:clone(d.dayGroups||{}),split:d.split==='groups'?'groups':'auto',program:d.split!=='groups'&&PROGRAMS[d.program]?d.program:null,
+  return {weeksSet:uw>=2&&uw<=104&&uw!==autoWeeks?uw:null,autoWeeks:autoWeeks,timeNote:timeNote,equip:(d.equip||equipNow()).slice(),goal:d.goal,area:d.area||null,sex:d.sex,age:a,height:h,weight:w,target:t,ndays:days,days:wdays,places:(d.places&&d.places.length?d.places:['gym']).slice(),placeEq:clone(d.placeEq||{}),dayPlace:Object.assign({},d.dayPlace||{}),dayPlaces:clone(d.dayPlaces||{}),dayGroups:clone(d.dayGroups||{}),split:d.split==='groups'?'groups':'auto',program:d.split!=='groups'&&PROGRAMS[d.program]?d.program:null,
     bmr:Math.round(bmr),tdee:Math.round(tdee),kcal:Math.round(kcal/10)*10,p:p,f:f,c:c,rate:Math.round(rate*100)/100,mode:mode,weeks:weeks,start:start,end:end,bmi:Math.round(bmi*10)/10,warn:warn};
 }
 function planItem(row,week){
@@ -3910,7 +3928,7 @@ function placeDaysUI(d){
   return h;
 }
 function setupView(){
-  const d=SETUP.d||(SETUP.d=Object.assign({goal:'',area:'',sex:(accCur()&&accCur().sex)||'m',age:'',height:'',weight:'',target:'',ndays:3,days:DAYSETS[3].slice(),places:['gym'],placeEq:{},dayPlace:{}},prof()?{days:prof().days.slice(),places:(prof().places||['gym']).slice(),placeEq:clone(prof().placeEq||{}),dayPlace:Object.assign({},prof().dayPlace||{}),dayPlaces:clone(prof().dayPlaces||{}),dayGroups:clone(prof().dayGroups||{}),split:prof().split||'auto',program:prof().program||null,goal:prof().goal,area:prof().area||'',sex:prof().sex,age:prof().age,height:prof().height,weight:curWeight(prof()),target:prof().target,ndays:prof().ndays}:{}));
+  const d=SETUP.d||(SETUP.d=Object.assign({goal:'',area:'',sex:(accCur()&&accCur().sex)||'m',age:'',height:'',weight:'',target:'',ndays:3,days:DAYSETS[3].slice(),places:['gym'],placeEq:{},dayPlace:{}},prof()?{days:prof().days.slice(),places:(prof().places||['gym']).slice(),placeEq:clone(prof().placeEq||{}),dayPlace:Object.assign({},prof().dayPlace||{}),dayPlaces:clone(prof().dayPlaces||{}),dayGroups:clone(prof().dayGroups||{}),split:prof().split||'auto',program:prof().program||null,weeks:prof().weeksSet||'',goal:prof().goal,area:prof().area||'',sex:prof().sex,age:prof().age,height:prof().height,weight:curWeight(prof()),target:prof().target,ndays:prof().ndays}:{}));
   const steps=['goal','data','result'],si=steps.indexOf(SETUP.step);
   let h='<section class="card glass setup"><div class="sstep">'+['Цель','Данные','План'].map((s,i)=>'<span class="'+(i<=si?'on':'')+'">'+(i+1)+'. '+s+'</span>').join('')+'</div>';
   if(SETUP.step==='goal'){
@@ -3927,7 +3945,8 @@ function setupView(){
   }else{
     const pr=SETUP.pr,gi=GOALS[pr.goal],sign=pr.mode==='gain'?'+':pr.mode==='lose'?'−':'';
     h+='<h2 class="stitle">'+gi.name+(pr.area?': '+(pr.area==='core'?'пресс':DIR[pr.area].name.toLowerCase()):'')+'</h2>'+
-      '<div class="sres"><div><b>'+num(pr.kcal)+'</b><span>ккал в день</span></div><div><b>'+pr.weeks+'</b><span>'+plural(pr.weeks,['неделя','недели','недель'])+' · до '+dateLong(pr.end)+'</span></div></div>'+
+      '<div class="sres"><div><b>'+num(pr.kcal)+'</b><span>ккал в день</span></div><div class="swk"><b>'+pr.weeks+'</b><span>'+plural(pr.weeks,['неделя','недели','недель'])+' · до '+dateLong(pr.end)+'</span></div></div>'+
+      deadlineUI(pr)+
       '<div class="macros"><span><b>'+pr.p+'</b> г белки</span><span><b>'+pr.f+'</b> г жиры</span><span><b>'+pr.c+'</b> г углеводы</span></div>'+
       '<p class="cap">'+pr.weight+' → '+pr.target+' кг'+(pr.rate?', темп '+sign+String(pr.rate).replace('.',',')+' кг в неделю':', вес держим, меняем форму')+'. Обмен '+num(pr.bmr)+' ккал, с '+pr.ndays+' тренировками — '+num(pr.tdee)+' ккал. Расчёт по формуле Миффлина — Сан Жеора.</p>'+
       (pr.warn?'<p class="ferr">'+esc(pr.warn)+'</p>':'')+
@@ -3977,7 +3996,26 @@ function progPick(pr){
     Object.keys(PROGRAMS).map(id=>'<button class="dch press" data-sprog="'+id+'" aria-pressed="'+(cur===id)+'">'+PROGRAMS[id].name+'</button>').join('')+
     '</div><p class="cap">'+esc(tip)+(pr.split==='groups'&&cur===''?' Сейчас план собран по группам мышц — программа заменит его.':'')+' Вес и повторы всё равно ведёт умный план.</p></div>';
 }
+// deadline: ± a week or a month, a date, or back to the computed pace
+function fmtKg(x){return String(Math.round(x*10)/10).replace('.',',');}
+function deadlineUI(pr){
+  const own=!!pr.weeksSet;
+  return '<div class="sfield sdl"><span class="flab">Срок цели</span><div class="dlrow">'+
+    '<button class="ghost glass press" data-swk="-4" aria-label="На месяц раньше"'+(pr.weeks<=5?' disabled':'')+'>−4</button><button class="ghost glass press" data-swk="-1" aria-label="На неделю раньше"'+(pr.weeks<=2?' disabled':'')+'>−1</button>'+
+    '<input type="date" id="sDeadline" class="fhint" value="'+pr.end+'" min="'+addDays(pr.start,14)+'" max="'+addDays(pr.start,728)+'" aria-label="Дата, к которой нужна цель">'+
+    '<button class="ghost glass press" data-swk="1" aria-label="На неделю позже">+1</button><button class="ghost glass press" data-swk="4" aria-label="На месяц позже">+4</button></div>'+
+    '<p class="cap">'+(own?'Свой срок: калории и темп подстроены под него.'+(pr.autoWeeks?' Рекомендованный — '+pr.autoWeeks+' '+plural(pr.autoWeeks,['неделя','недели','недель'])+'.':'')+' <button class="restore" data-swk="auto">Вернуть рекомендованный</button>':
+      'Срок рассчитан по безопасному темпу. Можно поставить свой — калории пересчитаются.')+'</p>'+
+    (pr.timeNote?'<p class="ferr">'+esc(pr.timeNote)+'</p>':'')+'</div>';
+}
+function setDeadline(weeks){
+  const d=SETUP.d;if(!d||!SETUP.pr)return;
+  d.weeks=weeks==='auto'?'':Math.max(2,Math.min(104,weeks));
+  if(SETUP.pr.program!==undefined)d.program=SETUP.pr.program;if(SETUP.pr.split)d.split=SETUP.pr.split;
+  SETUP.pr=calcProfile(d);HIST_REV++;renderMain();
+}
 function goalClick(ds){
+  if(ds.swk){if(ds.swk==='auto')setDeadline('auto');else setDeadline(SETUP.pr.weeks+Number(ds.swk));return true;}
   if(ds.sprog!=null&&SETUP.pr){const v=PROGRAMS[ds.sprog]?ds.sprog:null;SETUP.pr.program=v;SETUP.d.program=v;if(v){SETUP.pr.split='auto';SETUP.d.split='auto';}HIST_REV++;renderMain();return true;}
   if((ds.ssplit||ds.sdp2||ds.sdg)&&splitClick(ds))return true;
   if(ds.sgoal){SETUP.d.goal=ds.sgoal;if(ds.sgoal!=='area')SETUP.d.area='';renderMain();return true;}
@@ -7334,7 +7372,7 @@ document.addEventListener('click',e=>{
   if(ds.eqopen){UI.eqOpen=!UI.eqOpen;renderMain();return;}
   if(ds.beq||ds.beqpre){S.config.equip=ds.beqpre?EQUIP_PRESET[ds.beqpre].slice():eqToggle(equipNow().slice(),ds.beq);persistConfig();renderMain();return;}
   if(ds.seq||ds.seqpre){readSetup();SETUP.d.equip=ds.seqpre?EQUIP_PRESET[ds.seqpre].slice():eqToggle((SETUP.d.equip||equipNow()).slice(),ds.seq);renderMain();return;}
-  if((ds.sprog!=null||ds.sgoal||ds.sarea||ds.ssex||ds.sday||ds.splace||ds.sdp||ds.sdp2||ds.sdg||ds.ssplit||ds.speq||ds.seqt||ds.setup||ds.calm||ds.wstep)&&goalClick(ds))return;
+  if((ds.sprog!=null||ds.swk||ds.sgoal||ds.sarea||ds.ssex||ds.sday||ds.splace||ds.sdp||ds.sdp2||ds.sdg||ds.ssplit||ds.speq||ds.seqt||ds.setup||ds.calm||ds.wstep)&&goalClick(ds))return;
   if(ds.auth||ds.authsex||ds.authgo||ds.authdel){authClick(ds);return;}
   if(ds.acc){accClick(ds.acc);return;}
   if((ds.csug||ds.coach||ds.cset||ds.cundo!==undefined||ds.memdel!==undefined||ds.crate!==undefined||ds.cwhy!==undefined)&&coachClick(ds))return;
