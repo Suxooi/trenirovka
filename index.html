@@ -2959,7 +2959,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='28.10 20:45';
+const BUILD='30.10 19:38';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -3887,11 +3887,14 @@ function acceptProfile(pr){
   render();scrollCoach();toast('План готов: '+pr.days.map(weekdayName).join(', ')+'. Тренировки уже стоят в календаре.'+(reset?' Обновлено дней, собранных раньше: '+reset+'.':''));
 }
 function curWeight(pr){const w=pr.weights||[];return w.length?w[w.length-1].kg:pr.weight;}
-function logWeight(kg){
-  const pr=prof();if(!pr)return;kg=Math.round(kg*10)/10;if(!(kg>25&&kg<300))return;
-  const k=todayKey();pr.weights=(pr.weights||[]).filter(x=>x.d!==k).concat({d:k,kg:kg}).sort((a,b)=>a.d<b.d?-1:1).slice(-120);
+function logWeight(kg,date){
+  const pr=prof();if(!pr)return false;kg=Math.round(kg*10)/10;if(!(kg>25&&kg<300))return false;
+  const k=date||todayKey();pr.weights=(pr.weights||[]).filter(x=>x.d!==k).concat({d:k,kg:kg}).sort((a,b)=>a.d<b.d?-1:1).slice(-400);
   clearTimeout(goalTimer);goalTimer=setTimeout(persistConfig,600);
+  if(window.onWeight)try{window.onWeight(k);}catch(e){}
+  return true;
 }
+function weightOn(k){const pr=prof(),w=pr&&pr.weights&&pr.weights.find(x=>x.d===k);return w?w.kg:null;}
 function rotationNote(pr){
   if(pr.split==='groups')return '<p class="cap">По группам мышц: '+[1,2,3,4,5,6,0].filter(w=>pr.days.indexOf(w)>=0).map(w=>'<b>'+weekdayName(w)+'</b> — '+groupsTxt(dayGroupsOf(pr,w)||[])+(dayPlacesOf(pr,w).length>1||multiPlace(pr)?' ('+dayPlacesOf(pr,w).map(p=>PLACE_NAME[p]).join(' + ')+')':'')).join('; ')+'. Если группа повторяется в неделе, во второй день идут другие упражнения.</p>';
   const gs=placeGroups(pr),seq=g=>{const ls=[];for(let i=0;i<g.L;i++)ls.push(LETTERS[g.off+i]);return ls.join(' → ')+' → снова '+ls[0];};
@@ -4176,9 +4179,9 @@ async function itogiMemory(q){
   try{
     const r=await fetch(c.url.replace(/\/+$/,'')+'/memory/context?q='+encodeURIComponent(String(q||'').slice(0,300)),{headers:{'X-Token':c.tok},signal:ctl.signal});
     if(!r.ok)return '';
-    const j=await r.json(),mem=(j.memories||[]).map(m=>'- '+m.text+(m.category?' ('+m.category+')':'')),kb=(j.knowledge||[]).map(k=>'«'+k.title+'»: '+k.text);
+    const j=await r.json(),mem=(j.memories||[]).map(m=>'- '+m.text+(m.category?' ('+m.category+')':'')),kb=(j.knowledge||[]).map(k=>'«'+k.title+'»: '+k.text+(k.source?' (источник: '+k.source+')':''));
     return (mem.length?'Память о пользователе (общая с ботом «Итоги дня», учитывай всегда):\n'+mem.join('\n'):'')+
-      (kb.length?'\n\nИз базы знаний пользователя (может пригодиться для ответа):\n'+kb.join('\n\n'):'');
+      (kb.length?'\n\nИз базы знаний бота «Итоги дня»: заметки пользователя и свежие выводы эксперта по здоровью, обновляются еженедельно (используй, если подходят, и называй источник):\n'+kb.join('\n\n'):'');
   }catch(e){return '';}finally{clearTimeout(tm);}
 }
 function itogiRemember(text,category){
@@ -4355,6 +4358,7 @@ const COACH_TECH=`Всегда, независимо от инструкции �
 Действия с питанием:
 {"type":"meal","date":"ГГГГ-ММ-ДД","name":"Гречка с курицей","kcal":520,"p":42,"f":14,"c":55,"items":[{"name":"гречка варёная","grams":200,"kcal":220},{"name":"куриная грудка","grams":150,"kcal":250}]}
 {"type":"meal_del","date":"ГГГГ-ММ-ДД","name":"точное название из «Съедено сегодня»"}
+{"type":"weight","date":"ГГГГ-ММ-ДД","kg":88.4} — когда человек называет свой вес («вешу 88,4», «сегодня 87.9 утром»): записать взвешивание за этот день.
 "meal" — когда пользователь пишет, что съел или выпил что-то, или просит записать блюдо: одно действие на блюдо или приём пищи. Порцию оценивай по обычным размерам, если вес не указан; p/f/c — белки, жиры, углеводы в граммах; "items" — по желанию. Дата — сегодня, если не сказано иное (не позже сегодня и не раньше 14 дней назад). В "reply" коротко назови, что записал и сколько ккал, и сколько осталось до нормы на сегодня. Не записывай то, что человек только планирует съесть, и не дублируй блюдо, которое уже есть в «Съедено сегодня».`;
 const COACH_OPTS={
   tone:[['ty','На «ты»','Обращайся к пользователю на «ты».'],['vy','На «вы»','Обращайся к пользователю на «вы».']],
@@ -4450,6 +4454,12 @@ function applyCoachActions(list){
     }
     if(type==='forget'){
       const gone=memForget(a.text);if(gone)acts.push({label:'забыл: «'+gone.t.slice(0,80)+'»'});return;
+    }
+    if(type==='weight'){
+      const k=okDate?String(a.date):t;if(k>t||k<addDays(t,-14)||!prof())return;
+      const kg=Math.round(parseFloat(String(a.kg||a.value||'').replace(',','.'))*10)/10;if(!(kg>25&&kg<300))return;
+      const u=undo[k]=undo[k]||{};if(!('wt' in u))u.wt=weightOn(k);
+      if(logWeight(kg,k)){persistConfig();acts.push({label:'вес '+String(kg).replace('.',',')+' кг'+(k===t?'':' за '+k)});}return;
     }
     if(type==='meal'||type==='meal_del'){
       const k=okDate?String(a.date):t;if(k>t||k<addDays(t,-14))return;
@@ -4556,6 +4566,7 @@ function undoCoach(i){
       if(u.pf)d.planFrom=clone(u.pf);else if('pf' in u)delete d.planFrom;
       if(u.pa!==undefined)d.prefsAt=clone(u.pa);else if('pf' in u)delete d.prefsAt;}
     if('meals' in u){d.meals=clone(u.meals);food=true;}
+    if('wt' in u){const pr=prof();if(pr){pr.weights=(pr.weights||[]).filter(x=>x.d!==k);if(u.wt!=null)logWeight(u.wt,k);persistConfig();if(window.onWeight)window.onWeight(k);}food=true;}
     persistDay(k);});
   m.undone=true;saveCoach();render();toast(food&&!plan?'Записи в питании отменены.':food?'Изменения отменены.':'Изменения в плане отменены.');
 }
@@ -7031,6 +7042,9 @@ const COACH_TECH2=`Всегда, независимо от инструкции 
 - Правка по умолчанию только на один день. Если человек просит «всегда», «так и дальше», «в каждой такой тренировке» — scope "always", приложение запомнит её для этого вида тренировки.
 - Сами дни недели для тренировок навсегда ты не меняешь — подскажи, что это в «Прогресс → Цель и план».
 
+Вес
+- weight — каждый раз, когда человек называет свой вес («вешу 88,4», «утром 87,9»): запиши за этот день. Если за сегодня веса нет, а человек худеет или набирает, в утреннем разборе попроси взвеситься натощак и прислать цифру.
+
 Питание
 - food add — когда человек пишет, что съел или выпил, или просит записать: одно действие на блюдо. Порцию оценивай по обычным размерам, если вес не указан. Дата — сегодня, если не сказано иное (не позже сегодня, не раньше 14 дней назад). Не записывай то, что только планируется, и не дублируй уже записанное. В ответе — что записал, сколько ккал и сколько осталось до нормы.`;
 
@@ -7072,6 +7086,9 @@ const AG_TOOLS=[
   {name:'food',description:'Дневник питания: op add — записать блюдо (kcal и БЖУ в граммах), op delete — убрать запись по названию.',
    params:{type:'object',properties:{op:{type:'string',enum:['add','delete']},date:AG_DATE,name:{type:'string'},kcal:{type:'number'},p:{type:'number'},f:{type:'number'},c:{type:'number'}},required:['op','name']},
    run:(a,c)=>agAct(c,[{type:a.op==='delete'?'meal_del':'meal',date:a.date||todayKey(),name:a.name,kcal:a.kcal,p:a.p,f:a.f,c:a.c}])},
+  {name:'weight',description:'Записать взвешивание: вес тела в кг за день (по умолчанию сегодня). Вызывай всегда, когда человек называет свой вес.',
+   params:{type:'object',properties:{kg:{type:'number',description:'Вес, кг, например 88.4'},date:AG_DATE},required:['kg']},
+   run:(a,c)=>agAct(c,[{type:'weight',date:a.date||todayKey(),kg:a.kg}])},
   {name:'memory',description:'Твоя долгая память о человеке: op remember — сохранить устойчивый факт одной фразой (category: здоровье, питание, тренировки, режим, цели), op forget — убрать устаревший факт.',
    params:{type:'object',properties:{op:{type:'string',enum:['remember','forget']},text:{type:'string'},category:{type:'string'}},required:['op','text']},
    run:(a,c)=>agAct(c,[{type:a.op==='forget'?'forget':'remember',text:a.text,category:a.category}],true)},
@@ -7081,7 +7098,7 @@ const AG_TOOLS=[
 ];
 const AG_STEP={search_knowledge:'Смотрю базу знаний…',exercise_history:'Смотрю журнал упражнения…',get_days:'Смотрю дни…',get_week:'Смотрю итоги недели…',get_plan:'Смотрю план…',find_exercises:'Подбираю упражнения…',
   move_workout:'Переношу тренировку…',change_exercise:'Меняю план…',day_workout:'Меняю план…',food:'Записываю питание…',memory:'Запоминаю…',coach_task:'Ставлю себе задачу…'};
-const AG_HUMAN={search_knowledge:'база знаний',exercise_history:'журнал',get_days:'дни',get_week:'неделя',get_plan:'план',find_exercises:'каталог',move_workout:'перенос',change_exercise:'правка плана',day_workout:'план дня',food:'питание',memory:'память',coach_task:'задача'};
+const AG_HUMAN={search_knowledge:'база знаний',exercise_history:'журнал',get_days:'дни',get_week:'неделя',get_plan:'план',find_exercises:'каталог',move_workout:'перенос',change_exercise:'правка плана',day_workout:'план дня',food:'питание',weight:'вес',memory:'память',coach_task:'задача'};
 
 // run plan / food / memory actions through the same checked code as before; collect labels and undo for the turn
 function agAct(ctx,list,quiet){
@@ -7224,7 +7241,7 @@ function agMsg(reply,ctx,kind){
 }
 
 // ---- autonomy: the coach checks in by itself — due tasks and a short morning review ----
-const AUTO_DAILY='Утренний разбор. Посмотри вчерашний день (тренировка: сделано или пропущено, оценки подходов, питание) и план на сегодня и ближайшие дни. Если есть повод — поправь план (только сегодня и позже) и коротко напиши, что и почему. Если всё по плану — одна-две фразы: что сегодня и на что обратить внимание.';
+const AUTO_DAILY='Утренний разбор. Посмотри вчерашний день (тренировка: сделано или пропущено, оценки подходов, питание) и план на сегодня и ближайшие дни. Если есть повод — поправь план (только сегодня и позже) и коротко напиши, что и почему. Если всё по плану — одна-две фразы: что сегодня и на что обратить внимание. Если за сегодня нет взвешивания, а цель — похудеть или набрать, в конце попроси встать на весы натощак и прислать вес.';
 function autoWhy(){
   const c=coachCfg();if(c.auto==='off'||!agEngine()||COACH.busy||needOnboarding())return null;
   const t=todayKey(),st=coachState(),h=new Date().getHours();
@@ -7258,6 +7275,7 @@ function coachBrief(k){
     const r=rem();if(r&&r.on&&r.time)L.push('Напомню '+(r.before?'за '+r.before+' мин до ':'в ')+r.time+'.');}
   else if(pr&&pr.accepted)L.push(ty?'Сегодня отдыхаешь — мышцы растут как раз сейчас.':'Сегодня день отдыха — мышцы восстанавливаются и растут.');
   if(pr&&pr.accepted)L.push('Норма '+num(foodGoalFor(k))+' ккал, белок '+pr.p+' г.');
+  if(pr&&pr.accepted&&pr.mode!=='keep'&&weightOn(k)==null)L.push(ty?'Взвесься натощак и напиши мне вес.':'Взвесьтесь натощак и напишите мне вес.');
   const due=coachTasks().filter(x=>!x.done&&x.due===k);if(due.length)L.push('Я запланировал: '+due.slice(0,2).map(x=>x.text).join('; ')+'.');
   return L.join(' ');
 }
