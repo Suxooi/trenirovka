@@ -1,3 +1,5 @@
+function validDateKey(k){return typeof k==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(k)&&keyOf(parseKey(k))===k;}
+function daysBetween(from,to){const utc=k=>{const a=k.split('-').map(Number);return Date.UTC(a[0],a[1]-1,a[2]);};return (utc(to)-utc(from))/864e5;}
 <!doctype html>
 <html lang="ru">
 <head>
@@ -2927,7 +2929,7 @@ function loadLocal(){
 function saveLocal(){lsSet(LS,JSON.stringify({days:S.days,config:S.config}));}
 function persistDay(k){
   const d=S.days[k];
-  const keep=d&&((d.sets&&d.sets.length)||(d.plan&&d.plan.length)||d.planEdited||(d.meals&&d.meals.length));
+  const keep=d&&((d.sets&&d.sets.length)||(d.plan&&d.plan.length)||d.planEdited||(d.meals&&d.meals.length)||(d.water>0));
   if(!keep)delete S.days[k];
   if(S.mode==='db')queue('d-'+k,keep?d:null);else saveLocal();
   HIST_REV++;if(keep&&d.planEdited&&d.planFrom)learnPlan(k);
@@ -2959,7 +2961,7 @@ function goLocal(msg){
   S.mode='local';S.pending={};saveLocal();setStatus();
   if(msg)toast(msg);
 }
-const BUILD='30.10 19:38';
+const BUILD='02.11 18:00';
 function setStatus(){
   const t=S.mode==='db'?'Записи сохраняются в вашем аккаунте и видны на всех устройствах':'Записи хранятся на этом телефоне';
   $('status').textContent=t+' · версия '+BUILD;
@@ -3763,7 +3765,7 @@ document.addEventListener('change',e=>{
   const t=e.target;if(!t)return;
   if(t.id==='foodCam'||t.id==='foodPick'){const f=t.files&&t.files[0];t.value='';onFoodFile(f);}
   if(t.id==='foodGoal'){setGoal(parseFloat(t.value));renderMain();}
-  if(t.id==='sDeadline'&&SETUP.pr){const v=t.value;if(/^\d{4}-\d{2}-\d{2}$/.test(v))setDeadline(Math.round((parseKey(v)-parseKey(SETUP.pr.start))/864e5/7));return;}
+  if(t.id==='sDeadline'&&SETUP.pr){const v=t.value;if(validDateKey(v))setDeadline(v);return;}
 });
 let qTimer=null;
 document.addEventListener('input',e=>{
@@ -3811,11 +3813,12 @@ function calcProfile(d){
   }else{kcal=tdee;weeks=10;}
   if(weeks>52){weeks=52;warn='Цель далёкая: план рассчитан на год, потом его можно продлить.';}
   // the person's own deadline: pace and calories follow it, within safe limits
-  const autoWeeks=weeks,uw=Math.round(+d.weeks||0);let timeNote='';
-  if(uw>=2&&uw<=104&&uw!==autoWeeks){
+  const start=todayKey(),autoWeeks=weeks,deadlineDays=validDateKey(d.deadline)?daysBetween(start,d.deadline):0;
+  const exactDeadline=deadlineDays>=14&&deadlineDays<=728,uw=exactDeadline?deadlineDays/7:Math.round(+d.weeks||0),own=exactDeadline||(uw>=2&&uw<=104&&uw!==autoWeeks);let timeNote='';
+  if(own){
     weeks=uw;
     if(mode==='gain'&&diff>0){
-      const want=diff/weeks,maxR=Math.max(0.25,w*0.005);rate=Math.min(want,maxR);rate=Math.max(rate,0.05);kcal=tdee+rate*7700/7;
+      const want=diff/weeks,maxR=Math.max(0.25,w*0.005);rate=Math.min(want,maxR);kcal=tdee+rate*7700/7;
       if(want>maxR)timeNote='За '+weeks+' '+plural(weeks,['неделю','недели','недель'])+' набрать '+fmtKg(diff)+' кг без лишнего жира не выйдет: больше '+fmtKg(maxR)+' кг в неделю — это в основном жир. Ставлю максимальный разумный темп; к сроку будет около '+fmtKg(w+rate*weeks)+' кг.';
     }else if(mode==='lose'&&diff<0){
       const want=-diff/weeks,floor=Math.max(bmr*1.05,d.sex==='f'?1300:1500),maxR=Math.min(1,w*0.01);
@@ -3826,9 +3829,9 @@ function calcProfile(d){
   const bmi=w/((h/100)*(h/100)),tb=t/((h/100)*(h/100));
   if(tb<18.5)warn='Целевой вес ниже нормы для вашего роста (ИМТ '+tb.toFixed(1)+'). Лучше обсудить цель с врачом.';
   const p=Math.round(w*(mode==='lose'?2.0:1.8)),f=Math.round(w*0.9),c=Math.max(0,Math.round((kcal-p*4-f*9)/4));
-  const start=todayKey(),end=addDays(start,weeks*7);
-  return {weeksSet:uw>=2&&uw<=104&&uw!==autoWeeks?uw:null,autoWeeks:autoWeeks,timeNote:timeNote,equip:(d.equip||equipNow()).slice(),goal:d.goal,area:d.area||null,sex:d.sex,age:a,height:h,weight:w,target:t,ndays:days,days:wdays,places:(d.places&&d.places.length?d.places:['gym']).slice(),placeEq:clone(d.placeEq||{}),dayPlace:Object.assign({},d.dayPlace||{}),dayPlaces:clone(d.dayPlaces||{}),dayGroups:clone(d.dayGroups||{}),split:d.split==='groups'?'groups':'auto',program:d.split!=='groups'&&PROGRAMS[d.program]?d.program:null,
-    bmr:Math.round(bmr),tdee:Math.round(tdee),kcal:Math.round(kcal/10)*10,p:p,f:f,c:c,rate:Math.round(rate*100)/100,mode:mode,weeks:weeks,start:start,end:end,bmi:Math.round(bmi*10)/10,warn:warn};
+  const end=exactDeadline?d.deadline:addDays(start,weeks*7);weeks=Math.ceil(weeks);
+  return {deadlineSet:exactDeadline?d.deadline:null,weeksSet:own?uw:null,autoWeeks:autoWeeks,timeNote:timeNote,equip:(d.equip||equipNow()).slice(),goal:d.goal,area:d.area||null,sex:d.sex,age:a,height:h,weight:w,target:t,ndays:days,days:wdays,places:(d.places&&d.places.length?d.places:['gym']).slice(),placeEq:clone(d.placeEq||{}),dayPlace:Object.assign({},d.dayPlace||{}),dayPlaces:clone(d.dayPlaces||{}),dayGroups:clone(d.dayGroups||{}),split:d.split==='groups'?'groups':'auto',program:d.split!=='groups'&&PROGRAMS[d.program]?d.program:null,
+    bmr:Math.round(bmr),tdee:Math.round(tdee),kcal:Math.round(kcal/10)*10,p:p,f:f,c:c,rate:rate,mode:mode,weeks:weeks,start:start,end:end,bmi:Math.round(bmi*10)/10,warn:warn};
 }
 function planItem(row,week){
   const ex=allEx().find(e=>e.id===row[0]);if(!ex)return null;
@@ -3874,7 +3877,9 @@ function ownPlan(k){
 }
 function acceptProfile(pr){
   const first=needOnboarding();
-  pr.accepted=true;pr.weights=(prof()&&prof().weights)||[{d:todayKey(),kg:pr.weight}];
+  const previous=prof(),weights=previous&&previous.weights||[],changedWeight=previous&&Math.abs(curWeight(previous)-pr.weight)>0.001;
+  pr.accepted=true;pr.weights=clone(weights);
+  if(!weights.length||changedWeight)pr.weights=pr.weights.filter(x=>x.d!==todayKey()).concat({d:todayKey(),kg:pr.weight}).sort((a,b)=>a.d.localeCompare(b.d)).slice(-400);
   const t0=todayKey(),edited=Object.keys(S.days).filter(k=>k>=t0&&S.days[k].planEdited&&!(S.days[k].sets&&S.days[k].sets.length));
   const oldPlace={};edited.forEach(k=>{const s=schedInfo(k);oldPlace[k]=s?s.place:null;});
   S.config.profile=pr;
@@ -3889,7 +3894,7 @@ function acceptProfile(pr){
 function curWeight(pr){const w=pr.weights||[];return w.length?w[w.length-1].kg:pr.weight;}
 function logWeight(kg,date){
   const pr=prof();if(!pr)return false;kg=Math.round(kg*10)/10;if(!(kg>25&&kg<300))return false;
-  const k=date||todayKey();pr.weights=(pr.weights||[]).filter(x=>x.d!==k).concat({d:k,kg:kg}).sort((a,b)=>a.d<b.d?-1:1).slice(-400);
+  const k=date||todayKey();if(!validDateKey(k)||k>todayKey())return false;pr.weights=(pr.weights||[]).filter(x=>x.d!==k).concat({d:k,kg:kg}).sort((a,b)=>a.d<b.d?-1:1).slice(-400);
   clearTimeout(goalTimer);goalTimer=setTimeout(persistConfig,600);
   if(window.onWeight)try{window.onWeight(k);}catch(e){}
   return true;
@@ -3931,7 +3936,7 @@ function placeDaysUI(d){
   return h;
 }
 function setupView(){
-  const d=SETUP.d||(SETUP.d=Object.assign({goal:'',area:'',sex:(accCur()&&accCur().sex)||'m',age:'',height:'',weight:'',target:'',ndays:3,days:DAYSETS[3].slice(),places:['gym'],placeEq:{},dayPlace:{}},prof()?{days:prof().days.slice(),places:(prof().places||['gym']).slice(),placeEq:clone(prof().placeEq||{}),dayPlace:Object.assign({},prof().dayPlace||{}),dayPlaces:clone(prof().dayPlaces||{}),dayGroups:clone(prof().dayGroups||{}),split:prof().split||'auto',program:prof().program||null,weeks:prof().weeksSet||'',goal:prof().goal,area:prof().area||'',sex:prof().sex,age:prof().age,height:prof().height,weight:curWeight(prof()),target:prof().target,ndays:prof().ndays}:{}));
+  const d=SETUP.d||(SETUP.d=Object.assign({goal:'',area:'',sex:(accCur()&&accCur().sex)||'m',age:'',height:'',weight:'',target:'',ndays:3,days:DAYSETS[3].slice(),places:['gym'],placeEq:{},dayPlace:{}},prof()?{days:prof().days.slice(),places:(prof().places||['gym']).slice(),placeEq:clone(prof().placeEq||{}),dayPlace:Object.assign({},prof().dayPlace||{}),dayPlaces:clone(prof().dayPlaces||{}),dayGroups:clone(prof().dayGroups||{}),split:prof().split||'auto',program:prof().program||null,weeks:prof().weeksSet||'',deadline:prof().deadlineSet||'',goal:prof().goal,area:prof().area||'',sex:prof().sex,age:prof().age,height:prof().height,weight:curWeight(prof()),target:prof().target,ndays:prof().ndays}:{}));
   const steps=['goal','data','result'],si=steps.indexOf(SETUP.step);
   let h='<section class="card glass setup"><div class="sstep">'+['Цель','Данные','План'].map((s,i)=>'<span class="'+(i<=si?'on':'')+'">'+(i+1)+'. '+s+'</span>').join('')+'</div>';
   if(SETUP.step==='goal'){
@@ -3951,7 +3956,7 @@ function setupView(){
       '<div class="sres"><div><b>'+num(pr.kcal)+'</b><span>ккал в день</span></div><div class="swk"><b>'+pr.weeks+'</b><span>'+plural(pr.weeks,['неделя','недели','недель'])+' · до '+dateLong(pr.end)+'</span></div></div>'+
       deadlineUI(pr)+
       '<div class="macros"><span><b>'+pr.p+'</b> г белки</span><span><b>'+pr.f+'</b> г жиры</span><span><b>'+pr.c+'</b> г углеводы</span></div>'+
-      '<p class="cap">'+pr.weight+' → '+pr.target+' кг'+(pr.rate?', темп '+sign+String(pr.rate).replace('.',',')+' кг в неделю':', вес держим, меняем форму')+'. Обмен '+num(pr.bmr)+' ккал, с '+pr.ndays+' тренировками — '+num(pr.tdee)+' ккал. Расчёт по формуле Миффлина — Сан Жеора.</p>'+
+      '<p class="cap">'+pr.weight+' → '+pr.target+' кг'+(pr.rate?', темп '+sign+num(pr.rate)+' кг в неделю':', вес держим, меняем форму')+'. Обмен '+num(pr.bmr)+' ккал, с '+pr.ndays+' тренировками — '+num(pr.tdee)+' ккал. Расчёт по формуле Миффлина — Сан Жеора.</p>'+
       (pr.warn?'<p class="ferr">'+esc(pr.warn)+'</p>':'')+
       '<h3 class="sec" style="margin:4px 0 0">План тренировок · '+pr.days.map(weekdayName).join(', ')+'</h3>'+progPick(pr)+rotationNote(pr)+planPreview(pr)+
       '<p class="cap">Повторы растут на один каждые две недели. План встанет во вкладку «Тренировка» на все '+pr.weeks+' '+plural(pr.weeks,['неделю','недели','недель'])+'; любой день можно поменять там же.</p>'+
@@ -4002,7 +4007,7 @@ function progPick(pr){
 // deadline: ± a week or a month, a date, or back to the computed pace
 function fmtKg(x){return String(Math.round(x*10)/10).replace('.',',');}
 function deadlineUI(pr){
-  const own=!!pr.weeksSet;
+  const own=!!(pr.weeksSet||pr.deadlineSet);
   return '<div class="sfield sdl"><span class="flab">Срок цели</span><div class="dlrow">'+
     '<button class="ghost glass press" data-swk="-4" aria-label="На месяц раньше"'+(pr.weeks<=5?' disabled':'')+'>−4</button><button class="ghost glass press" data-swk="-1" aria-label="На неделю раньше"'+(pr.weeks<=2?' disabled':'')+'>−1</button>'+
     '<input type="date" id="sDeadline" class="fhint" value="'+pr.end+'" min="'+addDays(pr.start,14)+'" max="'+addDays(pr.start,728)+'" aria-label="Дата, к которой нужна цель">'+
@@ -4013,12 +4018,17 @@ function deadlineUI(pr){
 }
 function setDeadline(weeks){
   const d=SETUP.d;if(!d||!SETUP.pr)return;
-  d.weeks=weeks==='auto'?'':Math.max(2,Math.min(104,weeks));
+  if(weeks==='auto'){d.weeks='';d.deadline='';}
+  else{
+    const start=SETUP.pr.start,days=validDateKey(weeks)?daysBetween(start,weeks):Math.round(Number(weeks)*7);
+    if(!Number.isFinite(days))return;
+    d.deadline=addDays(start,Math.max(14,Math.min(728,days)));d.weeks='';
+  }
   if(SETUP.pr.program!==undefined)d.program=SETUP.pr.program;if(SETUP.pr.split)d.split=SETUP.pr.split;
   SETUP.pr=calcProfile(d);HIST_REV++;renderMain();
 }
 function goalClick(ds){
-  if(ds.swk){if(ds.swk==='auto')setDeadline('auto');else setDeadline(SETUP.pr.weeks+Number(ds.swk));return true;}
+  if(ds.swk){if(ds.swk==='auto')setDeadline('auto');else setDeadline(addDays(SETUP.pr.end,Number(ds.swk)*7));return true;}
   if(ds.sprog!=null&&SETUP.pr){const v=PROGRAMS[ds.sprog]?ds.sprog:null;SETUP.pr.program=v;SETUP.d.program=v;if(v){SETUP.pr.split='auto';SETUP.d.split='auto';}HIST_REV++;renderMain();return true;}
   if((ds.ssplit||ds.sdp2||ds.sdg)&&splitClick(ds))return true;
   if(ds.sgoal){SETUP.d.goal=ds.sgoal;if(ds.sgoal!=='area')SETUP.d.area='';renderMain();return true;}
@@ -4456,7 +4466,8 @@ function applyCoachActions(list){
       const gone=memForget(a.text);if(gone)acts.push({label:'забыл: «'+gone.t.slice(0,80)+'»'});return;
     }
     if(type==='weight'){
-      const k=okDate?String(a.date):t;if(k>t||k<addDays(t,-14)||!prof())return;
+      if(a.date!=null&&a.date!==''&&!validDateKey(String(a.date)))return;
+      const k=okDate?String(a.date):t;if(!validDateKey(k)||k>t||k<addDays(t,-14)||!prof())return;
       const kg=Math.round(parseFloat(String(a.kg||a.value||'').replace(',','.'))*10)/10;if(!(kg>25&&kg<300))return;
       const u=undo[k]=undo[k]||{};if(!('wt' in u))u.wt=weightOn(k);
       if(logWeight(kg,k)){persistConfig();acts.push({label:'вес '+String(kg).replace('.',',')+' кг'+(k===t?'':' за '+k)});}return;
@@ -5672,8 +5683,8 @@ function suggestFor(ex,p){
   }
   if(ex.kind==='reps'||ex.kind==='wr'){
     const mn=Math.min.apply(null,last.map(s=>s.r||0));
-    if(last.length>=Math.min(g,last.length)&&mn>=tr&&last.some(s=>s.feel===3))return {kind:'hold',r:Math.max(tr,mn),txt:'= '+Math.max(tr,mn)+' повторов: в прошлый раз было тяжело — закрепим'};
-    if(last.length>=Math.min(g,last.length)&&mn>=tr){const nr=Math.min(60,Math.max(tr,mn)+(last.every(s=>s.feel===1)?2:1));return {kind:'up',r:nr,txt:'↑ '+nr+' '+plural(nr,['повтор','повтора','повторов'])+': в прошлый раз все подходы по '+mn+'+'};}
+    if(last.length>=g&&mn>=tr&&last.some(s=>s.feel===3))return {kind:'hold',r:Math.max(tr,mn),txt:'= '+Math.max(tr,mn)+' повторов: в прошлый раз было тяжело — закрепим'};
+    if(last.length>=g&&mn>=tr){const nr=Math.min(60,Math.max(tr,mn)+(last.every(s=>s.feel===1)?2:1));return {kind:'up',r:nr,txt:'↑ '+nr+' '+plural(nr,['повтор','повтора','повторов'])+': в прошлый раз все подходы по '+mn+'+'};}
     return {kind:'hold',r:tr,txt:'= '+tr+' повторов: в прошлый раз '+last.map(s=>s.r).join(', ')};
   }
   if(ex.kind==='time'&&ex.tu!=='m'){
